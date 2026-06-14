@@ -11,7 +11,17 @@ const credsSchema = z.object({
 
 export type AuthState = { error?: string; message?: string };
 
+function supabaseConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+}
+
+const NOT_CONFIGURED =
+  "La app aún no está conectada a Supabase. Rellena NEXT_PUBLIC_SUPABASE_URL y ANON_KEY en .env.local y reinicia el servidor.";
+
 export async function login(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  if (!supabaseConfigured()) return { error: NOT_CONFIGURED };
   const parsed = credsSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -30,6 +40,8 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
 }
 
 export async function register(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  if (!supabaseConfigured()) return { error: NOT_CONFIGURED };
+
   const parsed = credsSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
