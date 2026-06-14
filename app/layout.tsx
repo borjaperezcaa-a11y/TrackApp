@@ -45,8 +45,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" data-theme="night" className={`${saira.variable} ${archivo.variable}`}>
+    <html
+      lang="es"
+      data-theme="night"
+      suppressHydrationWarning
+      className={`${saira.variable} ${archivo.variable}`}
+    >
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('theme');if(t==='day'||t==='night')document.documentElement.dataset.theme=t;}catch(e){}",
+          }}
+        />
         {children}
         <ServiceWorkerRegister />
       </body>

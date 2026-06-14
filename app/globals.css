@@ -143,6 +143,24 @@ body {
   to { stroke-dashoffset: 0; }
 }
 
+/* barras de gráfica que crecen desde la base (GPU, sin JS) */
+.grow-y {
+  transform-origin: bottom;
+  animation: growY 0.6s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+@keyframes growY {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* donut: trazo que se dibuja */
+.draw-stroke {
+  animation: drawStroke 0.9s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+@keyframes drawStroke {
+  from { stroke-dashoffset: var(--len, 0); }
+}
+
 /* entrada de página al navegar (App Router template): desliza desde la derecha */
 .page-anim {
   animation: pageIn 0.32s cubic-bezier(0.33, 1, 0.68, 1);

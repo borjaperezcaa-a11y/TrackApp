@@ -31,6 +31,16 @@ const num2 = new Intl.NumberFormat("es-ES", {
   useGrouping: ALWAYS,
 });
 
+const int0 = new Intl.NumberFormat("es-ES", {
+  maximumFractionDigits: 0,
+  useGrouping: ALWAYS,
+});
+
+/** Entero con separador de millares es-ES (sin símbolo): 4.280 */
+export function intES(n: number): string {
+  return int0.format(n);
+}
+
 // ICU separa el número y el símbolo con un espacio fino especial (U+202F/U+00A0).
 // La factura de referencia usa un espacio normal → normalizamos.
 const normalizeSpaces = (s: string) => s.replace(/[  ]/g, " ");
