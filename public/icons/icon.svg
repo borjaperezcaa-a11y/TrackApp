@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#0c0e12"/>
+  <path d="M96 320 A160 160 0 0 1 416 320" fill="none" stroke="#1c2129" stroke-width="28" stroke-linecap="round"/>
+  <path d="M96 320 A160 160 0 0 1 300 175" fill="none" stroke="#ffb23e" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="256" cy="320" r="22" fill="#ffb23e"/>
+  <path d="M256 320 L330 214" stroke="#f4f1e9" stroke-width="16" stroke-linecap="round"/>
+  <text x="256" y="404" text-anchor="middle" font-family="'Saira Condensed',sans-serif" font-weight="700" font-size="60" fill="#f4f1e9" letter-spacing="2">TRACK</text>
+</svg>

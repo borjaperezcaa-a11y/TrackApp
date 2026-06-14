@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   TrackApp — sistema de diseño portado 1:1 de /reference/trackapp-mockup.html
+   Tema night/day por html[data-theme]. Tipografías inyectadas por next/font
+   como --font-saira (display/números) y --font-archivo (cuerpo/UI).
+   ========================================================================== */
+
+:root {
+  --display: var(--font-saira), system-ui, sans-serif;
+  --body: var(--font-archivo), system-ui, sans-serif;
+
+  /* acentos compartidos */
+  --amber: #ffb23e;
+  --amber-soft: rgba(255, 178, 62, 0.15);
+  --amber-line: rgba(255, 178, 62, 0.3);
+  --green: #3ad17e;
+  --green-soft: rgba(58, 209, 126, 0.15);
+  --red: #ff6a5a;
+  --red-soft: rgba(255, 106, 90, 0.15);
+  --blue: #4aa3ff;
+  --purple: #b98cff;
+  --yellow: #ffd34a;
+}
+
+html[data-theme="night"] {
+  --bg: #0c0e12;
+  --panel: #15191f;
+  --panel2: #1c2129;
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #f4f1e9;
+  --dim: #959db0;
+  --chrome: #0a0c0f;
+  --shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+  --backlight: radial-gradient(120% 55% at 50% -10%, rgba(255, 178, 62, 0.1), transparent 60%);
+}
+
+html[data-theme="day"] {
+  --bg: #e9e6dd;
+  --panel: #ffffff;
+  --panel2: #f4f1e8;
+  --line: rgba(0, 0, 0, 0.1);
+  --text: #191b20;
+  --dim: #646c79;
+  --amber: #c97a00;
+  --green: #1d9b58;
+  --red: #cf4330;
+  --chrome: #ffffff;
+  --shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+  --backlight: radial-gradient(120% 55% at 50% -10%, rgba(201, 122, 0, 0.07), transparent 60%);
+}
+
+/* Mapeo a tokens Tailwind (inline = se resuelven en runtime → el cambio de
+   tema funciona sin recompilar). Genera utilidades bg-panel, text-dim, etc. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-dim: var(--dim);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-blue: var(--blue);
+  --color-purple: var(--purple);
+  --color-yellow: var(--yellow);
+
+  --font-display: var(--display);
+  --font-body: var(--body);
+
+  --radius-card: 20px;
+  --radius-field: 16px;
+}
+
+/* ---------- base ---------- */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  color-scheme: dark;
+}
+html[data-theme="day"] {
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  background-image: var(--backlight);
+  color: var(--text);
+  font-family: var(--body);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* números técnicos siempre tabulares */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+.font-display {
+  font-family: var(--display);
+}
+
+/* contenedor mobile-first: a pantalla completa en móvil, centrado en escritorio */
+.shell {
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  padding: 6px 18px calc(130px + env(safe-area-inset-bottom));
+  min-height: 100dvh;
+}
+
+/* ---------- animaciones del mockup ---------- */
+/* stagger de carga: tarjetas que suben escalonadas */
+.stagger > * {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.stagger > *:nth-child(6) { animation-delay: 0.34s; }
+.stagger > *:nth-child(7) { animation-delay: 0.4s; }
+
+@keyframes rise {
+  to { opacity: 1; transform: none; }
+}
+
+/* check que se dibuja (éxito al emitir/escanear) */
+.check-draw {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: draw 0.5s 0.15s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* transición entre páginas (slide desde la derecha + parallax atenuado) */
+.page-enter {
+  transform: translateX(100%);
+}
+.page-in {
+  transform: translateX(0);
+  transition: transform 0.34s cubic-bezier(0.33, 1, 0.68, 1), filter 0.34s;
+}
+.page-behind {
+  transform: translateX(-24%);
+  filter: brightness(0.5);
+  transition: transform 0.34s cubic-bezier(0.33, 1, 0.68, 1), filter 0.34s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.06s !important;
+  }
+}
+
+/* inputs base coherentes con el mockup */
+input,
+textarea,
+select {
+  width: 100%;
+  background: var(--panel);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-field);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 17px;
+  font-weight: 600;
+  padding: 17px 18px;
+  outline: none;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--amber);
+}
