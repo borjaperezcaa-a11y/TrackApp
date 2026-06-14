@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { isPwnedPassword } from "@/lib/validation/pwned";
 
 const credsSchema = z.object({
   email: z.string().email("Email no válido"),
@@ -48,6 +49,13 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
+  }
+
+  // Rechaza contraseñas presentes en filtraciones conocidas (gratis, sin Pro).
+  if (await isPwnedPassword(parsed.data.password)) {
+    return {
+      error: "Esa contraseña aparece en filtraciones conocidas. Elige una más segura.",
+    };
   }
 
   const supabase = await createClient();
