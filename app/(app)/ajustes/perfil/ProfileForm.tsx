@@ -36,6 +36,16 @@ export function ProfileForm({
 }) {
   const [state, formAction] = useActionState(saveProfile, initial);
 
+  // Campos controlados: así no se vacían tras guardar (React 19 resetea los
+  // formularios no controlados al completar una server action).
+  const [nombre, setNombre] = useState(values.nombre);
+  const [nif, setNif] = useState(values.nif);
+  const [direccion, setDireccion] = useState(values.direccion);
+  const [cpLocalidad, setCpLocalidad] = useState(values.cp_localidad);
+  const [iban, setIban] = useState(values.iban);
+  const [irpf, setIrpf] = useState(String(values.irpf_def));
+  const [serie, setSerie] = useState(values.serie);
+
   const [iva, setIva] = useState<number>(values.iva_def);
   const [logoUrl, setLogoUrl] = useState<string>(values.logo_url);
   const [uploading, setUploading] = useState(false);
@@ -119,23 +129,23 @@ export function ProfileForm({
       </Card>
 
       <Field label="Nombre o razón social" htmlFor="nombre">
-        <input id="nombre" name="nombre" defaultValue={values.nombre} placeholder="Tu nombre o razón social" />
+        <input id="nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu nombre o razón social" />
       </Field>
 
       <Field label="NIF / CIF" htmlFor="nif">
-        <input id="nif" name="nif" defaultValue={values.nif} placeholder="Tu NIF o CIF" autoCapitalize="characters" />
+        <input id="nif" name="nif" value={nif} onChange={(e) => setNif(e.target.value)} placeholder="Tu NIF o CIF" autoCapitalize="characters" />
       </Field>
 
       <Field label="Dirección" htmlFor="direccion">
-        <input id="direccion" name="direccion" defaultValue={values.direccion} placeholder="Calle, número" />
+        <input id="direccion" name="direccion" value={direccion} onChange={(e) => setDireccion(e.target.value)} placeholder="Calle, número" />
       </Field>
 
       <Field label="CP y localidad" htmlFor="cp_localidad">
-        <input id="cp_localidad" name="cp_localidad" defaultValue={values.cp_localidad} placeholder="CP y localidad" />
+        <input id="cp_localidad" name="cp_localidad" value={cpLocalidad} onChange={(e) => setCpLocalidad(e.target.value)} placeholder="CP y localidad" />
       </Field>
 
       <Field label="IBAN" htmlFor="iban">
-        <input id="iban" name="iban" defaultValue={values.iban} placeholder="ES00 0000 0000 0000 0000 0000" autoCapitalize="characters" />
+        <input id="iban" name="iban" value={iban} onChange={(e) => setIban(e.target.value)} placeholder="ES00 0000 0000 0000 0000 0000" autoCapitalize="characters" />
       </Field>
 
       {/* IVA por defecto (chips) */}
@@ -170,11 +180,12 @@ export function ProfileForm({
             min="0"
             max="100"
             inputMode="decimal"
-            defaultValue={values.irpf_def}
+            value={irpf}
+            onChange={(e) => setIrpf(e.target.value)}
           />
         </Field>
         <Field label="Serie" htmlFor="serie" hint={`Próximo nº: ${nextNumero}`}>
-          <input id="serie" name="serie" defaultValue={values.serie} autoCapitalize="characters" />
+          <input id="serie" name="serie" value={serie} onChange={(e) => setSerie(e.target.value)} autoCapitalize="characters" />
         </Field>
       </div>
 
