@@ -1,26 +1,55 @@
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Row } from "@/components/ui/Row";
+import { Fab } from "@/components/ui/Fab";
 import { Icon } from "@/components/ui/Icon";
+import { createClient } from "@/lib/supabase/server";
+import { eur, dateES } from "@/lib/format";
 
 export const metadata = { title: "Gastos · TrackApp" };
 
-export default function GastosPage() {
+type ExpenseRow = {
+  id: string;
+  categoria: string | null;
+  estacion: string | null;
+  fecha: string | null;
+  total: number;
+};
+
+export default async function GastosPage() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expenses")
+    .select("id, categoria, estacion, fecha, total")
+    .order("fecha", { ascending: false });
+  const expenses = (data ?? []) as ExpenseRow[];
+
   return (
     <>
       <PageHeader title="Gastos" kicker="Registrados" />
-      <div className="mt-8 flex flex-col items-center text-center">
-        <div className="grid h-20 w-20 place-items-center rounded-3xl bg-amber-soft text-amber">
-          <Icon name="image" size={34} />
+
+      {expenses.length === 0 ? (
+        <div className="mt-10 text-center">
+          <p className="text-[15px] font-semibold">Aún no tienes gastos</p>
+          <p className="mx-auto mt-1.5 max-w-[280px] text-[13px] text-dim">
+            Haz una foto a un ticket y la IA lo registra por ti. Verás tu margen real y el €/km.
+          </p>
         </div>
-        <p className="mt-5 text-[16px] font-bold">Escanea tus tickets</p>
-        <p className="mx-auto mt-2 max-w-[300px] text-[13px] leading-relaxed text-dim">
-          Muy pronto: haz una foto al ticket de gasoil, peaje o dieta y la IA reconoce el importe,
-          el IVA, la fecha y el establecimiento, y registra el gasto por ti. Así calcularemos tu
-          margen real y el €/km.
-        </p>
-        <span className="mt-5 inline-flex items-center gap-2 rounded-xl bg-panel2 px-4 py-2 text-xs font-bold text-dim">
-          Próximamente · paso 6
-        </span>
-      </div>
+      ) : (
+        <div className="stagger">
+          {expenses.map((e) => (
+            <Row
+              key={e.id}
+              href={`/gastos/${e.id}`}
+              icon={<Icon name={e.categoria === "Gasoil" ? "fuel" : "euro"} />}
+              title={[e.categoria, e.estacion].filter(Boolean).join(" · ") || "Gasto"}
+              subtitle={e.fecha ? dateES(e.fecha) : undefined}
+              right={<div className="font-display text-xl font-bold tnum">{eur(Number(e.total))}</div>}
+            />
+          ))}
+        </div>
+      )}
+
+      <Fab href="/gastos/nuevo" label="Nuevo gasto" />
     </>
   );
 }
