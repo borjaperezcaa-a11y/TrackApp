@@ -60,7 +60,10 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
     })
     .eq("user_id", user.id);
 
-  if (error) return { error: "No se pudieron guardar los datos." };
+  if (error) {
+    console.error("[saveProfile] supabase error:", JSON.stringify(error));
+    return { error: "No se pudieron guardar los datos." };
+  }
 
   revalidatePath("/ajustes/perfil");
   revalidatePath("/");
