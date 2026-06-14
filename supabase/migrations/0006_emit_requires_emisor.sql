@@ -19,7 +19,7 @@ create or replace function public.emit_invoice_from_trips(
 ) returns public.invoices
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions  -- extensions: pgcrypto.digest (SHA-256)
 as $$
 declare
   v_uid       uuid := auth.uid();

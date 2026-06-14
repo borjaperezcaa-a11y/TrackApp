@@ -1,4 +1,4 @@
--- TrackApp - esquema completo (concatenacion de migrations 0001..0006).
+-- TrackApp - esquema completo (concatenacion de migrations 0001..0009).
 -- Pega TODO esto en Supabase > SQL Editor > New query > Run.
 
 -- ===== 0001_schema.sql =====
@@ -534,7 +534,7 @@ create or replace function public.emit_invoice_from_trips(
 ) returns public.invoices
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions  -- extensions: pgcrypto.digest (SHA-256)
 as $$
 declare
   v_uid       uuid := auth.uid();
@@ -694,5 +694,75 @@ begin
   return v_invoice;
 end;
 $$;
+
+
+-- ===== 0007_security_hardening.sql =====
+-- ============================================================================
+-- TrackApp · 0007_security_hardening.sql
+-- Resuelve los avisos del Security Advisor de Supabase (los que procede).
+--   1) Fija search_path en las funciones de trigger (evita secuestro de search_path).
+--   2) Revoca EXECUTE de handle_new_user (es un trigger; nadie debe llamarlo a mano).
+--   3) Quita el SELECT público amplio del bucket de logos: las imágenes se siguen
+--      sirviendo por su URL pública (bucket public=true), pero ya NO se pueden
+--      LISTAR todos los ficheros vía API.
+--
+-- Nota: que `emit_invoice_from_trips` sea ejecutable por usuarios autenticados es
+-- INTENCIONADO (es como se emiten facturas) y seguro (usa auth.uid() + valida
+-- propiedad). Ese aviso se deja como está.
+-- ============================================================================
+
+-- 1) search_path inmutable en funciones de trigger (no referencian objetos sin
+--    cualificar, así que '' es seguro).
+alter function public.touch_updated_at() set search_path = '';
+alter function public.enforce_invoice_immutable() set search_path = '';
+
+-- 2) handle_new_user: trigger SECURITY DEFINER. Nadie debe poder invocarlo
+--    directamente; el trigger sigue funcionando aunque se revoque EXECUTE.
+revoke execute on function public.handle_new_user() from public;
+revoke execute on function public.handle_new_user() from anon;
+revoke execute on function public.handle_new_user() from authenticated;
+
+-- 3) Logos: quitar el SELECT público (permitía listar todos los ficheros).
+--    El bucket es público, así que las URLs públicas (getPublicUrl) siguen
+--    funcionando para mostrar el logo en la app y en el PDF.
+drop policy if exists logos_read_public on storage.objects;
+
+
+-- ===== 0008_grants.sql =====
+-- ============================================================================
+-- TrackApp · 0008_grants.sql
+-- Concede al rol `authenticated` los permisos de tabla necesarios. RLS sigue
+-- limitando QUÉ filas ve/toca cada usuario (auth.uid()); estos GRANT solo dan
+-- el permiso base sobre las tablas, que faltaba (error 42501).
+--
+-- No se concede nada a `anon`: la app exige login para todos los datos.
+-- Las facturas/lineas no tienen policy de INSERT, así que aunque exista el
+-- GRANT, RLS sigue impidiendo inserciones directas (solo la función de emisión).
+-- ============================================================================
+
+grant usage on schema public to authenticated;
+
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
+
+-- Para tablas/secuencias futuras (no haya que repetir esto):
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema public
+  grant usage, select on sequences to authenticated;
+
+
+-- ===== 0009_fix_digest_searchpath.sql =====
+-- ============================================================================
+-- TrackApp · 0009_fix_digest_searchpath.sql
+-- En Supabase, pgcrypto (función digest = SHA-256) se instala en el esquema
+-- `extensions`. La función de emisión tenía search_path = public, así que no
+-- encontraba digest() → "function digest(bytea, unknown) does not exist".
+-- Añadimos `extensions` al search_path (sin reescribir el cuerpo).
+-- ============================================================================
+
+alter function public.emit_invoice_from_trips(
+  uuid, uuid[], numeric, numeric, date, text, jsonb, jsonb, jsonb
+) set search_path = public, extensions;
 
 
