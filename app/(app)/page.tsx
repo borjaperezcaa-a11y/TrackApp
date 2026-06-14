@@ -23,7 +23,7 @@ export default async function HomePage() {
 
   const [{ data: profile }, { data: invData }, { data: tripData }, { data: expData }, { count: clientCount }] =
     await Promise.all([
-      supabase.from("profiles").select("nombre").maybeSingle(),
+      supabase.from("profiles").select("nombre, nif").maybeSingle(),
       supabase.from("invoices").select("fecha, base, total, pagada, cliente_snapshot"),
       supabase.from("trips").select("fecha, km, importe, estado, origen, destino"),
       supabase.from("expenses").select("fecha, categoria, total"),
@@ -75,6 +75,15 @@ export default async function HomePage() {
         </div>
         <ThemeToggle />
       </header>
+
+      {(!profile?.nombre || !profile?.nif) && (
+        <Link
+          href="/ajustes/perfil"
+          className="mb-3.5 block rounded-2xl border border-amber-line bg-amber-soft px-4 py-3 text-[12.5px] font-semibold text-amber transition-transform active:scale-[0.99]"
+        >
+          Completa tus datos fiscales (nombre y NIF) para poder emitir facturas ›
+        </Link>
+      )}
 
       {/* Medidor de beneficio del mes */}
       <section className="mb-3.5 rounded-[20px] border border-line bg-panel px-[18px] pb-[22px] pt-5 text-center shadow-[var(--shadow)]">

@@ -178,6 +178,27 @@ export function NuevaFacturaWizard({
     });
   }
 
+  // Sin datos de emisor (nombre + NIF) no se puede facturar: el camionero debe
+  // registrar sus datos primero. (Misma regla validada en el servidor.)
+  const profileReady = Boolean(profile.nombre.trim() && profile.nif.trim());
+  if (!profileReady) {
+    return (
+      <div className="mt-8 text-center">
+        <p className="text-[15px] font-semibold">Completa tus datos de emisor</p>
+        <p className="mx-auto mt-1.5 max-w-[290px] text-[13px] text-dim">
+          Para emitir facturas necesitas registrar al menos tu nombre o razón social y tu NIF/CIF
+          en “Mis datos”. Esos datos aparecerán como emisor de todas tus facturas.
+        </p>
+        <Link
+          href="/ajustes/perfil"
+          className="mt-5 inline-flex rounded-2xl bg-amber px-5 py-3 text-sm font-extrabold text-[#1a1205]"
+        >
+          Ir a Mis datos
+        </Link>
+      </div>
+    );
+  }
+
   if (billableClients.length === 0) {
     return (
       <div className="mt-8 text-center">

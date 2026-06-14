@@ -119,23 +119,23 @@ export function ProfileForm({
       </Card>
 
       <Field label="Nombre o razón social" htmlFor="nombre">
-        <input id="nombre" name="nombre" defaultValue={values.nombre} placeholder="Marcos Fuentes Vidal" />
+        <input id="nombre" name="nombre" defaultValue={values.nombre} placeholder="Tu nombre o razón social" />
       </Field>
 
       <Field label="NIF / CIF" htmlFor="nif">
-        <input id="nif" name="nif" defaultValue={values.nif} placeholder="45872506H" autoCapitalize="characters" />
+        <input id="nif" name="nif" defaultValue={values.nif} placeholder="Tu NIF o CIF" autoCapitalize="characters" />
       </Field>
 
       <Field label="Dirección" htmlFor="direccion">
-        <input id="direccion" name="direccion" defaultValue={values.direccion} placeholder="Lgar. Escuadro – Cumbraos, 20" />
+        <input id="direccion" name="direccion" defaultValue={values.direccion} placeholder="Calle, número" />
       </Field>
 
       <Field label="CP y localidad" htmlFor="cp_localidad">
-        <input id="cp_localidad" name="cp_localidad" defaultValue={values.cp_localidad} placeholder="36540 Silleda (Pontevedra)" />
+        <input id="cp_localidad" name="cp_localidad" defaultValue={values.cp_localidad} placeholder="CP y localidad" />
       </Field>
 
       <Field label="IBAN" htmlFor="iban">
-        <input id="iban" name="iban" defaultValue={values.iban} placeholder="ES13 0182 6050 6202 0156 7707" autoCapitalize="characters" />
+        <input id="iban" name="iban" defaultValue={values.iban} placeholder="ES00 0000 0000 0000 0000 0000" autoCapitalize="characters" />
       </Field>
 
       {/* IVA por defecto (chips) */}
