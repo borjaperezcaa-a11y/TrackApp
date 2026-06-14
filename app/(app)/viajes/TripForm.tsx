@@ -1,0 +1,109 @@
+"use client";
+
+import { useActionState } from "react";
+import Link from "next/link";
+import { Field } from "@/components/ui/Field";
+import { Cta } from "@/components/ui/Cta";
+import type { TripState } from "./actions";
+
+export type TripValues = {
+  fecha: string;
+  client_id: string;
+  origen: string;
+  destino: string;
+  km: string;
+  importe: string;
+};
+
+type ClientOption = { id: string; nombre: string };
+
+const initial: TripState = {};
+
+export function TripForm({
+  action,
+  values,
+  clients,
+  submitLabel,
+}: {
+  action: (prev: TripState, formData: FormData) => Promise<TripState>;
+  values: TripValues;
+  clients: ClientOption[];
+  submitLabel: string;
+}) {
+  const [state, formAction] = useActionState(action, initial);
+
+  if (clients.length === 0) {
+    return (
+      <div className="mt-8 text-center">
+        <p className="text-[15px] font-semibold">Primero necesitas un cliente</p>
+        <p className="mx-auto mt-1.5 max-w-[260px] text-[13px] text-dim">
+          Un viaje se asigna a un cliente para poder facturarlo.
+        </p>
+        <Link
+          href="/clientes/nuevo"
+          className="mt-5 inline-flex rounded-2xl bg-amber px-5 py-3 text-sm font-extrabold text-[#1a1205]"
+        >
+          Crear cliente
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="stagger">
+      <Field label="Fecha" htmlFor="fecha">
+        <input id="fecha" name="fecha" type="date" defaultValue={values.fecha} required />
+      </Field>
+
+      <Field label="Cliente" htmlFor="client_id">
+        <select id="client_id" name="client_id" defaultValue={values.client_id} required>
+          <option value="" disabled>
+            Selecciona un cliente…
+          </option>
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Origen" htmlFor="origen" hint="Con CP: Santiago (15890)">
+          <input id="origen" name="origen" defaultValue={values.origen} placeholder="Santiago (15890)" />
+        </Field>
+        <Field label="Destino" htmlFor="destino" hint="Parma - IT (43122)">
+          <input id="destino" name="destino" defaultValue={values.destino} placeholder="Irún (20305)" />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Km" htmlFor="km">
+          <input id="km" name="km" type="number" step="1" min="0" inputMode="numeric" defaultValue={values.km} placeholder="940" />
+        </Field>
+        <Field label="Importe (€)" htmlFor="importe">
+          <input
+            id="importe"
+            name="importe"
+            type="number"
+            step="0.01"
+            min="0"
+            inputMode="decimal"
+            defaultValue={values.importe}
+            placeholder="1240.00"
+            required
+            className="font-display !text-2xl"
+          />
+        </Field>
+      </div>
+
+      {state.error && (
+        <p className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
+          {state.error}
+        </p>
+      )}
+
+      <Cta icon="save">{submitLabel}</Cta>
+    </form>
+  );
+}

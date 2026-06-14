@@ -2,13 +2,24 @@
 
 import { useActionState, useState } from "react";
 import { clsx } from "@/lib/clsx";
-import { deleteClientAction, type ClientState } from "./actions";
 
-const initial: ClientState = {};
+type DeleteState = { error?: string };
 
-export function DeleteClientButton({ id }: { id: string }) {
+/**
+ * Botón de borrado con confirmación en dos pasos. Recibe un server action ya
+ * enlazado al id, con firma (prev, formData) => Promise<{ error? }>.
+ */
+export function ConfirmDelete({
+  action,
+  label,
+  question,
+}: {
+  action: (prev: DeleteState, formData: FormData) => Promise<DeleteState>;
+  label: string;
+  question: string;
+}) {
   const [confirming, setConfirming] = useState(false);
-  const [state, formAction, pending] = useActionState(deleteClientAction.bind(null, id), initial);
+  const [state, formAction, pending] = useActionState(action, {});
 
   return (
     <div className="mt-3">
@@ -18,13 +29,11 @@ export function DeleteClientButton({ id }: { id: string }) {
           onClick={() => setConfirming(true)}
           className="w-full rounded-[18px] border border-red/40 bg-red-soft py-4 text-sm font-bold text-red transition-transform active:scale-[0.97]"
         >
-          Borrar cliente
+          {label}
         </button>
       ) : (
         <form action={formAction}>
-          <p className="mb-2 text-center text-sm font-semibold text-dim">
-            ¿Seguro que quieres borrar este cliente?
-          </p>
+          <p className="mb-2 text-center text-sm font-semibold text-dim">{question}</p>
           <div className="flex gap-2.5">
             <button
               type="button"

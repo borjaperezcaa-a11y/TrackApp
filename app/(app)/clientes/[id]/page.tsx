@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import type { Client } from "@/lib/types";
+import { ConfirmDelete } from "@/components/ui/ConfirmDelete";
 import { ClientForm } from "../ClientForm";
-import { DeleteClientButton } from "../DeleteClientButton";
-import { updateClientAction } from "../actions";
+import { updateClientAction, deleteClientAction } from "../actions";
 
 export const metadata = { title: "Editar cliente · TrackApp" };
 
@@ -33,7 +33,11 @@ export default async function EditarClientePage({
         }}
         submitLabel="GUARDAR CAMBIOS"
       />
-      <DeleteClientButton id={id} />
+      <ConfirmDelete
+        action={deleteClientAction.bind(null, id)}
+        label="Borrar cliente"
+        question="¿Seguro que quieres borrar este cliente?"
+      />
     </>
   );
 }

@@ -9,7 +9,7 @@ const SECTIONS: {
   href?: string;
 }[] = [
   { key: "stats", label: "Estadísticas", note: "Paso 5", color: "var(--amber)" },
-  { key: "viajes", label: "Viajes", note: "Paso 3", color: "var(--blue)" },
+  { key: "viajes", label: "Viajes", note: "Rentabilidad", color: "var(--blue)", href: "/viajes" },
   { key: "facturas", label: "Facturas", note: "Paso 4", color: "var(--amber)" },
   { key: "gastos", label: "Gastos", note: "MVP+", color: "var(--red)" },
   { key: "clientes", label: "Clientes", note: "Tu cartera", color: "var(--green)", href: "/clientes" },
