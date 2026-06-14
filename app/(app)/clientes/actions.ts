@@ -1,0 +1,111 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+import { isValidNIFOrCIF } from "@/lib/validation/fiscal";
+
+const clientSchema = z.object({
+  nombre: z.string().trim().min(1, "El nombre es obligatorio").max(120),
+  nif: z
+    .string()
+    .trim()
+    .max(20)
+    .refine((v) => v === "" || isValidNIFOrCIF(v), "NIF/CIF no válido"),
+  direccion: z.string().trim().max(200),
+  cp_localidad: z.string().trim().max(120),
+  condiciones_pago: z.string().trim().max(120),
+});
+
+export type ClientState = { error?: string };
+
+function parse(formData: FormData) {
+  return clientSchema.safeParse(Object.fromEntries(formData));
+}
+
+function toRow(d: z.infer<typeof clientSchema>) {
+  return {
+    nombre: d.nombre,
+    nif: d.nif ? d.nif.toUpperCase() : null,
+    direccion: d.direccion || null,
+    cp_localidad: d.cp_localidad || null,
+    condiciones_pago: d.condiciones_pago || null,
+  };
+}
+
+export async function createClientAction(
+  _prev: ClientState,
+  formData: FormData,
+): Promise<ClientState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  const parsed = parse(formData);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
+
+  const { error } = await supabase.from("clients").insert({ ...toRow(parsed.data), user_id: user.id });
+  if (error) return { error: "No se pudo crear el cliente." };
+
+  revalidatePath("/clientes");
+  redirect("/clientes");
+}
+
+export async function updateClientAction(
+  id: string,
+  _prev: ClientState,
+  formData: FormData,
+): Promise<ClientState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  const parsed = parse(formData);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
+
+  const { error } = await supabase
+    .from("clients")
+    .update(toRow(parsed.data))
+    .eq("id", id)
+    .eq("user_id", user.id);
+  if (error) return { error: "No se pudieron guardar los cambios." };
+
+  revalidatePath("/clientes");
+  redirect("/clientes");
+}
+
+export async function deleteClientAction(
+  id: string,
+  _prev: ClientState,
+  _formData: FormData,
+): Promise<ClientState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  // Integridad: no se borra un cliente con viajes o facturas asociados.
+  const [{ count: invoiceCount }, { count: tripCount }] = await Promise.all([
+    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("client_id", id),
+    supabase.from("trips").select("id", { count: "exact", head: true }).eq("client_id", id),
+  ]);
+
+  if ((invoiceCount ?? 0) > 0) {
+    return { error: "Este cliente tiene facturas emitidas; no se puede borrar." };
+  }
+  if ((tripCount ?? 0) > 0) {
+    return { error: "Este cliente tiene viajes asociados. Bórralos o reasígnalos primero." };
+  }
+
+  const { error } = await supabase.from("clients").delete().eq("id", id).eq("user_id", user.id);
+  if (error) return { error: "No se pudo borrar el cliente." };
+
+  revalidatePath("/clientes");
+  redirect("/clientes");
+}
