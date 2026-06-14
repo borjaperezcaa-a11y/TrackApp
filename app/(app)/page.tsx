@@ -1,12 +1,19 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
-const SECTIONS = [
+const SECTIONS: {
+  key: string;
+  label: string;
+  note: string;
+  color: string;
+  href?: string;
+}[] = [
   { key: "stats", label: "Estadísticas", note: "Paso 5", color: "var(--amber)" },
   { key: "viajes", label: "Viajes", note: "Paso 3", color: "var(--blue)" },
   { key: "facturas", label: "Facturas", note: "Paso 4", color: "var(--amber)" },
   { key: "gastos", label: "Gastos", note: "MVP+", color: "var(--red)" },
   { key: "clientes", label: "Clientes", note: "Paso 2", color: "var(--green)" },
-  { key: "ajustes", label: "Ajustes", note: "Paso 1", color: "var(--dim)" },
+  { key: "ajustes", label: "Mis datos", note: "Perfil emisor", color: "var(--dim)", href: "/ajustes/perfil" },
 ];
 
 export default async function HomePage() {
@@ -46,24 +53,34 @@ export default async function HomePage() {
       </section>
 
       <div className="grid grid-cols-3 gap-3">
-        {SECTIONS.map((s) => (
-          <div
-            key={s.key}
-            className="flex min-h-[104px] flex-col gap-2 rounded-[18px] border border-line bg-panel p-3.5"
-          >
-            <span
-              className="grid h-10 w-10 place-items-center rounded-xl text-sm font-bold"
-              style={{
-                color: s.color,
-                background: `color-mix(in srgb, ${s.color} 16%, transparent)`,
-              }}
-            >
-              {s.label[0]}
-            </span>
-            <span className="text-sm font-bold">{s.label}</span>
-            <span className="-mt-0.5 text-[11.5px] font-semibold text-dim">{s.note}</span>
-          </div>
-        ))}
+        {SECTIONS.map((s) => {
+          const inner = (
+            <>
+              <span
+                className="grid h-10 w-10 place-items-center rounded-xl text-sm font-bold"
+                style={{
+                  color: s.color,
+                  background: `color-mix(in srgb, ${s.color} 16%, transparent)`,
+                }}
+              >
+                {s.label[0]}
+              </span>
+              <span className="text-sm font-bold">{s.label}</span>
+              <span className="-mt-0.5 text-[11.5px] font-semibold text-dim">{s.note}</span>
+            </>
+          );
+          const cls =
+            "flex min-h-[104px] flex-col gap-2 rounded-[18px] border border-line bg-panel p-3.5 transition-transform active:scale-95";
+          return s.href ? (
+            <Link key={s.key} href={s.href} className={cls}>
+              {inner}
+            </Link>
+          ) : (
+            <div key={s.key} className={`${cls} opacity-70`}>
+              {inner}
+            </div>
+          );
+        })}
       </div>
 
       <p className="mt-6 rounded-2xl border border-amber-line bg-amber-soft px-4 py-3 text-[12.5px] font-semibold text-amber">
