@@ -10,7 +10,7 @@ const SECTIONS: {
 }[] = [
   { key: "stats", label: "Estadísticas", note: "Paso 5", color: "var(--amber)" },
   { key: "viajes", label: "Viajes", note: "Rentabilidad", color: "var(--blue)", href: "/viajes" },
-  { key: "facturas", label: "Facturas", note: "Paso 4", color: "var(--amber)" },
+  { key: "facturas", label: "Facturas", note: "Emitidas", color: "var(--amber)", href: "/facturas" },
   { key: "gastos", label: "Gastos", note: "MVP+", color: "var(--red)" },
   { key: "clientes", label: "Clientes", note: "Tu cartera", color: "var(--green)", href: "/clientes" },
   { key: "ajustes", label: "Mis datos", note: "Perfil emisor", color: "var(--dim)", href: "/ajustes/perfil" },
