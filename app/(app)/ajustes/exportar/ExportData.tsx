@@ -24,7 +24,22 @@ function download(name: string, content: string, type: string) {
 }
 
 type Snapshot = { nombre?: string; nif?: string } | null;
+type ExtInvoice = {
+  serie: string | null;
+  numero: string;
+  fecha: string;
+  cliente: string | null;
+  cliente_nif: string | null;
+  base: number | null;
+  iva_rate: number | null;
+  iva: number | null;
+  irpf_rate: number | null;
+  irpf: number | null;
+  total: number;
+  cobrada: boolean;
+};
 type Invoice = {
+  serie: string;
   numero: string;
   fecha: string;
   cliente_snapshot: Snapshot;
@@ -53,7 +68,7 @@ async function fetchAll() {
     invoices: (inv.data ?? []) as Invoice[],
     lines: lines.data ?? [],
     events: ev.data ?? [],
-    external: ext.data ?? [],
+    external: (ext.data ?? []) as ExtInvoice[],
   };
 }
 
@@ -113,8 +128,12 @@ export function ExportData() {
     setInfo(null);
     setBusy("csv");
     try {
-      const { invoices } = await fetchAll();
+      const { invoices, external } = await fetchAll();
+      // Solo lo que TIENE factura: propias (Verifactu) + externas (coop). Los
+      // ingresos manuales NO llevan factura, así que NO van a la gestoría.
       const headers = [
+        "origen",
+        "serie",
         "numero",
         "fecha",
         "cliente",
@@ -127,31 +146,46 @@ export function ExportData() {
         "total",
         "cobrada",
         "tipo",
-        "huella",
       ];
-      const lines = invoices.map((i) =>
-        [
-          i.numero,
-          i.fecha,
-          i.cliente_snapshot?.nombre ?? "",
-          i.cliente_snapshot?.nif ?? "",
-          dec(i.base),
-          dec(i.iva_rate),
-          dec(i.iva),
-          dec(i.irpf_rate),
-          dec(i.irpf),
-          dec(i.total),
-          i.pagada ? "Sí" : "No",
-          i.tipo,
-          i.huella,
-        ]
-          .map(csvCell)
-          .join(";"),
-      );
-      // BOM para que Excel detecte UTF-8.
-      const csv = "﻿" + [headers.map(csvCell).join(";"), ...lines].join("\r\n");
+      const rowsPropias = invoices.map((i) => [
+        "Propia",
+        i.serie ?? "",
+        i.numero,
+        i.fecha,
+        i.cliente_snapshot?.nombre ?? "",
+        i.cliente_snapshot?.nif ?? "",
+        dec(i.base),
+        dec(i.iva_rate),
+        dec(i.iva),
+        dec(i.irpf_rate),
+        dec(i.irpf),
+        dec(i.total),
+        i.pagada ? "Sí" : "No",
+        i.tipo,
+      ]);
+      const rowsExt = external.map((e) => [
+        "Externa",
+        e.serie ?? "",
+        e.numero,
+        e.fecha,
+        e.cliente ?? "",
+        e.cliente_nif ?? "",
+        dec(e.base),
+        dec(e.iva_rate),
+        dec(e.iva),
+        dec(e.irpf_rate),
+        dec(e.irpf),
+        dec(e.total),
+        e.cobrada ? "Sí" : "No",
+        "",
+      ]);
+      const all = [headers, ...rowsPropias, ...rowsExt];
+      // BOM (﻿) para que Excel detecte UTF-8.
+      const csv = "﻿" + all.map((r) => r.map(csvCell).join(";")).join("\r\n");
       download(`trackapp-facturas-${stamp()}.csv`, csv, "text/csv");
-      setInfo(`CSV generado con ${invoices.length} facturas.`);
+      setInfo(
+        `CSV generado: ${rowsPropias.length} propias + ${rowsExt.length} externas. Sin ingresos manuales.`,
+      );
     } catch {
       setError("No se pudo generar el CSV. Inténtalo de nuevo.");
     } finally {
@@ -182,8 +216,8 @@ export function ExportData() {
       <Card className="mb-3.5">
         <div className="text-sm font-bold">Facturas para tu asesoría (CSV)</div>
         <p className="mt-1 text-[12.5px] text-dim">
-          Listado de facturas en formato de hoja de cálculo (Excel/LibreOffice), con base, IVA, IRPF
-          y total. Cómodo para enviárselo a tu gestor.
+          Solo facturas (propias y de cooperativa) en hoja de cálculo (Excel/LibreOffice), con base,
+          IVA, IRPF y total. Los ingresos manuales NO se incluyen. Cómodo para tu gestor.
         </p>
         <button
           type="button"
