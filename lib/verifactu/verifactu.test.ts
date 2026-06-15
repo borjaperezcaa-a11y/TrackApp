@@ -96,6 +96,7 @@ describe("verifactu · cadena canónica y huella", () => {
       { importeTotal: 10740.01 },
       { huellaAnterior: "ABC" },
       { genTs: new Date("2026-06-07T16:03:51Z") },
+      { tipoFactura: "R1" },
     ];
     for (const m of mutations) {
       expect(await computeHuella({ ...REF, ...m })).not.toBe(base);

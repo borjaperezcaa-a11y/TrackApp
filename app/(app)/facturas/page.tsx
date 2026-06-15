@@ -15,6 +15,7 @@ type InvoiceRow = {
   fecha: string;
   total: number;
   pagada: boolean;
+  tipo: string;
   cliente_snapshot: ClienteSnapshot;
 };
 
@@ -22,7 +23,7 @@ export default async function FacturasPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("invoices")
-    .select("id, numero, fecha, total, pagada, cliente_snapshot")
+    .select("id, numero, fecha, total, pagada, tipo, cliente_snapshot")
     .order("emitida_at", { ascending: false });
   const invoices = (data ?? []) as InvoiceRow[];
 
@@ -45,7 +46,7 @@ export default async function FacturasPage() {
               href={`/facturas/${inv.id}`}
               icon={<Icon name="doc" />}
               title={inv.cliente_snapshot?.nombre ?? "Cliente"}
-              subtitle={`${inv.numero} · ${dateES(inv.fecha)}`}
+              subtitle={`${inv.numero} · ${dateES(inv.fecha)}${inv.tipo !== "F1" ? " · Rectificativa" : ""}`}
               right={
                 <div className="flex flex-col items-end gap-1">
                   <div className="font-display text-xl font-bold tnum">{eur(Number(inv.total))}</div>

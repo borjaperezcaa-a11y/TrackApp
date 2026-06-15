@@ -93,6 +93,48 @@ export async function emitInvoiceAction(payload: EmitPayload): Promise<EmitResul
   return { invoiceId: invoice.id as string };
 }
 
+export async function emitRectificativaAction(
+  originalId: string,
+  motivo: string,
+): Promise<EmitResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  if (!z.string().uuid().safeParse(originalId).success) {
+    return { error: "Factura no válida." };
+  }
+
+  const { data, error } = await supabase.rpc("emit_rectificativa", {
+    p_original_id: originalId,
+    p_motivo: motivo?.trim().slice(0, 300) || null,
+  });
+
+  if (error) {
+    const known = [
+      "No autenticado",
+      "Perfil no encontrado",
+      "Factura no encontrada",
+      "Solo se pueden rectificar",
+      "Esta factura ya tiene una rectificativa",
+    ];
+    const msg = error.message ?? "";
+    if (known.some((k) => msg.includes(k))) return { error: msg };
+    console.error("[emitRectificativa] error:", error.code, error.message);
+    return { error: "No se pudo emitir la rectificativa. Inténtalo de nuevo." };
+  }
+
+  const inv = Array.isArray(data) ? data[0] : data;
+  if (!inv?.id) return { error: "No se pudo crear la rectificativa." };
+
+  revalidatePath("/facturas");
+  revalidatePath("/viajes");
+  revalidatePath("/");
+  return { invoiceId: inv.id as string };
+}
+
 export async function togglePaidAction(id: string, pagada: boolean): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {

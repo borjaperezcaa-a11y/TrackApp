@@ -70,6 +70,9 @@ export type Invoice = {
   cliente_snapshot: ClienteSnapshot;
   pagada: boolean;
   emitida_at: string;
+  tipo: string; // "F1" normal, "R1" rectificativa
+  rectifica_id: string | null;
+  motivo: string | null;
 };
 
 export type InvoiceLine = {

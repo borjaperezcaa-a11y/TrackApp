@@ -42,6 +42,9 @@ const invoice: Invoice = {
   },
   pagada: false,
   emitida_at: "2026-06-07T16:03:50Z",
+  tipo: "F1",
+  rectifica_id: null,
+  motivo: null,
 };
 
 const lines: InvoiceLine[] = [

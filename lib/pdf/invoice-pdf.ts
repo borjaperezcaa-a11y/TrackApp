@@ -94,7 +94,8 @@ export async function buildInvoicePdf(invoice: Invoice, lines: InvoiceLine[]): P
   }
 
   // ── Título ────────────────────────────────────────────────────────────────
-  text("FACTURA", M, 120, { font: bold, size: 18 });
+  const esRect = invoice.tipo && invoice.tipo !== "F1";
+  text(esRect ? "FACTURA RECTIFICATIVA" : "FACTURA", M, 120, { font: bold, size: esRect ? 15 : 18 });
   hline(128);
 
   // ── Cliente (izquierda) ─────────────────────────────────────────────────

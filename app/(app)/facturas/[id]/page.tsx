@@ -14,8 +14,9 @@ export default async function FacturaDetallePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: invoice } = await supabase.from("invoices").select("*").eq("id", id).maybeSingle();
-  if (!invoice) notFound();
+  const { data: invoiceData } = await supabase.from("invoices").select("*").eq("id", id).maybeSingle();
+  if (!invoiceData) notFound();
+  const invoice = invoiceData as Invoice;
 
   const { data: linesData } = await supabase
     .from("invoice_lines")
@@ -23,10 +24,33 @@ export default async function FacturaDetallePage({
     .eq("invoice_id", id)
     .order("orden");
 
+  // ¿Esta factura ha sido anulada por una rectificativa?
+  const { data: rect } = await supabase
+    .from("invoices")
+    .select("id, numero")
+    .eq("rectifica_id", id)
+    .maybeSingle();
+
+  // Si esta factura ES una rectificativa, ¿a qué original referencia?
+  let original: { id: string; numero: string } | null = null;
+  if (invoice.rectifica_id) {
+    const { data: orig } = await supabase
+      .from("invoices")
+      .select("id, numero")
+      .eq("id", invoice.rectifica_id)
+      .maybeSingle();
+    original = orig ?? null;
+  }
+
   return (
     <>
-      <PageHeader title={(invoice as Invoice).numero} kicker="Factura" fallbackHref="/facturas" />
-      <InvoiceDetailClient invoice={invoice as Invoice} lines={(linesData ?? []) as InvoiceLine[]} />
+      <PageHeader title={invoice.numero} kicker="Factura" fallbackHref="/facturas" />
+      <InvoiceDetailClient
+        invoice={invoice}
+        lines={(linesData ?? []) as InvoiceLine[]}
+        annulledBy={rect ?? null}
+        original={original}
+      />
     </>
   );
 }

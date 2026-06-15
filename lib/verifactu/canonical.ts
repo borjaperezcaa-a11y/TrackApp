@@ -28,6 +28,8 @@ export type HuellaInput = {
   huellaAnterior: string | null;
   /** Instante de generación del registro (se formatea en UTC, segundos). */
   genTs: Date;
+  /** Tipo de factura: "F1" normal (por defecto), "R1".."R5" rectificativa. */
+  tipoFactura?: string;
 };
 
 /**
@@ -74,7 +76,7 @@ export function buildCanonical(input: HuellaInput): string {
     `IDEmisorFactura=${input.emisorNif ?? ""}` +
     `&NumSerieFactura=${input.numero}` +
     `&FechaExpedicionFactura=${dateDMY(input.fechaExpedicion)}` +
-    `&TipoFactura=F1` +
+    `&TipoFactura=${input.tipoFactura ?? "F1"}` +
     `&CuotaTotal=${formatAmount(input.cuotaTotal)}` +
     `&ImporteTotal=${formatAmount(input.importeTotal)}` +
     `&Huella=${input.huellaAnterior ?? ""}` +

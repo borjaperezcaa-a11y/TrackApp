@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
@@ -9,17 +11,46 @@ import { clsx } from "@/lib/clsx";
 import { eur, amount, dateES } from "@/lib/format";
 import { verifyInvoice, type HuellaInput } from "@/lib/verifactu";
 import type { Invoice, InvoiceLine } from "@/lib/types";
-import { togglePaidAction } from "../actions";
+import { togglePaidAction, emitRectificativaAction } from "../actions";
 
-export function InvoiceDetailClient({ invoice, lines }: { invoice: Invoice; lines: InvoiceLine[] }) {
+type Ref = { id: string; numero: string } | null;
+
+export function InvoiceDetailClient({
+  invoice,
+  lines,
+  annulledBy,
+  original,
+}: {
+  invoice: Invoice;
+  lines: InvoiceLine[];
+  annulledBy: Ref;
+  original: Ref;
+}) {
+  const router = useRouter();
   const em = invoice.emisor_snapshot;
   const cl = invoice.cliente_snapshot;
+  const esRectificativa = invoice.tipo !== "F1";
 
   const [qr, setQr] = useState<string | null>(null);
   const [verified, setVerified] = useState<boolean | null>(null);
   const [pagada, setPagada] = useState(invoice.pagada);
   const [pending, startTransition] = useTransition();
   const [pdfBusy, setPdfBusy] = useState(false);
+
+  // Flujo de rectificativa (anulación)
+  const [rectOpen, setRectOpen] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [rectBusy, rectStart] = useTransition();
+  const [rectError, setRectError] = useState<string | null>(null);
+
+  function emitirRectificativa() {
+    setRectError(null);
+    rectStart(async () => {
+      const res = await emitRectificativaAction(invoice.id, motivo);
+      if (res.error) setRectError(res.error);
+      else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
+    });
+  }
 
   // QR (carga diferida de qrcode)
   useEffect(() => {
@@ -46,6 +77,7 @@ export function InvoiceDetailClient({ invoice, lines }: { invoice: Invoice; line
       importeTotal: Number(invoice.total),
       huellaAnterior: invoice.prev_hash,
       genTs: new Date(invoice.gen_ts),
+      tipoFactura: invoice.tipo,
     };
     verifyInvoice(input, invoice.huella).then(setVerified);
   }, [invoice, em]);
@@ -96,6 +128,33 @@ export function InvoiceDetailClient({ invoice, lines }: { invoice: Invoice; line
           {eur(Number(invoice.total))}
         </div>
       </Card>
+
+      {esRectificativa && (
+        <p className="mb-3.5 rounded-2xl border border-amber-line bg-amber-soft px-4 py-3 text-[12.5px] font-semibold text-amber">
+          Factura RECTIFICATIVA (anulación)
+          {original && (
+            <>
+              {" "}
+              de la{" "}
+              <Link href={`/facturas/${original.id}`} className="underline">
+                {original.numero}
+              </Link>
+            </>
+          )}
+          . Sus importes están en negativo para dejar la original a cero.
+          {invoice.motivo ? ` Motivo: ${invoice.motivo}` : ""}
+        </p>
+      )}
+
+      {annulledBy && (
+        <p className="mb-3.5 rounded-2xl border border-red/40 bg-red-soft px-4 py-3 text-[12.5px] font-semibold text-red">
+          Esta factura fue anulada por la rectificativa{" "}
+          <Link href={`/facturas/${annulledBy.id}`} className="underline">
+            {annulledBy.numero}
+          </Link>
+          .
+        </p>
+      )}
 
       {/* Portes */}
       <div className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">
@@ -193,6 +252,59 @@ export function InvoiceDetailClient({ invoice, lines }: { invoice: Invoice; line
         <Icon name="check" size={18} />
         {pagada ? "Marcar como pendiente" : "Marcar como cobrada"}
       </button>
+
+      {/* Rectificativa: solo en facturas normales no anuladas */}
+      {!esRectificativa && !annulledBy && (
+        <div className="mt-6 border-t border-line pt-4">
+          {!rectOpen ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setRectOpen(true)}
+                className="w-full rounded-[18px] border border-red/40 bg-red-soft py-4 text-sm font-bold text-red transition-transform active:scale-[0.97]"
+              >
+                Rectificar / anular esta factura
+              </button>
+              <p className="mt-2 px-1 text-center text-[11.5px] text-dim">
+                Una factura emitida no se edita ni se borra. Se emite una rectificativa que la anula
+                (importes en negativo) y libera sus viajes para volver a facturar.
+              </p>
+            </>
+          ) : (
+            <div>
+              <p className="mb-2 text-sm font-bold">Emitir rectificativa de anulación</p>
+              <textarea
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Motivo (opcional): error en importe, datos del cliente…"
+                className="min-h-[70px] w-full rounded-xl border-[1.5px] border-line bg-panel px-3.5 py-3 text-sm font-medium outline-none focus:border-amber"
+              />
+              {rectError && (
+                <p className="mt-2 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
+                  {rectError}
+                </p>
+              )}
+              <div className="mt-2.5 flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setRectOpen(false)}
+                  className="flex-1 rounded-[18px] border border-line bg-panel py-4 text-sm font-bold text-text"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={emitirRectificativa}
+                  disabled={rectBusy}
+                  className="flex-1 rounded-[18px] bg-red py-4 text-sm font-extrabold text-white transition-transform active:scale-[0.97] disabled:opacity-60"
+                >
+                  {rectBusy ? "Emitiendo…" : "Emitir rectificativa"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
