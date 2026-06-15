@@ -15,7 +15,13 @@ function greeting(h: number): string {
   return "Buenas noches";
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ onboarding?: string }>;
+}) {
+  // Previsualizar el onboarding aunque la cuenta ya tenga datos: ?onboarding=1
+  const forceOnboarding = (await searchParams).onboarding === "1";
   const supabase = await createClient();
   // Hora/fecha en zona España: en el servidor `new Date()` es UTC y, de noche,
   // daría el saludo y el mes equivocados para el usuario.
@@ -95,7 +101,7 @@ export default async function HomePage() {
     { label: "Registra tu primer viaje", href: "/viajes/nuevo", done: hasTrips },
     { label: "Emite tu primera factura", href: "/facturas/nueva", done: hasInvoices },
   ];
-  const onboardingDone = onboardingSteps.every((s) => s.done);
+  const onboardingDone = onboardingSteps.every((s) => s.done) && !forceOnboarding;
 
   const dateLabel = new Intl.DateTimeFormat("es-ES", {
     timeZone: "Europe/Madrid",
