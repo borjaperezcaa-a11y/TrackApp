@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isPwnedPassword } from "@/lib/validation/pwned";
+import { isEmailAllowed } from "@/lib/allowlist";
 
 const credsSchema = z.object({
   email: z.string().email("Email no válido"),
@@ -49,6 +50,11 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
+  }
+
+  // Modo invitación: solo los emails autorizados pueden crear cuenta.
+  if (!isEmailAllowed(parsed.data.email)) {
+    return { error: "El registro está limitado por invitación. Pide acceso al administrador." };
   }
 
   // Rechaza contraseñas presentes en filtraciones conocidas (gratis, sin Pro).
