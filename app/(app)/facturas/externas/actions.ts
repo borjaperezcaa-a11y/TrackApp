@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { logEvent } from "@/lib/events";
 import { EXTERNAL_SOURCES } from "@/lib/external-invoice";
 
 const schema = z.object({
@@ -67,8 +68,18 @@ export async function createExternalInvoiceAction(
   const parsed = schema.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
 
-  const { error } = await supabase.from("external_invoices").insert(toRow(parsed.data, user.id));
+  const { data: inserted, error } = await supabase
+    .from("external_invoices")
+    .insert(toRow(parsed.data, user.id))
+    .select("id")
+    .single();
   if (error) return { error: "No se pudo guardar la factura." };
+
+  await logEvent(supabase, "factura_externa_registrada", {
+    detalle: { numero: parsed.data.numero, total: parsed.data.total, fuente: parsed.data.fuente },
+    entidad: "factura_externa",
+    entidadId: inserted?.id as string | undefined,
+  });
 
   revalidate();
   redirect("/facturas/externas");
@@ -94,6 +105,12 @@ export async function updateExternalInvoiceAction(
     .eq("user_id", user.id);
   if (error) return { error: "No se pudieron guardar los cambios." };
 
+  await logEvent(supabase, "factura_externa_editada", {
+    detalle: { numero: parsed.data.numero },
+    entidad: "factura_externa",
+    entidadId: id,
+  });
+
   revalidate();
   redirect("/facturas/externas");
 }
@@ -115,6 +132,11 @@ export async function deleteExternalInvoiceAction(
     .eq("id", id)
     .eq("user_id", user.id);
   if (error) return { error: "No se pudo borrar la factura." };
+
+  await logEvent(supabase, "factura_externa_borrada", {
+    entidad: "factura_externa",
+    entidadId: id,
+  });
 
   revalidate();
   redirect("/facturas/externas");

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Icon } from "@/components/ui/Icon";
 import { createClient } from "@/lib/supabase/server";
 import { nowMadrid } from "@/lib/format";
 import { ProfileForm, type ProfileValues } from "./ProfileForm";
@@ -72,6 +74,20 @@ export default async function PerfilPage() {
         emitir.
       </p>
       <ProfileForm userId={user.id} values={values} nextNumero={nextNumero} locked={locked} />
+
+      <Link
+        href="/ajustes/eventos"
+        className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3.5 transition-transform active:scale-[0.99]"
+      >
+        <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-panel2 text-amber">
+          <Icon name="doc" size={18} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">Registro de eventos</span>
+          <span className="block text-[12px] text-dim">Historial inalterable de operaciones (Verifactu)</span>
+        </span>
+        <span className="text-amber">›</span>
+      </Link>
 
       <form action="/auth/signout" method="post" className="mt-6">
         <button

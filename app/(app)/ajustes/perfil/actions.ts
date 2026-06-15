@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { nowMadrid } from "@/lib/format";
+import { logEvent } from "@/lib/events";
 import { isValidNIFOrCIF, isValidIBAN } from "@/lib/validation/fiscal";
 
 const profileSchema = z.object({
@@ -93,6 +94,14 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
   if (error) {
     console.error("[saveProfile] error:", error.code, error.message);
     return { error: "No se pudieron guardar los datos." };
+  }
+
+  // Evento: solo cuando se (re)configura el arranque de numeración.
+  if (!locked && d.num_inicial > 0) {
+    await logEvent(supabase, "numeracion_configurada", {
+      detalle: { serie, num_inicial: d.num_inicial, anio: nowMadrid().year },
+      entidad: "perfil",
+    });
   }
 
   revalidatePath("/ajustes/perfil");

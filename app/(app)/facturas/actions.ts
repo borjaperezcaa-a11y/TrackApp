@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { logEvent } from "@/lib/events";
 import type { EmitPayload, EmitResult } from "./types";
 
 const lineSchema = z.object({
@@ -87,6 +88,12 @@ export async function emitInvoiceAction(payload: EmitPayload): Promise<EmitResul
   const invoice = Array.isArray(data) ? data[0] : data;
   if (!invoice?.id) return { error: "La emisión no devolvió la factura." };
 
+  await logEvent(supabase, "factura_emitida", {
+    detalle: { numero: invoice.numero, total: invoice.total },
+    entidad: "factura",
+    entidadId: invoice.id as string,
+  });
+
   revalidatePath("/facturas");
   revalidatePath("/viajes");
   revalidatePath("/");
@@ -128,6 +135,12 @@ export async function emitRectificativaAction(
 
   const inv = Array.isArray(data) ? data[0] : data;
   if (!inv?.id) return { error: "No se pudo crear la rectificativa." };
+
+  await logEvent(supabase, "factura_anulada", {
+    detalle: { numero: inv.numero, original: originalId, motivo: motivo?.trim().slice(0, 300) || null },
+    entidad: "factura",
+    entidadId: inv.id as string,
+  });
 
   revalidatePath("/facturas");
   revalidatePath("/viajes");
@@ -179,6 +192,12 @@ export async function emitRectificativaDifAction(
 
   const inv = Array.isArray(data) ? data[0] : data;
   if (!inv?.id) return { error: "No se pudo crear la rectificativa." };
+
+  await logEvent(supabase, "factura_rectificada", {
+    detalle: { numero: inv.numero, original: originalId, motivo: motivo?.trim().slice(0, 300) || null },
+    entidad: "factura",
+    entidadId: inv.id as string,
+  });
 
   revalidatePath("/facturas");
   revalidatePath("/");
