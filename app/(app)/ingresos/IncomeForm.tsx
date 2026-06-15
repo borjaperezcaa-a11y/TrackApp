@@ -45,6 +45,13 @@ export function IncomeForm({
 
   const [concepto, setConcepto] = useState(values.concepto);
   const [cliente, setCliente] = useState(values.cliente);
+  const [showClientes, setShowClientes] = useState(false);
+  const sugeridos = clients
+    .filter((c) => {
+      const q = cliente.trim().toLowerCase();
+      return c.toLowerCase().includes(q) && c.toLowerCase() !== q;
+    })
+    .slice(0, 8);
   const [fecha, setFecha] = useState(values.fecha);
   const [base, setBase] = useState(values.base);
   const [iva, setIva] = useState(values.iva);
@@ -108,22 +115,40 @@ export function IncomeForm({
       </Field>
 
       <Field label="Cliente / pagador" htmlFor="cliente" hint="Elige uno de tu cartera o escribe uno nuevo">
-        <input
-          id="cliente"
-          value={cliente}
-          onChange={(e) => setCliente(e.target.value)}
-          placeholder="Transportes Ejemplo S.L."
-          list="ingreso-clientes"
-          autoComplete="off"
-          className={inputSm}
-        />
-        {clients.length > 0 && (
-          <datalist id="ingreso-clientes">
-            {clients.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
-        )}
+        <div className="relative">
+          <input
+            id="cliente"
+            value={cliente}
+            onChange={(e) => {
+              setCliente(e.target.value);
+              setShowClientes(true);
+            }}
+            onFocus={() => setShowClientes(true)}
+            onBlur={() => setTimeout(() => setShowClientes(false), 120)}
+            placeholder="Transportes Ejemplo S.L."
+            autoComplete="off"
+            className={inputSm}
+          />
+          {showClientes && sugeridos.length > 0 && (
+            <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-auto rounded-xl border border-line bg-panel py-1 shadow-[var(--shadow)]">
+              {sugeridos.map((c) => (
+                <li key={c}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setCliente(c);
+                      setShowClientes(false);
+                    }}
+                    className="block w-full px-3.5 py-2.5 text-left text-[14px] font-semibold text-text hover:bg-panel2"
+                  >
+                    {c}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
