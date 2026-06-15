@@ -6,7 +6,12 @@ import { createIncomeAction } from "../actions";
 
 export const metadata = { title: "Nuevo ingreso · TrackApp" };
 
-export default async function NuevoIngresoPage() {
+export default async function NuevoIngresoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ nuevoCliente?: string }>;
+}) {
+  const sp = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,6 +28,7 @@ export default async function NuevoIngresoPage() {
         action={createIncomeAction}
         submitLabel="GUARDAR INGRESO"
         clients={clients}
+        preselectCliente={sp.nuevoCliente}
         values={{
           concepto: "",
           cliente: "",

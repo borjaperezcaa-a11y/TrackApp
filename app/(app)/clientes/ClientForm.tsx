@@ -19,15 +19,18 @@ export function ClientForm({
   action,
   values,
   submitLabel,
+  next,
 }: {
   action: (prev: ClientState, formData: FormData) => Promise<ClientState>;
   values: ClientValues;
   submitLabel: string;
+  next?: string;
 }) {
   const [state, formAction] = useActionState(action, initial);
 
   return (
     <form action={formAction} className="stagger">
+      {next && <input type="hidden" name="next" value={next} />}
       <Field label="Nombre o razón social" htmlFor="nombre">
         <input id="nombre" name="nombre" defaultValue={values.nombre} placeholder="Transportes García S.L." required />
       </Field>

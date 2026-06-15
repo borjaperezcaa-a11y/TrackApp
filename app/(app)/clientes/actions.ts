@@ -51,6 +51,15 @@ export async function createClientAction(
   if (error) return { error: "No se pudo crear el cliente." };
 
   revalidatePath("/clientes");
+
+  // Si venimos de otra pantalla (ingreso, viaje…), volver allí con el cliente
+  // recién creado preseleccionado. `next` solo se acepta si es una ruta interna.
+  const next = formData.get("next");
+  if (typeof next === "string" && /^\/(?![/\\])/.test(next)) {
+    revalidatePath(next);
+    const sep = next.includes("?") ? "&" : "?";
+    redirect(`${next}${sep}nuevoCliente=${encodeURIComponent(parsed.data.nombre)}`);
+  }
   redirect("/clientes");
 }
 

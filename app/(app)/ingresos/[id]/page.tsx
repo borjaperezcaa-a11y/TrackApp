@@ -8,8 +8,15 @@ import type { Income } from "@/lib/types";
 
 export const metadata = { title: "Editar ingreso · TrackApp" };
 
-export default async function EditarIngresoPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditarIngresoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ nuevoCliente?: string }>;
+}) {
   const { id } = await params;
+  const sp = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -35,6 +42,7 @@ export default async function EditarIngresoPage({ params }: { params: Promise<{ 
         action={updateIncomeAction.bind(null, id)}
         submitLabel="GUARDAR CAMBIOS"
         clients={clients}
+        preselectCliente={sp.nuevoCliente}
         values={{
           concepto: i.concepto ?? "",
           cliente: i.cliente ?? "",

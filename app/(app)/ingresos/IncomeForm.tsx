@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
 import { round2, parseDecimal } from "@/lib/format";
 import type { IncomePayload, IncomeState } from "./actions";
+
+const DRAFT_KEY = "income-draft";
 
 const IVA_OPTS = [21, 10, 4, 0];
 const num = parseDecimal;
@@ -33,13 +35,16 @@ export function IncomeForm({
   action,
   submitLabel,
   clients = [],
+  preselectCliente,
 }: {
   values: IncomeValues;
   action: (payload: IncomePayload) => Promise<IncomeState>;
   submitLabel: string;
   clients?: string[];
+  preselectCliente?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [saving, startSave] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +67,44 @@ export function IncomeForm({
     const r = num(values.iva_rate);
     return Number.isFinite(r) && values.iva_rate.trim() !== "" ? r : 21;
   });
+
+  // Al volver de crear un cliente: restaura el borrador y preselecciona el nuevo.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as Partial<IncomeValues> & { ivaRate?: number };
+        if (d.concepto != null) setConcepto(d.concepto);
+        if (d.cliente != null) setCliente(d.cliente);
+        if (d.fecha != null) setFecha(d.fecha);
+        if (d.base != null) setBase(d.base);
+        if (d.iva != null) setIva(d.iva);
+        if (d.total != null) setTotal(d.total);
+        if (typeof d.cobrada === "boolean") setCobrada(d.cobrada);
+        if (typeof d.ivaRate === "number") setIvaRate(d.ivaRate);
+        sessionStorage.removeItem(DRAFT_KEY);
+      }
+    } catch {
+      /* sessionStorage no disponible */
+    }
+    if (preselectCliente) setCliente(preselectCliente);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Guarda lo escrito y va a crear el cliente, para volver aquí al guardarlo.
+  function goNuevoCliente() {
+    try {
+      sessionStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ concepto, cliente, fecha, base, iva, total, cobrada, ivaRate }),
+      );
+    } catch {
+      /* ignore */
+    }
+    const params = new URLSearchParams({ next: pathname });
+    if (cliente.trim()) params.set("nombre", cliente.trim());
+    router.push(`/clientes/nuevo?${params.toString()}`);
+  }
 
   // Desglose hacia atrás: base e IVA se calculan del total y el tipo.
   function recalc(totalStr: string, rate: number) {
@@ -129,7 +172,7 @@ export function IncomeForm({
             autoComplete="off"
             className={inputSm}
           />
-          {showClientes && sugeridos.length > 0 && (
+          {showClientes && (
             <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-auto rounded-xl border border-line bg-panel py-1 shadow-[var(--shadow)]">
               {sugeridos.map((c) => (
                 <li key={c}>
@@ -146,6 +189,19 @@ export function IncomeForm({
                   </button>
                 </li>
               ))}
+              <li className={sugeridos.length > 0 ? "border-t border-line" : undefined}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    goNuevoCliente();
+                  }}
+                  className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[14px] font-bold text-amber hover:bg-panel2"
+                >
+                  <Icon name="plus" size={16} />
+                  {cliente.trim() ? `Crear «${cliente.trim()}»` : "Nuevo cliente"}
+                </button>
+              </li>
             </ul>
           )}
         </div>

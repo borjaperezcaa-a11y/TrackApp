@@ -6,10 +6,19 @@ import { createTripAction } from "../actions";
 
 export const metadata = { title: "Nuevo viaje · TrackApp" };
 
-export default async function NuevoViajePage() {
+export default async function NuevoViajePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ nuevoCliente?: string }>;
+}) {
+  const sp = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.from("clients").select("id, nombre").order("nombre");
   const clients = data ?? [];
+  // Al volver de crear un cliente, lo dejamos preseleccionado en el desplegable.
+  const preselectId = sp.nuevoCliente
+    ? (clients.find((c) => c.nombre === sp.nuevoCliente)?.id ?? "")
+    : "";
 
   return (
     <>
@@ -19,7 +28,7 @@ export default async function NuevoViajePage() {
         clients={clients}
         values={{
           fecha: todayMadrid(),
-          client_id: "",
+          client_id: preselectId,
           origen: "",
           destino: "",
           descripcion: "",

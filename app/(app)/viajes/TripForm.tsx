@@ -1,10 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Field } from "@/components/ui/Field";
 import { Cta } from "@/components/ui/Cta";
+import { Icon } from "@/components/ui/Icon";
 import type { TripState } from "./actions";
+
+const TRIP_DRAFT = "trip-draft";
 
 export type TripValues = {
   fecha: string;
@@ -34,6 +38,46 @@ export function TripForm({
   submitLabel: string;
 }) {
   const [state, formAction] = useActionState(action, initial);
+  const router = useRouter();
+  const pathname = usePathname();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Al volver de crear un cliente, restaura lo que ya habías escrito en el viaje
+  // (el cliente lo fija la página con el recién creado).
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+    try {
+      const raw = sessionStorage.getItem(TRIP_DRAFT);
+      if (raw) {
+        const d = JSON.parse(raw) as Record<string, string>;
+        for (const [k, v] of Object.entries(d)) {
+          if (k === "client_id") continue; // lo preselecciona la página
+          const el = form.elements.namedItem(k) as HTMLInputElement | null;
+          if (el) el.value = v;
+        }
+        sessionStorage.removeItem(TRIP_DRAFT);
+      }
+    } catch {
+      /* sessionStorage no disponible */
+    }
+  }, []);
+
+  function goNuevoCliente() {
+    const form = formRef.current;
+    if (form) {
+      try {
+        const draft: Record<string, string> = {};
+        new FormData(form).forEach((v, k) => {
+          draft[k] = String(v);
+        });
+        sessionStorage.setItem(TRIP_DRAFT, JSON.stringify(draft));
+      } catch {
+        /* ignore */
+      }
+    }
+    router.push(`/clientes/nuevo?next=${encodeURIComponent(pathname)}`);
+  }
 
   if (clients.length === 0) {
     return (
@@ -53,7 +97,7 @@ export function TripForm({
   }
 
   return (
-    <form action={formAction} className="stagger">
+    <form ref={formRef} action={formAction} className="stagger">
       <Field label="Fecha" htmlFor="fecha">
         <input id="fecha" name="fecha" type="date" defaultValue={values.fecha} required />
       </Field>
@@ -69,6 +113,13 @@ export function TripForm({
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={goNuevoCliente}
+          className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-bold text-amber"
+        >
+          <Icon name="plus" size={15} /> Nuevo cliente
+        </button>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
