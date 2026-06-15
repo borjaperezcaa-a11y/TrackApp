@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
+import { LoadError } from "@/components/ui/LoadError";
 import { createClient } from "@/lib/supabase/server";
 import type { Client } from "@/lib/types";
 
@@ -15,14 +16,16 @@ function initials(nombre: string): string {
 
 export default async function ClientesPage() {
   const supabase = await createClient();
-  const { data } = await supabase.from("clients").select("*").order("nombre");
+  const { data, error } = await supabase.from("clients").select("*").order("nombre");
   const clients = (data ?? []) as Client[];
 
   return (
     <>
       <PageHeader title="Clientes" kicker="Tu cartera" actionHref="/clientes/nuevo" actionLabel="Nuevo cliente" />
 
-      {clients.length === 0 ? (
+      {error ? (
+        <LoadError />
+      ) : clients.length === 0 ? (
         <div className="mt-10 text-center">
           <p className="text-[15px] font-semibold">Aún no tienes clientes</p>
           <p className="mx-auto mt-1.5 max-w-[260px] text-[13px] text-dim">

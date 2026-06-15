@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
 import { Icon } from "@/components/ui/Icon";
+import { LoadError } from "@/components/ui/LoadError";
 import { createClient } from "@/lib/supabase/server";
 import { eur, dateES } from "@/lib/format";
 
@@ -16,7 +17,7 @@ type ExpenseRow = {
 
 export default async function GastosPage() {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("expenses")
     .select("id, categoria, estacion, fecha, total")
     .order("fecha", { ascending: false });
@@ -26,7 +27,9 @@ export default async function GastosPage() {
     <>
       <PageHeader title="Gastos" kicker="Registrados" hideBack actionHref="/gastos/nuevo" actionLabel="Nuevo gasto" />
 
-      {expenses.length === 0 ? (
+      {error ? (
+        <LoadError />
+      ) : expenses.length === 0 ? (
         <div className="mt-10 text-center">
           <p className="text-[15px] font-semibold">Aún no tienes gastos</p>
           <p className="mx-auto mt-1.5 max-w-[280px] text-[13px] text-dim">

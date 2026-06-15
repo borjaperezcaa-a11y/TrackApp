@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
+import { LoadError } from "@/components/ui/LoadError";
 import { createClient } from "@/lib/supabase/server";
 import { eur, dateES } from "@/lib/format";
 
@@ -21,7 +22,7 @@ export default async function FacturasExternasPage() {
   const supabase = await createClient();
   // Ordenadas por serie: el número libre incluye la serie (p. ej. COOP/25-1234),
   // así que ordenar por `numero` agrupa cada serie y la deja correlativa.
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("external_invoices")
     .select("id, numero, fecha, total, cobrada, cliente")
     .order("numero", { ascending: true });
@@ -33,7 +34,9 @@ export default async function FacturasExternasPage() {
 
       <Tabs />
 
-      {rows.length === 0 ? (
+      {error ? (
+        <LoadError />
+      ) : rows.length === 0 ? (
         <div className="mt-8 text-center">
           <p className="text-[15px] font-semibold">Aún no has registrado facturas externas</p>
           <p className="mx-auto mt-1.5 max-w-[280px] text-[13px] text-dim">

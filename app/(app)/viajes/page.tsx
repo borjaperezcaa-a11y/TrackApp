@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
+import { LoadError } from "@/components/ui/LoadError";
 import { createClient } from "@/lib/supabase/server";
 import { eurPerKm, profitability } from "@/lib/trip";
 import { eur, dateES, amount } from "@/lib/format";
@@ -21,7 +22,7 @@ type TripRow = {
 
 export default async function ViajesPage() {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("trips")
     .select("id, fecha, origen, destino, descripcion, km, importe, estado")
     // pendientes primero; dentro de cada grupo, los más recientes arriba.
@@ -35,7 +36,9 @@ export default async function ViajesPage() {
     <>
       <PageHeader title="Viajes" kicker="Rentabilidad" hideBack actionHref="/viajes/nuevo" actionLabel="Nuevo viaje" />
 
-      {trips.length === 0 ? (
+      {error ? (
+        <LoadError />
+      ) : trips.length === 0 ? (
         <div className="mt-10 text-center">
           <p className="text-[15px] font-semibold">Aún no has registrado viajes</p>
           <p className="mx-auto mt-1.5 max-w-[260px] text-[13px] text-dim">

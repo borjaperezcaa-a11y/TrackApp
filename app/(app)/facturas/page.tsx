@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
+import { LoadError } from "@/components/ui/LoadError";
 import { createClient } from "@/lib/supabase/server";
 import { eur, dateES } from "@/lib/format";
 import type { ClienteSnapshot } from "@/lib/types";
@@ -21,7 +22,7 @@ type InvoiceRow = {
 
 export default async function FacturasPage() {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("invoices")
     .select("id, numero, fecha, total, pagada, tipo, cliente_snapshot")
     // pagada=false (pendientes) primero; dentro de cada grupo, las más recientes arriba.
@@ -37,7 +38,9 @@ export default async function FacturasPage() {
 
       <Tabs />
 
-      {invoices.length === 0 ? (
+      {error ? (
+        <LoadError />
+      ) : invoices.length === 0 ? (
         <div className="mt-10 text-center">
           <p className="text-[15px] font-semibold">Aún no has emitido facturas</p>
           <p className="mx-auto mt-1.5 max-w-[260px] text-[13px] text-dim">
