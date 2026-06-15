@@ -59,6 +59,19 @@ describe("stats · KPIs", () => {
     expect(k.ingresos).toBe(1000);
     expect(k.km).toBe(0);
     expect(k.eurKm).toBeNull();
+    expect(k.eurKmCombustible).toBeNull();
+  });
+
+  it("€/km de combustible por periodo (gasto Gasoil / km)", () => {
+    const exp: SExpense[] = [
+      { fecha: "2025-05-10", categoria: "Gasoil", total: 1500 },
+      { fecha: "2025-05-20", categoria: "Peaje", total: 100 },
+    ];
+    // T2: km = 1000 + 500 = 1500; combustible (solo Gasoil) = 1500 → 1,00 €/km
+    const k = periodKpis(invoices, trips, exp, 2025, "2");
+    expect(k.gastoCombustible).toBe(1500);
+    expect(k.eurKmCombustible).toBeCloseTo(1.0, 3);
+    expect(k.beneficioKm).toBeCloseTo((2500 - 1600) / 1500, 4);
   });
 });
 

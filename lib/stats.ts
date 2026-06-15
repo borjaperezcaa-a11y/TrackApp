@@ -18,9 +18,14 @@ export type Kpis = {
   gastos: number;
   beneficio: number;
   margen: number; // 0..1
-  eurKm: number | null;
+  eurKm: number | null; // ingresos / km
   km: number;
   nFacturas: number;
+  // El combustible no se imputa por viaje (un depósito da para varios), pero sí
+  // como métrica de periodo:
+  gastoCombustible: number; // suma de gastos de categoría Gasoil
+  eurKmCombustible: number | null; // gasto combustible / km
+  beneficioKm: number | null; // beneficio / km
 };
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
@@ -40,6 +45,7 @@ export function periodKpis(
   const gastos = sum(ex.map((e) => e.total));
   const km = sum(tr.map((t) => t.km ?? 0));
   const beneficio = ingresos - gastos;
+  const gastoCombustible = sum(ex.filter((e) => e.categoria === "Gasoil").map((e) => e.total));
 
   return {
     ingresos,
@@ -49,6 +55,9 @@ export function periodKpis(
     eurKm: km > 0 ? ingresos / km : null,
     km,
     nFacturas: inv.length,
+    gastoCombustible,
+    eurKmCombustible: km > 0 ? gastoCombustible / km : null,
+    beneficioKm: km > 0 ? beneficio / km : null,
   };
 }
 

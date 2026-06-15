@@ -87,8 +87,20 @@ export function PeriodStats({
         <Kpi label="Margen" value={`${Math.round(k.margen * 100)}%`} />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3">
-        <Kpi label="€/km" value={k.eurKm != null ? `${k.eurKm.toFixed(2).replace(".", ",")} €/km` : "—"} />
+        <Kpi label="€/km (ingresos)" value={k.eurKm != null ? `${k.eurKm.toFixed(2).replace(".", ",")} €/km` : "—"} />
         <Kpi label="Facturas" value={String(k.nFacturas)} />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <Kpi
+          label="€/km combustible"
+          value={k.eurKmCombustible != null ? `${k.eurKmCombustible.toFixed(2).replace(".", ",")} €/km` : "—"}
+          color="var(--amber)"
+        />
+        <Kpi
+          label="Beneficio /km"
+          value={k.beneficioKm != null ? `${k.beneficioKm.toFixed(2).replace(".", ",")} €/km` : "—"}
+          color={k.beneficioKm != null && k.beneficioKm < 0 ? "var(--red)" : "var(--green)"}
+        />
       </div>
 
       {/* Ingresos vs gastos */}
