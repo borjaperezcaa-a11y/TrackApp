@@ -11,7 +11,7 @@ export default async function EstadisticasPage() {
 
   const [{ data: invData }, { data: tripData }, { data: expData }] = await Promise.all([
     supabase.from("invoices").select("fecha, base, total, cliente_snapshot"),
-    supabase.from("trips").select("fecha, km, importe, origen, destino"),
+    supabase.from("trips").select("fecha, km, importe, origen, destino, peso, peso_unidad"),
     supabase.from("expenses").select("fecha, categoria, total"),
   ]);
 
@@ -21,12 +21,17 @@ export default async function EstadisticasPage() {
     total: Number(i.total),
     clientName: (i.cliente_snapshot as { nombre?: string })?.nombre ?? "Cliente",
   }));
-  const trips: STrip[] = (tripData ?? []).map((t) => ({
-    fecha: t.fecha,
-    km: t.km != null ? Number(t.km) : null,
-    importe: Number(t.importe),
-    ruta: t.origen && t.destino ? `${t.origen} → ${t.destino}` : t.origen || t.destino || "",
-  }));
+  const trips: STrip[] = (tripData ?? []).map((t) => {
+    const peso = t.peso != null ? Number(t.peso) : null;
+    const toneladas = peso == null ? null : t.peso_unidad === "kg" ? peso / 1000 : peso;
+    return {
+      fecha: t.fecha,
+      km: t.km != null ? Number(t.km) : null,
+      importe: Number(t.importe),
+      ruta: t.origen && t.destino ? `${t.origen} → ${t.destino}` : t.origen || t.destino || "",
+      toneladas,
+    };
+  });
   const expenses: SExpense[] = (expData ?? []).map((e) => ({
     fecha: e.fecha,
     categoria: e.categoria ?? "Otro",

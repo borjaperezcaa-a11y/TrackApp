@@ -17,8 +17,8 @@ const invoices: SInvoice[] = [
   { fecha: "2025-06-20", base: 500, total: 600, clientName: "A" },
 ];
 const trips: STrip[] = [
-  { fecha: "2025-05-15", km: 1000, importe: 2000, ruta: "X → Y" },
-  { fecha: "2025-06-20", km: 500, importe: 500, ruta: "Z → W" },
+  { fecha: "2025-05-15", km: 1000, importe: 2000, ruta: "X → Y", toneladas: 20 },
+  { fecha: "2025-06-20", km: 500, importe: 500, ruta: "Z → W", toneladas: 10 },
 ];
 const expenses: SExpense[] = [];
 
@@ -72,6 +72,13 @@ describe("stats · KPIs", () => {
     expect(k.gastoCombustible).toBe(1500);
     expect(k.eurKmCombustible).toBeCloseTo(1.0, 3);
     expect(k.beneficioKm).toBeCloseTo((2500 - 1600) / 1500, 4);
+  });
+
+  it("t·km y €/t·km por periodo", () => {
+    // T2: 1000 km · 20 t + 500 km · 10 t = 25.000 t·km; ingresos 2500 → 0,1 €/t·km
+    const k = periodKpis(invoices, trips, expenses, 2025, "2");
+    expect(k.tkm).toBe(25000);
+    expect(k.eurTkm).toBeCloseTo(0.1, 4);
   });
 });
 

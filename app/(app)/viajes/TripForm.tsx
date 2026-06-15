@@ -12,6 +12,8 @@ export type TripValues = {
   origen: string;
   destino: string;
   descripcion: string;
+  peso: string;
+  peso_unidad: "t" | "kg";
   km: string;
   importe: string;
 };
@@ -78,8 +80,28 @@ export function TripForm({
         </Field>
       </div>
 
-      <Field label="Descripción de la carga" htmlFor="descripcion" hint="Peso, tonelaje, tipo de carga…">
-        <input id="descripcion" name="descripcion" defaultValue={values.descripcion} placeholder="24 t de fruta · carga completa" />
+      <Field label="Descripción de la carga" htmlFor="descripcion" hint="Tipo de carga, observaciones…">
+        <input id="descripcion" name="descripcion" defaultValue={values.descripcion} placeholder="Fruta · carga completa" />
+      </Field>
+
+      <Field label="Peso de la carga" htmlFor="peso" hint="Para el €/tonelada-km en estadísticas">
+        <div className="flex gap-2">
+          <input
+            id="peso"
+            name="peso"
+            type="number"
+            step="0.001"
+            min="0"
+            inputMode="decimal"
+            defaultValue={values.peso}
+            placeholder="24"
+            className="flex-1"
+          />
+          <select name="peso_unidad" defaultValue={values.peso_unidad} className="w-24 flex-none">
+            <option value="t">t</option>
+            <option value="kg">kg</option>
+          </select>
+        </div>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">

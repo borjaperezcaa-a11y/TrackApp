@@ -23,6 +23,8 @@ export default async function NuevoViajePage() {
           origen: "",
           destino: "",
           descripcion: "",
+          peso: "",
+          peso_unidad: "t",
           km: "",
           importe: "",
         }}

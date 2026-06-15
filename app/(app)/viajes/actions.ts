@@ -11,6 +11,8 @@ const tripSchema = z.object({
   origen: z.string().trim().max(160),
   destino: z.string().trim().max(160),
   descripcion: z.string().trim().max(300),
+  peso: z.string().trim(),
+  peso_unidad: z.enum(["t", "kg"]).default("t"),
   km: z.string().trim(),
   importe: z.string().trim(),
 });
@@ -38,6 +40,13 @@ function parseTrip(formData: FormData):
     km = k;
   }
 
+  let peso: number | null = null;
+  if (d.peso !== "") {
+    const p = num(d.peso);
+    if (!Number.isFinite(p) || p < 0) return { ok: false, error: "Peso no válido" };
+    peso = p;
+  }
+
   return {
     ok: true,
     row: {
@@ -46,6 +55,8 @@ function parseTrip(formData: FormData):
       origen: d.origen || null,
       destino: d.destino || null,
       descripcion: d.descripcion || null,
+      peso,
+      peso_unidad: d.peso_unidad,
       km,
       importe,
     },

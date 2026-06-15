@@ -21,6 +21,8 @@ export type Trip = {
   origen: string | null;
   destino: string | null;
   descripcion: string | null;
+  peso: number | null;
+  peso_unidad: "t" | "kg";
   km: number | null;
   importe: number;
   estado: TripEstado;

@@ -31,6 +31,7 @@ export default async function EditarViajePage({ params }: { params: Promise<{ id
           <div className="mt-1 text-[13px] text-dim">
             {dateES(t.fecha)}
             {t.km != null ? ` · ${amount(t.km).replace(",00", "")} km` : ""}
+            {t.peso != null ? ` · ${amount(t.peso).replace(",00", "")} ${t.peso_unidad}` : ""}
           </div>
           {t.descripcion && <div className="mt-1 text-[13px] font-medium">{t.descripcion}</div>}
           <div className="mt-3 font-display text-2xl font-bold text-amber tnum">{eur(t.importe)}</div>
@@ -64,6 +65,8 @@ export default async function EditarViajePage({ params }: { params: Promise<{ id
           origen: t.origen ?? "",
           destino: t.destino ?? "",
           descripcion: t.descripcion ?? "",
+          peso: t.peso != null ? String(t.peso) : "",
+          peso_unidad: t.peso_unidad ?? "t",
           km: t.km != null ? String(t.km) : "",
           importe: String(t.importe),
         }}

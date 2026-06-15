@@ -1,4 +1,4 @@
--- TrackApp - esquema completo (concatenacion de migrations 0001..0014).
+-- TrackApp - esquema completo (concatenacion de migrations 0001..0015).
 -- Pega TODO esto en Supabase > SQL Editor > New query > Run.
 
 -- ===== 0001_schema.sql =====
@@ -1638,5 +1638,19 @@ begin
   update public.profiles set contador = v_chain where user_id = v_uid;
   return v_inv;
 end; $$;
+
+
+-- ===== 0015_peso_viaje.sql =====
+-- ============================================================================
+-- TrackApp · 0015_peso_viaje.sql
+-- Peso de la carga del viaje (numérico) con unidad t/kg. Sirve para métricas de
+-- rentabilidad por tonelada-kilómetro (t·km) en las estadísticas del periodo.
+-- (No afecta a la factura: la descripción de texto ya viaja a la factura.)
+-- ============================================================================
+
+alter table public.trips
+  add column if not exists peso        numeric(12,3),
+  add column if not exists peso_unidad text not null default 't'
+    check (peso_unidad in ('t', 'kg'));
 
 
