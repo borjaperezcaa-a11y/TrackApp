@@ -21,21 +21,31 @@ export default async function HomePage() {
   const year = now.getFullYear();
   const month0 = now.getMonth();
 
-  const [{ data: profile }, { data: invData }, { data: tripData }, { data: expData }, { count: clientCount }] =
+  const [{ data: profile }, { data: invData }, { data: extData }, { data: tripData }, { data: expData }, { count: clientCount }] =
     await Promise.all([
       supabase.from("profiles").select("nombre, nif").maybeSingle(),
       supabase.from("invoices").select("fecha, base, total, pagada, cliente_snapshot"),
+      supabase.from("external_invoices").select("fecha, base, total, cobrada"),
       supabase.from("trips").select("fecha, km, importe, estado, origen, destino"),
       supabase.from("expenses").select("fecha, categoria, total"),
       supabase.from("clients").select("id", { count: "exact", head: true }),
     ]);
 
-  const invoices: SInvoice[] = (invData ?? []).map((i) => ({
-    fecha: i.fecha,
-    base: Number(i.base),
-    total: Number(i.total),
-    clientName: (i.cliente_snapshot as { nombre?: string })?.nombre ?? "Cliente",
-  }));
+  // Contabilidad total: ingresos propios (Verifactu) + facturas de cooperativa.
+  const invoices: SInvoice[] = [
+    ...(invData ?? []).map((i) => ({
+      fecha: i.fecha,
+      base: Number(i.base),
+      total: Number(i.total),
+      clientName: (i.cliente_snapshot as { nombre?: string })?.nombre ?? "Cliente",
+    })),
+    ...(extData ?? []).map((e) => ({
+      fecha: e.fecha,
+      base: Number(e.base),
+      total: Number(e.total),
+      clientName: "Cooperativa",
+    })),
+  ];
   const expenses: SExpense[] = (expData ?? []).map((e) => ({
     fecha: e.fecha,
     categoria: e.categoria ?? "Otro",

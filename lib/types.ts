@@ -78,6 +78,32 @@ export type Invoice = {
   motivo: string | null;
 };
 
+/** Factura externa: emitida por la cooperativa en nombre del autónomo
+ * (facturación por terceros). Ingreso suyo, registrado/archivado, fuera de
+ * la cadena Verifactu. Numeración libre y editable. */
+export type ExternalInvoice = {
+  id: string;
+  user_id: string;
+  fuente: "cooperativa" | "otra";
+  numero: string;
+  fecha: string;
+  cliente: string | null;
+  cliente_nif: string | null;
+  concepto: string | null;
+  base: number;
+  iva_rate: number | null;
+  iva: number;
+  irpf_rate: number | null;
+  irpf: number;
+  total: number;
+  cobrada: boolean;
+  archivo_url: string | null;
+  qr_raw: string | null;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type InvoiceLine = {
   id: string;
   invoice_id: string;

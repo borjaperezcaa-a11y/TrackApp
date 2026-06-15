@@ -9,18 +9,28 @@ export const metadata = { title: "Estadísticas · TrackApp" };
 export default async function EstadisticasPage() {
   const supabase = await createClient();
 
-  const [{ data: invData }, { data: tripData }, { data: expData }] = await Promise.all([
+  const [{ data: invData }, { data: extData }, { data: tripData }, { data: expData }] = await Promise.all([
     supabase.from("invoices").select("fecha, base, total, cliente_snapshot"),
+    supabase.from("external_invoices").select("fecha, base, total, cliente"),
     supabase.from("trips").select("fecha, km, importe, origen, destino, peso, peso_unidad"),
     supabase.from("expenses").select("fecha, categoria, total"),
   ]);
 
-  const invoices: SInvoice[] = (invData ?? []).map((i) => ({
-    fecha: i.fecha,
-    base: Number(i.base),
-    total: Number(i.total),
-    clientName: (i.cliente_snapshot as { nombre?: string })?.nombre ?? "Cliente",
-  }));
+  // Contabilidad total: ingresos propios (Verifactu) + facturas de cooperativa.
+  const invoices: SInvoice[] = [
+    ...(invData ?? []).map((i) => ({
+      fecha: i.fecha,
+      base: Number(i.base),
+      total: Number(i.total),
+      clientName: (i.cliente_snapshot as { nombre?: string })?.nombre ?? "Cliente",
+    })),
+    ...(extData ?? []).map((e) => ({
+      fecha: e.fecha,
+      base: Number(e.base),
+      total: Number(e.total),
+      clientName: e.cliente ?? "Cooperativa",
+    })),
+  ];
   const trips: STrip[] = (tripData ?? []).map((t) => {
     const peso = t.peso != null ? Number(t.peso) : null;
     const toneladas = peso == null ? null : t.peso_unidad === "kg" ? peso / 1000 : peso;
