@@ -15,7 +15,17 @@ export default async function EditarClientePage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data } = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  // Filtro explícito por user_id (además de RLS): defensa en profundidad.
+  const { data } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
   if (!data) notFound();
   const c = data as Client;
 

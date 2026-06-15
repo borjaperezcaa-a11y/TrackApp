@@ -13,8 +13,18 @@ export default async function FacturaDetallePage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  const { data: invoiceData } = await supabase.from("invoices").select("*").eq("id", id).maybeSingle();
+  // Filtro explícito por user_id (además de RLS): defensa en profundidad.
+  const { data: invoiceData } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
   if (!invoiceData) notFound();
   const invoice = invoiceData as Invoice;
 
@@ -22,6 +32,7 @@ export default async function FacturaDetallePage({
     .from("invoice_lines")
     .select("*")
     .eq("invoice_id", id)
+    .eq("user_id", user.id)
     .order("orden");
 
   // ¿Esta factura ha sido anulada/rectificada por otra? (a lo sumo una, pero
@@ -30,6 +41,7 @@ export default async function FacturaDetallePage({
     .from("invoices")
     .select("id, numero")
     .eq("rectifica_id", id)
+    .eq("user_id", user.id)
     .order("emitida_at", { ascending: true })
     .limit(1);
   const rect = rectRows?.[0] ?? null;
@@ -41,6 +53,7 @@ export default async function FacturaDetallePage({
       .from("invoices")
       .select("id, numero")
       .eq("id", invoice.rectifica_id)
+      .eq("user_id", user.id)
       .maybeSingle();
     original = orig ?? null;
   }

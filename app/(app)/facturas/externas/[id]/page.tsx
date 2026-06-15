@@ -17,7 +17,12 @@ export default async function EditarFacturaExternaPage({ params }: { params: Pro
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase.from("external_invoices").select("*").eq("id", id).maybeSingle();
+  const { data } = await supabase
+    .from("external_invoices")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
   if (!data) notFound();
   const f = data as ExternalInvoice;
 
