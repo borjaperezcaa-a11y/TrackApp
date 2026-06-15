@@ -19,6 +19,7 @@ export type ProfileValues = {
   iva_def: number;
   irpf_def: number;
   serie: string;
+  num_inicial: number;
   logo_url: string;
 };
 
@@ -29,10 +30,12 @@ export function ProfileForm({
   userId,
   values,
   nextNumero,
+  locked,
 }: {
   userId: string;
   values: ProfileValues;
   nextNumero: string;
+  locked: boolean;
 }) {
   const [state, formAction] = useActionState(saveProfile, initial);
 
@@ -45,6 +48,7 @@ export function ProfileForm({
   const [iban, setIban] = useState(values.iban);
   const [irpf, setIrpf] = useState(String(values.irpf_def));
   const [serie, setSerie] = useState(values.serie);
+  const [numInicial, setNumInicial] = useState(String(values.num_inicial || ""));
 
   const [iva, setIva] = useState<number>(values.iva_def);
   const [logoUrl, setLogoUrl] = useState<string>(values.logo_url);
@@ -178,23 +182,73 @@ export function ProfileForm({
         <input type="hidden" name="iva_def" value={iva} />
       </Field>
 
+      <Field label="IRPF por defecto (%)" htmlFor="irpf_def" hint="Transporte en módulos: 1%">
+        <input
+          id="irpf_def"
+          name="irpf_def"
+          type="number"
+          step="0.5"
+          min="0"
+          max="100"
+          inputMode="decimal"
+          value={irpf}
+          onChange={(e) => setIrpf(e.target.value)}
+        />
+      </Field>
+
+      {/* Numeración de facturas */}
+      <div className="mt-1 mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">
+        Numeración
+      </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="IRPF por defecto (%)" htmlFor="irpf_def" hint="Transporte en módulos: 1%">
+        <Field label="Serie (prefijo)" htmlFor="serie" hint="El prefijo de tus facturas. Ej.: FACT">
           <input
-            id="irpf_def"
-            name="irpf_def"
-            type="number"
-            step="0.5"
-            min="0"
-            max="100"
-            inputMode="decimal"
-            value={irpf}
-            onChange={(e) => setIrpf(e.target.value)}
+            id="serie"
+            name="serie"
+            value={serie}
+            onChange={(e) => setSerie(e.target.value)}
+            autoCapitalize="characters"
+            readOnly={locked}
+            className={locked ? "opacity-60" : undefined}
           />
         </Field>
-        <Field label="Serie" htmlFor="serie" hint={`Próximo nº: ${nextNumero}`}>
-          <input id="serie" name="serie" value={serie} onChange={(e) => setSerie(e.target.value)} autoCapitalize="characters" />
+        <Field
+          label="Nº última factura"
+          htmlFor="num_inicial"
+          hint="Si ya facturabas, escríbelo aquí"
+        >
+          <input
+            id="num_inicial"
+            name="num_inicial"
+            type="number"
+            min="0"
+            step="1"
+            inputMode="numeric"
+            value={numInicial}
+            onChange={(e) => setNumInicial(e.target.value)}
+            placeholder="0"
+            readOnly={locked}
+            className={locked ? "opacity-60" : undefined}
+          />
         </Field>
+      </div>
+
+      <div className="mb-3.5 rounded-2xl border border-amber-line bg-amber-soft px-4 py-3 text-[12.5px] leading-relaxed text-amber">
+        <b>Próxima factura: {nextNumero}</b>
+        <br />
+        {locked ? (
+          <span>
+            Ya has emitido facturas con la app, así que la serie y el número de arranque quedan
+            bloqueados: cambiarlos rompería la numeración correlativa (Verifactu lo exige).
+          </span>
+        ) : (
+          <span>
+            Si vienes de facturar por tu cuenta, elige tu <b>prefijo</b> y escribe el{" "}
+            <b>número de tu última factura</b> de este año (p. ej. 42): la app continuará tu serie
+            y emitirá la 43. Si empiezas de cero, déjalo en 0. Solo se puede ajustar{" "}
+            <b>antes de emitir la primera factura</b> en la app.
+          </span>
+        )}
       </div>
 
       {state.error && (

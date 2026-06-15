@@ -29,7 +29,22 @@ export default async function PerfilPage() {
     .limit(1)
     .maybeSingle();
 
-  const nextNum = (last?.num ?? 0) + 1;
+  // Total de facturas emitidas en la app: si ya hay alguna, la numeración de
+  // arranque se bloquea (la cadena ya está iniciada; cambiarla crearía huecos).
+  const { count: emittedCount } = await supabase
+    .from("invoices")
+    .select("id", { count: "exact", head: true });
+  const locked = (emittedCount ?? 0) > 0;
+
+  // "Suelo" de migración: solo aplica si se fijó para esta serie y año.
+  const floorApplies =
+    profile?.num_inicial != null &&
+    profile?.num_inicial_anio === year &&
+    (profile?.num_inicial_serie ?? "").toUpperCase() === serie;
+  const numInicial = floorApplies ? Number(profile!.num_inicial) : 0;
+
+  const maxNum = last?.num ?? 0;
+  const nextNum = Math.max(maxNum, numInicial) + 1;
   const yy = String(year % 100).padStart(2, "0");
   const nextNumero = `${serie}/${yy}-${String(nextNum).padStart(2, "0")}`;
 
@@ -42,6 +57,7 @@ export default async function PerfilPage() {
     iva_def: profile?.iva_def != null ? Number(profile.iva_def) : 21,
     irpf_def: profile?.irpf_def != null ? Number(profile.irpf_def) : 1,
     serie,
+    num_inicial: numInicial,
     logo_url: profile?.logo_url ?? "",
   };
 
@@ -52,7 +68,7 @@ export default async function PerfilPage() {
         Estos datos rellenan automáticamente el emisor de tus facturas. Todo es editable antes de
         emitir.
       </p>
-      <ProfileForm userId={user.id} values={values} nextNumero={nextNumero} />
+      <ProfileForm userId={user.id} values={values} nextNumero={nextNumero} locked={locked} />
 
       <form action="/auth/signout" method="post" className="mt-6">
         <button

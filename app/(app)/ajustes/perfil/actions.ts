@@ -27,6 +27,11 @@ const profileSchema = z.object({
     .min(1, "La serie es obligatoria")
     .max(10)
     .regex(/^[A-Za-z0-9/_-]+$/, "Serie no válida (letras, números, / _ -)"),
+  num_inicial: z.coerce
+    .number()
+    .int("El número debe ser entero")
+    .min(0, "Número no válido")
+    .max(9_999_999, "Número fuera de rango"),
   logo_url: z
     .string()
     .trim()
@@ -48,6 +53,24 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
     return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
   }
   const d = parsed.data;
+  const serie = d.serie.toUpperCase();
+
+  // La numeración de arranque (serie + nº inicial) solo se puede tocar mientras
+  // no haya facturas emitidas en la app: una vez iniciada la cadena, cambiarla
+  // rompería la correlación (Verifactu lo exige). Lo verificamos en servidor.
+  const { count: emittedCount } = await supabase
+    .from("invoices")
+    .select("id", { count: "exact", head: true });
+  const locked = (emittedCount ?? 0) > 0;
+
+  const numbering = locked
+    ? {}
+    : {
+        serie,
+        num_inicial: d.num_inicial > 0 ? d.num_inicial : null,
+        num_inicial_anio: d.num_inicial > 0 ? new Date().getFullYear() : null,
+        num_inicial_serie: d.num_inicial > 0 ? serie : null,
+      };
 
   const { error } = await supabase
     .from("profiles")
@@ -59,8 +82,8 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
       iban: d.iban ? d.iban.replace(/\s+/g, "").toUpperCase() : null,
       iva_def: d.iva_def,
       irpf_def: d.irpf_def,
-      serie: d.serie.toUpperCase(),
       logo_url: d.logo_url || null,
+      ...numbering,
     })
     .eq("user_id", user.id);
 
