@@ -8,7 +8,7 @@ import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
 import { EXPENSE_CATEGORIES, type ExtractedExpense } from "@/lib/expense";
-import { round2 } from "@/lib/format";
+import { round2, parseDecimal } from "@/lib/format";
 import type { ExpensePayload, ExpenseState } from "./actions";
 
 const IVA_OPTS = [21, 10, 4, 0];
@@ -23,9 +23,7 @@ export type ExpenseValues = {
   foto_path: string | null;
 };
 
-function num(s: string): number {
-  return Number(s.replace(/\./g, "").replace(",", "."));
-}
+const num = parseDecimal;
 function optNum(s: string): number | null {
   if (s.trim() === "") return null;
   const n = num(s);

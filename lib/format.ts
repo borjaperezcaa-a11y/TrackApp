@@ -65,6 +65,23 @@ export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
+/**
+ * Parsea un importe escrito por el usuario a número.
+ * - Los <input type="number"> entregan el decimal con PUNTO y sin separador de
+ *   millares (formato en-US): "1500.00", "87.4" → se usan tal cual.
+ * - Si el usuario teclea formato español con COMA ("1.240,50" o "1240,50"), se
+ *   interpreta la coma como decimal y los puntos como millares.
+ * Devuelve NaN si la cadena está vacía o no es un número.
+ */
+export function parseDecimal(s: string): number {
+  const t = s.trim();
+  if (t === "") return NaN;
+  // Con coma → formato español: quita puntos de millar y pasa la coma a punto.
+  if (t.includes(",")) return Number(t.replace(/\./g, "").replace(",", "."));
+  // Sin coma → tal cual lo da el input numérico (punto = decimal).
+  return Number(t);
+}
+
 /** Date | string ISO → "31/03/2025" */
 export function dateES(d: Date | string): string {
   const date = typeof d === "string" ? new Date(d) : d;

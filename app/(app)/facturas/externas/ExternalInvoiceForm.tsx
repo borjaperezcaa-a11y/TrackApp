@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
-import { round2, eur } from "@/lib/format";
+import { round2, eur, parseDecimal } from "@/lib/format";
 import { EXTERNAL_SOURCES, type ExtractedInvoice } from "@/lib/external-invoice";
 import type { ExternalInvoicePayload, ExternalInvoiceState } from "./actions";
 
@@ -30,9 +30,7 @@ export type ExternalInvoiceValues = {
   archivo_path: string | null;
 };
 
-function num(s: string): number {
-  return Number(s.replace(/\./g, "").replace(",", "."));
-}
+const num = parseDecimal;
 function optNum(s: string): number | null {
   if (s.trim() === "") return null;
   const n = num(s);

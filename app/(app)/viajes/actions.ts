@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { parseDecimal } from "@/lib/format";
 
 const tripSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha no válida"),
@@ -19,9 +20,7 @@ const tripSchema = z.object({
 
 export type TripState = { error?: string };
 
-function num(s: string): number {
-  return Number(s.replace(/\./g, "").replace(",", "."));
-}
+const num = parseDecimal;
 
 function parseTrip(formData: FormData):
   | { ok: true; row: Record<string, unknown> }
