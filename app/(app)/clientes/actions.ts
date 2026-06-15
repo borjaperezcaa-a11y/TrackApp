@@ -91,10 +91,19 @@ export async function deleteClientAction(
   if (!user) return { error: "Sesión expirada." };
 
   // Integridad: no se borra un cliente con viajes o facturas asociados.
-  const [{ count: invoiceCount }, { count: tripCount }] = await Promise.all([
+  const [
+    { count: invoiceCount, error: invErr },
+    { count: tripCount, error: tripErr },
+  ] = await Promise.all([
     supabase.from("invoices").select("id", { count: "exact", head: true }).eq("client_id", id),
     supabase.from("trips").select("id", { count: "exact", head: true }).eq("client_id", id),
   ]);
+
+  // Si la comprobación falla, NO borrar (evita borrar un cliente con
+  // dependencias por un error transitorio que dejaría count en null).
+  if (invErr || tripErr) {
+    return { error: "No se pudo comprobar si el cliente tiene datos asociados. Inténtalo de nuevo." };
+  }
 
   if ((invoiceCount ?? 0) > 0) {
     return { error: "Este cliente tiene facturas emitidas; no se puede borrar." };

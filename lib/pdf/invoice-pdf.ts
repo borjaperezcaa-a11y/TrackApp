@@ -52,8 +52,11 @@ export async function buildInvoicePdf(invoice: Invoice, lines: InvoiceLine[]): P
   const hline = (y: number, x1 = M, x2 = W - M, color = LINE) =>
     page.drawLine({ start: { x: x1, y: H - y }, end: { x: x2, y: H - y }, thickness: 0.7, color });
 
-  const em = invoice.emisor_snapshot;
-  const cl = invoice.cliente_snapshot;
+  // Las facturas emitidas por la app siempre traen estos snapshots, pero el PDF
+  // se blinda por si recibiera datos parciales.
+  const em = invoice.emisor_snapshot ?? ({} as Invoice["emisor_snapshot"]);
+  const cl = invoice.cliente_snapshot ?? ({} as Invoice["cliente_snapshot"]);
+  const huella = invoice.huella ?? "";
 
   // ── Logo (si lo hay) arriba a la derecha ──────────────────────────────────
   if (em.logo_url) {
@@ -203,8 +206,8 @@ export async function buildInvoicePdf(invoice: Invoice, lines: InvoiceLine[]): P
   }
   const fx = M + 92;
   page.drawText("Huella Verifactu (SHA-256):", { x: fx, y: 110, size: 8, font: bold, color: BLACK });
-  page.drawText(invoice.huella.slice(0, 48), { x: fx, y: 99, size: 7, font, color: GRAY });
-  page.drawText(invoice.huella.slice(48), { x: fx, y: 90, size: 7, font, color: GRAY });
+  page.drawText(huella.slice(0, 48), { x: fx, y: 99, size: 7, font, color: GRAY });
+  page.drawText(huella.slice(48), { x: fx, y: 90, size: 7, font, color: GRAY });
   page.drawText("Documento de prueba: Verifactu NO oficial. No se ha enviado a la AEAT", {
     x: fx,
     y: 70,

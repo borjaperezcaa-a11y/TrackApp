@@ -133,7 +133,8 @@ export async function POST(request: Request) {
       return Response.json({ error: "Respuesta de IA no válida" }, { status: 502 });
     }
     return Response.json({ data: parsed.data });
-  } catch {
+  } catch (e) {
+    console.error("[invoices/scan] error:", e);
     return Response.json({ error: "No se pudo leer la factura. Inténtalo de nuevo." }, { status: 502 });
   }
 }

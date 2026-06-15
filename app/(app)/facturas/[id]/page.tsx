@@ -24,12 +24,15 @@ export default async function FacturaDetallePage({
     .eq("invoice_id", id)
     .order("orden");
 
-  // ¿Esta factura ha sido anulada por una rectificativa?
-  const { data: rect } = await supabase
+  // ¿Esta factura ha sido anulada/rectificada por otra? (a lo sumo una, pero
+  // limitamos para no romper si llegara a haber más de una fila).
+  const { data: rectRows } = await supabase
     .from("invoices")
     .select("id, numero")
     .eq("rectifica_id", id)
-    .maybeSingle();
+    .order("emitida_at", { ascending: true })
+    .limit(1);
+  const rect = rectRows?.[0] ?? null;
 
   // Si esta factura ES una rectificativa, ¿a qué original referencia?
   let original: { id: string; numero: string } | null = null;
