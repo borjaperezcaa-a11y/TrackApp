@@ -149,8 +149,8 @@ export function PeriodStats({
           <Ranking
             items={routes.map((r) => ({
               title: r.ruta,
-              sub: r.eurKm != null ? `${r.eurKm.toFixed(2).replace(".", ",")} €/km` : undefined,
-              value: eur(r.total),
+              sub: `${eur(r.total)} cobrado`,
+              value: r.eurKm != null ? `${r.eurKm.toFixed(2).replace(".", ",")} €/km` : "—",
             }))}
           />
         </>
