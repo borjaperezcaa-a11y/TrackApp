@@ -89,6 +89,20 @@ export default async function PerfilPage() {
         <span className="text-amber">›</span>
       </Link>
 
+      <Link
+        href="/ajustes/declaracion"
+        className="mt-2.5 flex items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3.5 transition-transform active:scale-[0.99]"
+      >
+        <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-panel2 text-amber">
+          <Icon name="doc" size={18} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">Declaración responsable</span>
+          <span className="block text-[12px] text-dim">Conformidad del productor (Art. 13)</span>
+        </span>
+        <span className="text-amber">›</span>
+      </Link>
+
       <form action="/auth/signout" method="post" className="mt-6">
         <button
           type="submit"
