@@ -12,7 +12,7 @@ export default async function EstadisticasPage() {
   const [{ data: invData }, { data: extData }, { data: incData }, { data: tripData }, { data: expData }] = await Promise.all([
     supabase.from("invoices").select("fecha, base, total, cliente_snapshot"),
     supabase.from("external_invoices").select("fecha, base, total, cliente"),
-    supabase.from("incomes").select("fecha, base, total, concepto"),
+    supabase.from("incomes").select("fecha, base, total, concepto, cliente"),
     supabase.from("trips").select("fecha, km, importe, origen, destino, peso, peso_unidad"),
     supabase.from("expenses").select("fecha, categoria, total"),
   ]);
@@ -36,7 +36,9 @@ export default async function EstadisticasPage() {
       fecha: i.fecha,
       base: i.base != null ? Number(i.base) : Number(i.total),
       total: Number(i.total),
-      clientName: i.concepto ?? "Ingreso",
+      // Si el ingreso tiene cliente, suma a ese cliente en el ranking; si no,
+      // se identifica por su concepto.
+      clientName: i.cliente?.trim() || i.concepto || "Ingreso",
       esFactura: false, // ingreso manual: no cuenta en el nº de facturas
     })),
   ];
