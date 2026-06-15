@@ -162,7 +162,8 @@ export function clientRanking(
   for (const i of inv) {
     const name = i.clientName || "Cliente";
     const a = agg.get(name) ?? { total: 0, n: 0 };
-    a.total += i.total;
+    // Base imponible (no el total con IVA): coherente con el KPI "Ingresos".
+    a.total += i.base;
     a.n += 1;
     agg.set(name, a);
   }

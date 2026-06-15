@@ -90,10 +90,10 @@ describe("stats · buckets y rankings", () => {
     expect(b[1].ingresos).toBe(2500);
     expect(b[3].ingresos).toBe(0);
   });
-  it("ranking de clientes por total facturado", () => {
+  it("ranking de clientes por base imponible (coherente con ingresos)", () => {
     const r = clientRanking(invoices, 2025, "Y");
-    expect(r[0]).toEqual({ name: "B", total: 2400, nFacturas: 1 });
-    expect(r[1]).toEqual({ name: "A", total: 1800, nFacturas: 2 });
+    expect(r[0]).toEqual({ name: "B", total: 2000, nFacturas: 1 });
+    expect(r[1]).toEqual({ name: "A", total: 1500, nFacturas: 2 });
   });
   it("ranking de rutas con €/km", () => {
     const r = routeRanking(trips, 2025, "2");

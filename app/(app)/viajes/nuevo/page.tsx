@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { createClient } from "@/lib/supabase/server";
-import { dateISO } from "@/lib/format";
+import { todayMadrid } from "@/lib/format";
 import { TripForm } from "../TripForm";
 import { createTripAction } from "../actions";
 
@@ -18,7 +18,7 @@ export default async function NuevoViajePage() {
         action={createTripAction}
         clients={clients}
         values={{
-          fecha: dateISO(new Date()),
+          fecha: todayMadrid(),
           client_id: "",
           origen: "",
           destino: "",

@@ -193,7 +193,7 @@ export function ExpenseForm({
         fecha,
         base: optNum(base),
         iva: optNum(iva),
-        total: totalNum,
+        total: round2(totalNum),
         trip_id: null,
         foto_path: fotoPath,
       };

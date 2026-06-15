@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { createClient } from "@/lib/supabase/server";
-import { dateISO } from "@/lib/format";
+import { todayMadrid } from "@/lib/format";
 import { ExpenseForm } from "../ExpenseForm";
 import { createExpenseAction } from "../actions";
 
@@ -23,7 +23,7 @@ export default async function NuevoGastoPage() {
         values={{
           categoria: "Gasoil",
           estacion: "",
-          fecha: dateISO(new Date()),
+          fecha: todayMadrid(),
           base: "",
           iva: "",
           total: "",

@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { createClient } from "@/lib/supabase/server";
-import { dateISO } from "@/lib/format";
+import { todayMadrid } from "@/lib/format";
 import { ExternalInvoiceForm } from "../ExternalInvoiceForm";
 import { createExternalInvoiceAction } from "../actions";
 
@@ -23,7 +23,7 @@ export default async function NuevaFacturaExternaPage() {
         values={{
           fuente: "cooperativa",
           numero: "",
-          fecha: dateISO(new Date()),
+          fecha: todayMadrid(),
           cliente: "",
           cliente_nif: "",
           concepto: "",

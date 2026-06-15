@@ -4,7 +4,7 @@ import { Gauge } from "@/components/charts/Gauge";
 import { MiniBars } from "@/components/charts/MiniBars";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { eur } from "@/lib/format";
+import { eur, nowMadrid } from "@/lib/format";
 import { monthlySeries, bestMonthBeneficio, type SInvoice, type SExpense } from "@/lib/stats";
 import { dateParts } from "@/lib/fiscal";
 
@@ -17,9 +17,9 @@ function greeting(h: number): string {
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const now = new Date();
-  const year = now.getFullYear();
-  const month0 = now.getMonth();
+  // Hora/fecha en zona España: en el servidor `new Date()` es UTC y, de noche,
+  // daría el saludo y el mes equivocados para el usuario.
+  const { year, month0, hour } = nowMadrid();
 
   const [{ data: profile }, { data: invData }, { data: extData }, { data: tripData }, { data: expData }, { count: clientCount }] =
     await Promise.all([
@@ -64,7 +64,12 @@ export default async function HomePage() {
   }).length;
   const pendingInvoices = (invData ?? []).filter((i) => !i.pagada).length;
 
-  const dateLabel = now.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  const dateLabel = new Intl.DateTimeFormat("es-ES", {
+    timeZone: "Europe/Madrid",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
 
   const tiles: { key: string; icon: IconName; label: string; note: string; color: string; href: string }[] = [
     { key: "stats", icon: "chart", label: "Estadísticas", note: `${eur(monthPoint.beneficio)} mes`, color: "var(--amber)", href: "/estadisticas" },
@@ -79,7 +84,7 @@ export default async function HomePage() {
     <div className="stagger pt-2">
       <header className="flex items-center gap-3 px-0.5 pb-4 pt-2">
         <div>
-          <div className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-dim">{greeting(now.getHours())}</div>
+          <div className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-dim">{greeting(hour)}</div>
           <h1 className="font-display text-2xl font-bold leading-none">{profile?.nombre || "Tu negocio"}</h1>
           <div className="mt-1 text-xs font-medium capitalize text-dim">{dateLabel}</div>
         </div>

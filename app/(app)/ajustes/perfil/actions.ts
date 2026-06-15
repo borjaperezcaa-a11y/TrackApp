@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { nowMadrid } from "@/lib/format";
 import { isValidNIFOrCIF, isValidIBAN } from "@/lib/validation/fiscal";
 
 const profileSchema = z.object({
@@ -63,14 +64,16 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
     .select("id", { count: "exact", head: true });
   const locked = (emittedCount ?? 0) > 0;
 
+  // Si está bloqueado, no se toca la numeración. Si no, se actualiza la serie
+  // siempre, pero el "suelo" num_inicial solo se fija cuando el usuario indica
+  // un número > 0: dejar el campo vacío PRESERVA el arranque ya guardado (antes
+  // lo borraba en silencio). El año se calcula en zona España para que coincida
+  // con extract(year from current_date) de Postgres al emitir.
   const numbering = locked
     ? {}
-    : {
-        serie,
-        num_inicial: d.num_inicial > 0 ? d.num_inicial : null,
-        num_inicial_anio: d.num_inicial > 0 ? new Date().getFullYear() : null,
-        num_inicial_serie: d.num_inicial > 0 ? serie : null,
-      };
+    : d.num_inicial > 0
+      ? { serie, num_inicial: d.num_inicial, num_inicial_anio: nowMadrid().year, num_inicial_serie: serie }
+      : { serie };
 
   const { error } = await supabase
     .from("profiles")

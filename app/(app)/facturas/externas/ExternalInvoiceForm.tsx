@@ -200,6 +200,15 @@ export function ExternalInvoiceForm({
       setError("Indica el número de la factura.");
       return;
     }
+    const baseNum = num(base);
+    if (!Number.isFinite(baseNum) || baseNum <= 0) {
+      setError("Indica la base imponible de la factura.");
+      return;
+    }
+    if (totalNum < 0) {
+      setError("El total es negativo: la retención de IRPF no puede superar a base + IVA.");
+      return;
+    }
     startSave(async () => {
       let archivoPath = values.archivo_path;
       if (file?.blob) {

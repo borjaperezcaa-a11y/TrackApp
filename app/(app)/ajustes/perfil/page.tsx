@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { createClient } from "@/lib/supabase/server";
+import { nowMadrid } from "@/lib/format";
 import { ProfileForm, type ProfileValues } from "./ProfileForm";
 
 export const metadata = { title: "Mis datos · TrackApp" };
@@ -18,7 +19,9 @@ export default async function PerfilPage() {
     .maybeSingle();
 
   const serie = (profile?.serie ?? "FACT").toUpperCase();
-  const year = new Date().getFullYear();
+  // Año en zona España: debe coincidir con extract(year from current_date) de
+  // Postgres al emitir, o el "suelo" de numeración no aplicaría en la frontera.
+  const year = nowMadrid().year;
 
   const { data: last } = await supabase
     .from("invoices")

@@ -97,3 +97,31 @@ export function dateISO(d: Date | string): string {
   const date = typeof d === "string" ? new Date(d) : d;
   return date.toISOString().slice(0, 10);
 }
+
+/**
+ * Fecha de HOY en zona España ("Europe/Madrid"), formato "YYYY-MM-DD".
+ * Imprescindible en Server Components/acciones: allí `new Date()` es UTC y, de
+ * noche, la fecha UTC ya es el día siguiente para España → fecha fiscal errónea.
+ */
+export function todayMadrid(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/** Partes de la fecha/hora actual en zona España (año, mes 0-11, día, hora 0-23). */
+export function nowMadrid(): { year: number; month0: number; day: number; hour: number } {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  return { year: get("year"), month0: get("month") - 1, day: get("day"), hour: get("hour") };
+}
