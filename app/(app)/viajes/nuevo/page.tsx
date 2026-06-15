@@ -22,6 +22,7 @@ export default async function NuevoViajePage() {
           client_id: "",
           origen: "",
           destino: "",
+          descripcion: "",
           km: "",
           importe: "",
         }}

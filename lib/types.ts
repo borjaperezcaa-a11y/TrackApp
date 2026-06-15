@@ -20,6 +20,7 @@ export type Trip = {
   client_id: string | null;
   origen: string | null;
   destino: string | null;
+  descripcion: string | null;
   km: number | null;
   importe: number;
   estado: TripEstado;
@@ -82,6 +83,7 @@ export type InvoiceLine = {
   fecha: string | null;
   origen: string | null;
   destino: string | null;
+  descripcion: string | null;
   cantidad: number;
   precio: number;
   importe: number;

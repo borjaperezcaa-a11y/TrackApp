@@ -14,6 +14,7 @@ type TripRow = {
   fecha: string;
   origen: string | null;
   destino: string | null;
+  descripcion: string | null;
   km: number | null;
   importe: number;
   estado: "pendiente" | "facturado";
@@ -23,7 +24,7 @@ export default async function ViajesPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("trips")
-    .select("id, fecha, origen, destino, km, importe, estado")
+    .select("id, fecha, origen, destino, descripcion, km, importe, estado")
     .order("fecha", { ascending: false });
   const trips = (data ?? []) as TripRow[];
 
@@ -49,6 +50,7 @@ export default async function ViajesPage() {
                 : t.origen || t.destino || "Viaje";
             const sub = [
               dateES(t.fecha),
+              t.descripcion || null,
               t.km != null ? `${amount(t.km).replace(",00", "")} km` : null,
               ek != null ? `${ek.toFixed(2).replace(".", ",")} €/km` : null,
               prof?.label,

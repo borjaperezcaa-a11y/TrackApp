@@ -32,6 +32,7 @@ export default async function EditarViajePage({ params }: { params: Promise<{ id
             {dateES(t.fecha)}
             {t.km != null ? ` · ${amount(t.km).replace(",00", "")} km` : ""}
           </div>
+          {t.descripcion && <div className="mt-1 text-[13px] font-medium">{t.descripcion}</div>}
           <div className="mt-3 font-display text-2xl font-bold text-amber tnum">{eur(t.importe)}</div>
         </Card>
         <p className="rounded-2xl border border-amber-line bg-amber-soft px-4 py-3 text-[12.5px] font-semibold text-amber">
@@ -62,6 +63,7 @@ export default async function EditarViajePage({ params }: { params: Promise<{ id
           client_id: t.client_id ?? "",
           origen: t.origen ?? "",
           destino: t.destino ?? "",
+          descripcion: t.descripcion ?? "",
           km: t.km != null ? String(t.km) : "",
           importe: String(t.importe),
         }}

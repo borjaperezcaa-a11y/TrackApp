@@ -10,6 +10,7 @@ const tripSchema = z.object({
   client_id: z.string().uuid("Selecciona un cliente"),
   origen: z.string().trim().max(160),
   destino: z.string().trim().max(160),
+  descripcion: z.string().trim().max(300),
   km: z.string().trim(),
   importe: z.string().trim(),
 });
@@ -44,6 +45,7 @@ function parseTrip(formData: FormData):
       client_id: d.client_id,
       origen: d.origen || null,
       destino: d.destino || null,
+      descripcion: d.descripcion || null,
       km,
       importe,
     },

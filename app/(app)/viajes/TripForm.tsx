@@ -11,6 +11,7 @@ export type TripValues = {
   client_id: string;
   origen: string;
   destino: string;
+  descripcion: string;
   km: string;
   importe: string;
 };
@@ -76,6 +77,10 @@ export function TripForm({
           <input id="destino" name="destino" defaultValue={values.destino} placeholder="Irún (20305)" />
         </Field>
       </div>
+
+      <Field label="Descripción de la carga" htmlFor="descripcion" hint="Peso, tonelaje, tipo de carga…">
+        <input id="descripcion" name="descripcion" defaultValue={values.descripcion} placeholder="24 t de fruta · carga completa" />
+      </Field>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Km" htmlFor="km">
