@@ -24,6 +24,8 @@ export default async function FacturasPage() {
   const { data } = await supabase
     .from("invoices")
     .select("id, numero, fecha, total, pagada, tipo, cliente_snapshot")
+    // pagada=false (pendientes) primero; dentro de cada grupo, las más recientes arriba.
+    .order("pagada", { ascending: true })
     .order("emitida_at", { ascending: false });
   const invoices = (data ?? []) as InvoiceRow[];
 

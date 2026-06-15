@@ -8,7 +8,10 @@ import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
 import { EXPENSE_CATEGORIES, type ExtractedExpense } from "@/lib/expense";
+import { round2 } from "@/lib/format";
 import type { ExpensePayload, ExpenseState } from "./actions";
+
+const IVA_OPTS = [21, 10, 4, 0];
 
 export type ExpenseValues = {
   categoria: string;
@@ -17,11 +20,8 @@ export type ExpenseValues = {
   base: string;
   iva: string;
   total: string;
-  trip_id: string;
   foto_path: string | null;
 };
-
-type TripOption = { id: string; label: string };
 
 function num(s: string): number {
   return Number(s.replace(/\./g, "").replace(",", "."));
@@ -73,13 +73,11 @@ function compressImage(file: File): Promise<Compressed> {
 export function ExpenseForm({
   userId,
   values,
-  trips,
   action,
   submitLabel,
 }: {
   userId: string;
   values: ExpenseValues;
-  trips: TripOption[];
   action: (payload: ExpensePayload) => Promise<ExpenseState>;
   submitLabel: string;
 }) {
@@ -93,7 +91,30 @@ export function ExpenseForm({
   const [base, setBase] = useState(values.base);
   const [iva, setIva] = useState(values.iva);
   const [total, setTotal] = useState(values.total);
-  const [tripId, setTripId] = useState(values.trip_id);
+  // Tipo de IVA: si al editar ya hay base+IVA, se infiere; si no, 21 por defecto.
+  const [ivaRate, setIvaRate] = useState<number>(() => {
+    const b = num(values.base);
+    const i = num(values.iva);
+    return b > 0 && Number.isFinite(i) ? Math.round((i / b) * 100) : 21;
+  });
+
+  // Calcula base e IVA a partir del total y el tipo (desglose hacia atrás).
+  function recalc(totalStr: string, rate: number) {
+    const t = num(totalStr);
+    if (!Number.isFinite(t) || t <= 0) return;
+    const b = round2(t / (1 + rate / 100));
+    setBase(String(b));
+    setIva(String(round2(t - b)));
+  }
+
+  function onTotalChange(v: string) {
+    setTotal(v);
+    recalc(v, ivaRate);
+  }
+  function onIvaRate(rate: number) {
+    setIvaRate(rate);
+    recalc(total, rate);
+  }
 
   const [photo, setPhoto] = useState<Compressed | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -103,8 +124,14 @@ export function ExpenseForm({
 
   function applyExtraction(d: ExtractedExpense) {
     if (d.total != null) setTotal(String(d.total));
-    if (d.base != null) setBase(String(d.base));
-    if (d.iva != null) setIva(String(d.iva));
+    const rate = d.iva_rate ?? ivaRate;
+    if (d.iva_rate != null) setIvaRate(d.iva_rate);
+    if (d.base != null || d.iva != null) {
+      if (d.base != null) setBase(String(d.base));
+      if (d.iva != null) setIva(String(d.iva));
+    } else if (d.total != null) {
+      recalc(String(d.total), rate); // sin desglose: lo calculamos del total
+    }
     if (d.fecha) setFecha(d.fecha);
     if (d.establecimiento) setEstacion(d.establecimiento);
     if (d.categoria && (EXPENSE_CATEGORIES as readonly string[]).includes(d.categoria)) {
@@ -169,7 +196,7 @@ export function ExpenseForm({
         base: optNum(base),
         iva: optNum(iva),
         total: totalNum,
-        trip_id: tripId || null,
+        trip_id: null,
         foto_path: fotoPath,
       };
       const res = await action(payload);
@@ -256,31 +283,36 @@ export function ExpenseForm({
           <input id="fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputSm} />
         </Field>
         <Field label="Total (€)" htmlFor="total">
-          <input id="total" type="number" step="0.01" min="0" inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="87.40" className={`${inputSm} font-display !text-xl`} />
+          <input id="total" type="number" step="0.01" min="0" inputMode="decimal" value={total} onChange={(e) => onTotalChange(e.target.value)} placeholder="87.40" className={`${inputSm} font-display !text-xl`} />
         </Field>
       </div>
 
+      <Field label="IVA" hint="La base y la cuota se calculan del total">
+        <div className="flex flex-wrap gap-2">
+          {IVA_OPTS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => onIvaRate(r)}
+              className={clsx(
+                "rounded-[13px] border-[1.5px] px-3.5 py-2 text-[13px] font-bold transition-all",
+                ivaRate === r ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
+              )}
+            >
+              {r}%
+            </button>
+          ))}
+        </div>
+      </Field>
+
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Base (€)" htmlFor="base" hint="Opcional">
+        <Field label="Base (€)" htmlFor="base" hint="Calculada · editable">
           <input id="base" type="number" step="0.01" min="0" inputMode="decimal" value={base} onChange={(e) => setBase(e.target.value)} placeholder="72.23" className={inputSm} />
         </Field>
-        <Field label="IVA (€)" htmlFor="iva" hint="Opcional">
+        <Field label="IVA (€)" htmlFor="iva" hint="Calculada · editable">
           <input id="iva" type="number" step="0.01" min="0" inputMode="decimal" value={iva} onChange={(e) => setIva(e.target.value)} placeholder="15.17" className={inputSm} />
         </Field>
       </div>
-
-      {trips.length > 0 && (
-        <Field label="Asignar a viaje" hint="Opcional · para calcular el €/km real">
-          <select value={tripId} onChange={(e) => setTripId(e.target.value)} className={inputSm}>
-            <option value="">Sin asignar</option>
-            {trips.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-      )}
 
       {error && (
         <p className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{error}</p>

@@ -193,23 +193,28 @@ body {
   }
 }
 
-/* inputs base coherentes con el mockup */
-input,
-textarea,
-select {
-  width: 100%;
-  background: var(--panel);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-field);
-  color: var(--text);
-  font-family: var(--body);
-  font-size: 17px;
-  font-weight: 600;
-  padding: 17px 18px;
-  outline: none;
-}
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: var(--amber);
+/* inputs base coherentes con el mockup.
+   En @layer base para que las utilidades de Tailwind (w-24, flex-1, px-3…)
+   puedan ajustarlos; si no, estos estilos sin capa ganarían a las utilidades
+   (p. ej. un <select> con w-24 se iría a width:100%). */
+@layer base {
+  input,
+  textarea,
+  select {
+    width: 100%;
+    background: var(--panel);
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-field);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 17px;
+    font-weight: 600;
+    padding: 17px 18px;
+    outline: none;
+  }
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--amber);
+  }
 }

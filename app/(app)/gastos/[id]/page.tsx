@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ConfirmDelete } from "@/components/ui/ConfirmDelete";
 import { createClient } from "@/lib/supabase/server";
-import { dateES } from "@/lib/format";
 import { ExpenseForm } from "../ExpenseForm";
 import { updateExpenseAction, deleteExpenseAction } from "../actions";
 
@@ -17,7 +16,6 @@ type ExpenseFull = {
   base: number | null;
   iva: number | null;
   total: number;
-  trip_id: string | null;
   foto_url: string | null;
 };
 
@@ -32,16 +30,6 @@ export default async function EditarGastoPage({ params }: { params: Promise<{ id
   const { data } = await supabase.from("expenses").select("*").eq("id", id).maybeSingle();
   if (!data) notFound();
   const e = data as ExpenseFull;
-
-  const { data: tripsData } = await supabase
-    .from("trips")
-    .select("id, fecha, origen, destino")
-    .order("fecha", { ascending: false })
-    .limit(50);
-  const trips = (tripsData ?? []).map((t) => ({
-    id: t.id,
-    label: `${dateES(t.fecha)} · ${t.origen ?? ""} → ${t.destino ?? ""}`.trim(),
-  }));
 
   // URL firmada para mostrar el ticket (bucket privado).
   let ticketUrl: string | null = null;
@@ -60,7 +48,6 @@ export default async function EditarGastoPage({ params }: { params: Promise<{ id
       )}
       <ExpenseForm
         userId={user.id}
-        trips={trips}
         action={updateExpenseAction.bind(null, id)}
         submitLabel="GUARDAR CAMBIOS"
         values={{
@@ -70,7 +57,6 @@ export default async function EditarGastoPage({ params }: { params: Promise<{ id
           base: e.base != null ? String(e.base) : "",
           iva: e.iva != null ? String(e.iva) : "",
           total: String(e.total),
-          trip_id: e.trip_id ?? "",
           foto_path: e.foto_url,
         }}
       />
