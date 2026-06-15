@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
   },
   // Security headers — TLS is enforced by Vercel; here we harden the responses.
   async headers() {
+    const isDev = process.env.NODE_ENV !== "production";
     const csp = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -20,12 +21,13 @@ const nextConfig: NextConfig = {
       "frame-ancestors 'none'",
       "form-action 'self'",
       "img-src 'self' data: blob: https://*.supabase.co",
-      // 'unsafe-inline' necesario para el script de tema y los scripts de
-      // arranque de Next (App Router). Migrar a nonce en una fase posterior.
-      "script-src 'self' 'unsafe-inline'",
+      // 'unsafe-inline' por el script de tema y los scripts de arranque de Next.
+      // En desarrollo Next requiere ADEMÁS 'unsafe-eval' (HMR/React Refresh);
+      // en producción se omite. Migrar a nonce en una fase posterior.
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co",
+      `connect-src 'self' https://*.supabase.co${isDev ? " ws: wss:" : ""}`,
       "worker-src 'self'",
       "manifest-src 'self'",
     ].join("; ");
