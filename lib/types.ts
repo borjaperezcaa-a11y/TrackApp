@@ -78,6 +78,23 @@ export type Invoice = {
   motivo: string | null;
 };
 
+/** Ingreso manual: lo apunta el usuario, no es factura Verifactu ni va a la AEAT. */
+export type Income = {
+  id: string;
+  user_id: string;
+  concepto: string | null;
+  cliente: string | null;
+  fecha: string | null;
+  base: number | null;
+  iva_rate: number | null;
+  iva: number | null;
+  total: number;
+  cobrada: boolean;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 /** Factura externa: emitida por la cooperativa en nombre del autónomo
  * (facturación por terceros). Ingreso suyo, registrado/archivado, fuera de
  * la cadena Verifactu. Numeración libre y editable. */

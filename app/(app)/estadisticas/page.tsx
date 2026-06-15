@@ -9,14 +9,16 @@ export const metadata = { title: "Estadísticas · TrackApp" };
 export default async function EstadisticasPage() {
   const supabase = await createClient();
 
-  const [{ data: invData }, { data: extData }, { data: tripData }, { data: expData }] = await Promise.all([
+  const [{ data: invData }, { data: extData }, { data: incData }, { data: tripData }, { data: expData }] = await Promise.all([
     supabase.from("invoices").select("fecha, base, total, cliente_snapshot"),
     supabase.from("external_invoices").select("fecha, base, total, cliente"),
+    supabase.from("incomes").select("fecha, base, total, concepto"),
     supabase.from("trips").select("fecha, km, importe, origen, destino, peso, peso_unidad"),
     supabase.from("expenses").select("fecha, categoria, total"),
   ]);
 
-  // Contabilidad total: ingresos propios (Verifactu) + facturas de cooperativa.
+  // Contabilidad total: ingresos de facturas (propias + externas) + ingresos
+  // manuales apuntados por el usuario.
   const invoices: SInvoice[] = [
     ...(invData ?? []).map((i) => ({
       fecha: i.fecha,
@@ -29,6 +31,12 @@ export default async function EstadisticasPage() {
       base: Number(e.base),
       total: Number(e.total),
       clientName: e.cliente ?? "Factura externa",
+    })),
+    ...(incData ?? []).map((i) => ({
+      fecha: i.fecha,
+      base: i.base != null ? Number(i.base) : Number(i.total),
+      total: Number(i.total),
+      clientName: i.concepto ?? "Ingreso",
     })),
   ];
   const trips: STrip[] = (tripData ?? []).map((t) => {

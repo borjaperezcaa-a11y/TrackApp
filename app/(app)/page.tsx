@@ -21,17 +21,19 @@ export default async function HomePage() {
   // daría el saludo y el mes equivocados para el usuario.
   const { year, month0, hour } = nowMadrid();
 
-  const [{ data: profile }, { data: invData }, { data: extData }, { data: tripData }, { data: expData }, { count: clientCount }] =
+  const [{ data: profile }, { data: invData }, { data: extData }, { data: incData }, { data: tripData }, { data: expData }, { count: clientCount }] =
     await Promise.all([
       supabase.from("profiles").select("nombre, nif").maybeSingle(),
       supabase.from("invoices").select("fecha, base, total, pagada, cliente_snapshot"),
       supabase.from("external_invoices").select("fecha, base, total, cobrada"),
+      supabase.from("incomes").select("fecha, base, total, concepto"),
       supabase.from("trips").select("fecha, km, importe, estado, origen, destino"),
       supabase.from("expenses").select("fecha, categoria, total"),
       supabase.from("clients").select("id", { count: "exact", head: true }),
     ]);
 
-  // Contabilidad total: ingresos propios (Verifactu) + facturas de cooperativa.
+  // Contabilidad total: ingresos de facturas (propias + externas) + ingresos
+  // manuales apuntados por el usuario.
   const invoices: SInvoice[] = [
     ...(invData ?? []).map((i) => ({
       fecha: i.fecha,
@@ -44,6 +46,12 @@ export default async function HomePage() {
       base: Number(e.base),
       total: Number(e.total),
       clientName: "Factura externa",
+    })),
+    ...(incData ?? []).map((i) => ({
+      fecha: i.fecha,
+      base: i.base != null ? Number(i.base) : Number(i.total),
+      total: Number(i.total),
+      clientName: i.concepto ?? "Ingreso",
     })),
   ];
   const expenses: SExpense[] = (expData ?? []).map((e) => ({
@@ -74,9 +82,10 @@ export default async function HomePage() {
   const tiles: { key: string; icon: IconName; label: string; note: string; color: string; href: string }[] = [
     { key: "stats", icon: "chart", label: "Estadísticas", note: `${eur(monthPoint.beneficio)} mes`, color: "var(--amber)", href: "/estadisticas" },
     { key: "viajes", icon: "truck", label: "Viajes", note: `${tripsThisMonth} este mes`, color: "var(--blue)", href: "/viajes" },
-    { key: "facturas", icon: "doc", label: "Facturas", note: `${pendingInvoices} pendientes`, color: "var(--amber)", href: "/facturas" },
+    { key: "facturas", icon: "doc", label: "Facturación", note: `${pendingInvoices} pendientes`, color: "var(--amber)", href: "/facturas" },
+    { key: "ingresos", icon: "income", label: "Ingresos", note: "Apunta a mano", color: "var(--green)", href: "/ingresos" },
     { key: "gastos", icon: "euro", label: "Gastos", note: monthPoint.gastos > 0 ? `${eur(monthPoint.gastos)} mes` : "Escanea un ticket", color: "var(--red)", href: "/gastos" },
-    { key: "clientes", icon: "user", label: "Clientes", note: `${clientCount ?? 0} en cartera`, color: "var(--green)", href: "/clientes" },
+    { key: "clientes", icon: "user", label: "Clientes", note: `${clientCount ?? 0} en cartera`, color: "var(--purple)", href: "/clientes" },
     { key: "ajustes", icon: "gear", label: "Mis datos", note: "Perfil emisor", color: "var(--dim)", href: "/ajustes/perfil" },
   ];
 

@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { eur, dateES } from "@/lib/format";
 import type { ClienteSnapshot } from "@/lib/types";
 
-export const metadata = { title: "Facturas · TrackApp" };
+export const metadata = { title: "Facturación · TrackApp" };
 
 type InvoiceRow = {
   id: string;
@@ -34,7 +34,7 @@ export default async function FacturasPage() {
 
   return (
     <>
-      <PageHeader title="Facturas" kicker="Emitidas" hideBack actionHref="/facturas/nueva" actionLabel="Nueva factura" />
+      <PageHeader title="Facturación" kicker="Emitidas" hideBack actionHref="/facturas/nueva" actionLabel="Nueva factura" />
 
       <Tabs />
 
