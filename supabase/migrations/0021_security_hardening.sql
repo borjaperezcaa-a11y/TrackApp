@@ -7,7 +7,7 @@
 --   2) allow_ai_scan exponía p_per_min/p_per_day y execute a authenticated: un
 --      cliente podía llamarlo directamente con límites altos. No era explotable
 --      (las rutas usan los valores por defecto), pero se clampan dentro del
---      cuerpo para que ninguna llamada pueda elevar el límite real (6/min,100/día).
+--      cuerpo para que ninguna llamada pueda elevar el límite real (6/min,10/día).
 -- ============================================================================
 
 -- ─── 1) WITH CHECK en las policies UPDATE de storage ────────────────────────
@@ -38,7 +38,7 @@ create policy facturas_update_own on storage.objects
 -- ─── 2) allow_ai_scan: clampar los límites dentro del cuerpo ─────────────────
 create or replace function public.allow_ai_scan(
   p_per_min int default 6,
-  p_per_day int default 100
+  p_per_day int default 10
 ) returns boolean
 language plpgsql
 security definer
@@ -49,8 +49,9 @@ declare
   v_min int;
   v_day int;
   -- Límites reales acotados: ninguna llamada (ni directa) puede elevarlos.
+  -- Fase de pruebas: 10 escaneos/día por usuario para controlar el coste de IA.
   v_cap_min int := least(greatest(coalesce(p_per_min, 6), 1), 6);
-  v_cap_day int := least(greatest(coalesce(p_per_day, 100), 1), 100);
+  v_cap_day int := least(greatest(coalesce(p_per_day, 10), 1), 10);
 begin
   if v_uid is null then
     return false;
