@@ -1,7 +1,6 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
 import { Badge } from "@/components/ui/Badge";
-import { Fab } from "@/components/ui/Fab";
 import { Icon } from "@/components/ui/Icon";
 import { createClient } from "@/lib/supabase/server";
 import { eurPerKm, profitability } from "@/lib/trip";
@@ -34,7 +33,7 @@ export default async function ViajesPage() {
 
   return (
     <>
-      <PageHeader title="Viajes" kicker="Rentabilidad" />
+      <PageHeader title="Viajes" kicker="Rentabilidad" hideBack actionHref="/viajes/nuevo" actionLabel="Nuevo viaje" />
 
       {trips.length === 0 ? (
         <div className="mt-10 text-center">
@@ -63,8 +62,6 @@ export default async function ViajesPage() {
           )}
         </div>
       )}
-
-      <Fab href="/viajes/nuevo" label="Nuevo viaje" />
     </>
   );
 }

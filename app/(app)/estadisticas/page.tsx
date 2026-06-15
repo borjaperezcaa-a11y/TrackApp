@@ -56,7 +56,7 @@ export default async function EstadisticasPage() {
 
   return (
     <>
-      <PageHeader title="Estadísticas" kicker="Periodo fiscal" />
+      <PageHeader title="Estadísticas" kicker="Periodo fiscal" hideBack />
       <PeriodStats
         invoices={invoices}
         trips={trips}

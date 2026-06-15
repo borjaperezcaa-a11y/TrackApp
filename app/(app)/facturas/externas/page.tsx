@@ -2,7 +2,6 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
 import { Badge } from "@/components/ui/Badge";
-import { Fab } from "@/components/ui/Fab";
 import { Icon } from "@/components/ui/Icon";
 import { createClient } from "@/lib/supabase/server";
 import { eur, dateES } from "@/lib/format";
@@ -32,7 +31,7 @@ export default async function FacturasExternasPage() {
 
   return (
     <>
-      <PageHeader title="Cooperativa" kicker="Facturas registradas" fallbackHref="/facturas" />
+      <PageHeader title="Cooperativa" kicker="Facturas registradas" fallbackHref="/facturas" actionHref="/facturas/externas/nueva" actionLabel="Registrar factura" />
 
       <Tabs />
 
@@ -66,8 +65,6 @@ export default async function FacturasExternasPage() {
           )}
         </div>
       )}
-
-      <Fab href="/facturas/externas/nueva" label="Registrar factura" />
     </>
   );
 }

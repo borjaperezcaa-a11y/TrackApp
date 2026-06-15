@@ -294,6 +294,7 @@ export function ExternalInvoiceForm({
               key={s}
               type="button"
               onClick={() => setFuente(s)}
+              aria-pressed={fuente === s}
               className={clsx(
                 "rounded-[13px] border-[1.5px] px-3.5 py-2 text-[13px] font-bold capitalize transition-all",
                 fuente === s ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
@@ -334,7 +335,7 @@ export function ExternalInvoiceForm({
       <Field label="IVA" hint="La cuota se calcula de la base · editable">
         <div className="flex flex-wrap gap-2">
           {IVA_OPTS.map((r) => (
-            <button key={r} type="button" onClick={() => onIvaRate(r)} className={chip(ivaRate === r)}>
+            <button key={r} type="button" onClick={() => onIvaRate(r)} aria-pressed={ivaRate === r} className={chip(ivaRate === r)}>
               {r}%
             </button>
           ))}
@@ -344,7 +345,7 @@ export function ExternalInvoiceForm({
       <Field label="Retención IRPF" hint="Transporte: 15% (o 7% nuevos autónomos). 0 si no aplica.">
         <div className="flex flex-wrap gap-2">
           {IRPF_OPTS.map((r) => (
-            <button key={r} type="button" onClick={() => onIrpfRate(r)} className={chip(irpfRate === r)}>
+            <button key={r} type="button" onClick={() => onIrpfRate(r)} aria-pressed={irpfRate === r} className={chip(irpfRate === r)}>
               {r}%
             </button>
           ))}
@@ -369,8 +370,8 @@ export function ExternalInvoiceForm({
       {/* Estado de cobro */}
       <Field label="Estado">
         <div className="flex gap-2">
-          <button type="button" onClick={() => setCobrada(false)} className={chip(!cobrada)}>Pendiente</button>
-          <button type="button" onClick={() => setCobrada(true)} className={chip(cobrada)}>Cobrada</button>
+          <button type="button" onClick={() => setCobrada(false)} aria-pressed={!cobrada} className={chip(!cobrada)}>Pendiente</button>
+          <button type="button" onClick={() => setCobrada(true)} aria-pressed={cobrada} className={chip(cobrada)}>Cobrada</button>
         </div>
       </Field>
 

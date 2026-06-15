@@ -217,4 +217,16 @@ body {
   select:focus {
     border-color: var(--amber);
   }
+
+  /* Foco visible para navegación con teclado (no aparece en toque/ratón).
+     Sigue el border-radius de cada elemento automáticamente. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
 }

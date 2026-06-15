@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { BottomNav } from "@/components/ui/BottomNav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -10,5 +11,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Defensa en profundidad: además del middleware, el server valida la sesión.
   if (!user) redirect("/login");
 
-  return <div className="shell">{children}</div>;
+  return (
+    <>
+      <main className="shell">{children}</main>
+      <BottomNav />
+    </>
+  );
 }

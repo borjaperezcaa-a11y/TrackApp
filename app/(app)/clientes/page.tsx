@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
-import { Fab } from "@/components/ui/Fab";
 import { createClient } from "@/lib/supabase/server";
 import type { Client } from "@/lib/types";
 
@@ -21,7 +20,7 @@ export default async function ClientesPage() {
 
   return (
     <>
-      <PageHeader title="Clientes" kicker="Tu cartera" />
+      <PageHeader title="Clientes" kicker="Tu cartera" actionHref="/clientes/nuevo" actionLabel="Nuevo cliente" />
 
       {clients.length === 0 ? (
         <div className="mt-10 text-center">
@@ -49,8 +48,6 @@ export default async function ClientesPage() {
           ))}
         </div>
       )}
-
-      <Fab href="/clientes/nuevo" label="Nuevo cliente" />
     </>
   );
 }

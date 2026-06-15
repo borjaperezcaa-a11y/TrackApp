@@ -1,6 +1,5 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
-import { Fab } from "@/components/ui/Fab";
 import { Icon } from "@/components/ui/Icon";
 import { createClient } from "@/lib/supabase/server";
 import { eur, dateES } from "@/lib/format";
@@ -25,7 +24,7 @@ export default async function GastosPage() {
 
   return (
     <>
-      <PageHeader title="Gastos" kicker="Registrados" />
+      <PageHeader title="Gastos" kicker="Registrados" hideBack actionHref="/gastos/nuevo" actionLabel="Nuevo gasto" />
 
       {expenses.length === 0 ? (
         <div className="mt-10 text-center">
@@ -48,8 +47,6 @@ export default async function GastosPage() {
           ))}
         </div>
       )}
-
-      <Fab href="/gastos/nuevo" label="Nuevo gasto" />
     </>
   );
 }

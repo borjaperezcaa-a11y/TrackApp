@@ -168,6 +168,7 @@ export function ProfileForm({
               key={v}
               type="button"
               onClick={() => setIva(v)}
+              aria-pressed={iva === v}
               className={clsx(
                 "rounded-[13px] border-[1.5px] px-4 py-2.5 text-sm font-bold transition-all",
                 iva === v

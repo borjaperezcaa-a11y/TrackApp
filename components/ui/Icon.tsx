@@ -18,6 +18,7 @@ export const ICON_PATHS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   fuel: '<path d="M3 22V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v18M3 22h11M3 10h11M16 8l3 3v7a2 2 0 0 0 4 0v-9l-4-4"/>',
   trash: '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>',
+  home: '<path d="M3 11l9-8 9 8M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/>',
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

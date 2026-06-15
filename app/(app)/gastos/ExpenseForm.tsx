@@ -263,6 +263,7 @@ export function ExpenseForm({
               key={c}
               type="button"
               onClick={() => setCategoria(c)}
+              aria-pressed={categoria === c}
               className={clsx(
                 "rounded-[13px] border-[1.5px] px-3.5 py-2 text-[13px] font-bold transition-all",
                 categoria === c ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
@@ -294,6 +295,7 @@ export function ExpenseForm({
               key={r}
               type="button"
               onClick={() => onIvaRate(r)}
+              aria-pressed={ivaRate === r}
               className={clsx(
                 "rounded-[13px] border-[1.5px] px-3.5 py-2 text-[13px] font-bold transition-all",
                 ivaRate === r ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
