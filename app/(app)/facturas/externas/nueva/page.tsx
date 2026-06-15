@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { todayMadrid } from "@/lib/format";
+import { serieFromNumero } from "@/lib/external-invoice";
 import { ExternalInvoiceForm } from "../ExternalInvoiceForm";
 import { createExternalInvoiceAction } from "../actions";
 
@@ -13,6 +14,14 @@ export default async function NuevaFacturaExternaPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  // Series ya conocidas (prefijo del número → nombre) para autorrellenar.
+  const { data: existing } = await supabase.from("external_invoices").select("numero, serie");
+  const knownSeries: Record<string, string> = {};
+  for (const r of existing ?? []) {
+    const pref = serieFromNumero(r.numero as string);
+    if (pref && r.serie) knownSeries[pref] = r.serie as string;
+  }
+
   return (
     <>
       <PageHeader title="Factura externa" kicker="Registrar" fallbackHref="/facturas/externas" />
@@ -20,8 +29,9 @@ export default async function NuevaFacturaExternaPage() {
         userId={user.id}
         action={createExternalInvoiceAction}
         submitLabel="GUARDAR FACTURA"
+        knownSeries={knownSeries}
         values={{
-          fuente: "cooperativa",
+          serie: "",
           numero: "",
           fecha: todayMadrid(),
           cliente: "",

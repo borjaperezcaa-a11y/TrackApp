@@ -45,7 +45,7 @@ export default async function EditarFacturaExternaPage({ params }: { params: Pro
         action={updateExternalInvoiceAction.bind(null, id)}
         submitLabel="GUARDAR CAMBIOS"
         values={{
-          fuente: f.fuente,
+          serie: f.serie ?? "",
           numero: f.numero,
           fecha: f.fecha,
           cliente: f.cliente ?? "",

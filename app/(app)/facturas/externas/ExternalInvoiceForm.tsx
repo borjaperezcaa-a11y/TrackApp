@@ -8,14 +8,14 @@ import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
 import { round2, eur, parseDecimal } from "@/lib/format";
-import { EXTERNAL_SOURCES, type ExtractedInvoice } from "@/lib/external-invoice";
+import { serieFromNumero, type ExtractedInvoice } from "@/lib/external-invoice";
 import type { ExternalInvoicePayload, ExternalInvoiceState } from "./actions";
 
 const IVA_OPTS = [21, 10, 4, 0];
 const IRPF_OPTS = [0, 1, 7, 15];
 
 export type ExternalInvoiceValues = {
-  fuente: string;
+  serie: string;
   numero: string;
   fecha: string;
   cliente: string;
@@ -80,18 +80,37 @@ export function ExternalInvoiceForm({
   values,
   action,
   submitLabel,
+  knownSeries = {},
 }: {
   userId: string;
   values: ExternalInvoiceValues;
   action: (payload: ExternalInvoicePayload) => Promise<ExternalInvoiceState>;
   submitLabel: string;
+  knownSeries?: Record<string, string>;
 }) {
   const router = useRouter();
   const [saving, startSave] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [fuente, setFuente] = useState(values.fuente || "cooperativa");
+  const [serie, setSerie] = useState(values.serie);
+  // Mientras el usuario no toque la serie a mano, se autorrellena del número.
+  const [serieAuto, setSerieAuto] = useState(values.serie.trim() === "");
   const [numero, setNumero] = useState(values.numero);
+
+  // Detecta la serie del número y, si ya tiene nombre conocido, lo reutiliza.
+  function detectSerie(numeroVal: string) {
+    if (!serieAuto) return;
+    const pref = serieFromNumero(numeroVal);
+    setSerie(pref ? knownSeries[pref] ?? pref : "");
+  }
+  function onNumero(v: string) {
+    setNumero(v);
+    detectSerie(v);
+  }
+  function onSerie(v: string) {
+    setSerie(v);
+    setSerieAuto(false); // el usuario toma el control del nombre de serie
+  }
   const [fecha, setFecha] = useState(values.fecha);
   const [cliente, setCliente] = useState(values.cliente);
   const [clienteNif, setClienteNif] = useState(values.cliente_nif);
@@ -140,7 +159,10 @@ export function ExternalInvoiceForm({
   const fileRef = useRef<HTMLInputElement>(null);
 
   function applyExtraction(d: ExtractedInvoice) {
-    if (d.numero) setNumero(d.numero);
+    if (d.numero) {
+      setNumero(d.numero);
+      detectSerie(d.numero);
+    }
     if (d.fecha) setFecha(d.fecha);
     if (d.cliente) setCliente(d.cliente);
     if (d.cliente_nif) setClienteNif(d.cliente_nif);
@@ -200,6 +222,10 @@ export function ExternalInvoiceForm({
       setError("Indica el número de la factura.");
       return;
     }
+    if (serie.trim() === "") {
+      setError("Indica la serie (nombre) de la factura.");
+      return;
+    }
     const baseNum = num(base);
     if (!Number.isFinite(baseNum) || baseNum <= 0) {
       setError("Indica la base imponible de la factura.");
@@ -224,7 +250,7 @@ export function ExternalInvoiceForm({
         archivoPath = path;
       }
       const payload: ExternalInvoicePayload = {
-        fuente: fuente as ExternalInvoicePayload["fuente"],
+        serie: serie.trim(),
         numero: numero.trim(),
         fecha,
         cliente: cliente.trim() || null,
@@ -293,34 +319,18 @@ export function ExternalInvoiceForm({
         )}
       </Card>
 
-      {/* Origen */}
-      <Field label="Origen de la factura">
-        <div className="flex flex-wrap gap-2">
-          {EXTERNAL_SOURCES.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setFuente(s)}
-              aria-pressed={fuente === s}
-              className={clsx(
-                "rounded-[13px] border-[1.5px] px-3.5 py-2 text-[13px] font-bold capitalize transition-all",
-                fuente === s ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
-              )}
-            >
-              {s === "cooperativa" ? "Cooperativa" : "Otra"}
-            </button>
-          ))}
-        </div>
-      </Field>
-
       <div className="grid grid-cols-2 gap-3">
         <Field label="Nº factura" htmlFor="numero">
-          <input id="numero" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="COOP/25-1234" className={inputSm} />
+          <input id="numero" value={numero} onChange={(e) => onNumero(e.target.value)} placeholder="COOP/25-1234" className={inputSm} />
         </Field>
         <Field label="Fecha" htmlFor="fecha">
           <input id="fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputSm} />
         </Field>
       </div>
+
+      <Field label="Serie" htmlFor="serie" hint="Nombre para saber de quién es. Se detecta del número; puedes cambiarlo.">
+        <input id="serie" value={serie} onChange={(e) => onSerie(e.target.value)} placeholder="Cooperativa Levante" className={inputSm} />
+      </Field>
 
       <Field label="Cliente final" htmlFor="cliente" hint="El destinatario de la factura (no la cooperativa)">
         <input id="cliente" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Transportes Ejemplo S.L." className={inputSm} />

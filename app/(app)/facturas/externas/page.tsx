@@ -16,18 +16,27 @@ type ExtRow = {
   total: number;
   cobrada: boolean;
   cliente: string | null;
+  serie: string | null;
 };
 
 export default async function FacturasExternasPage() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("external_invoices")
-    .select("id, numero, fecha, total, cobrada, cliente");
-  // Orden natural por serie/número: el número libre incluye la serie (p. ej.
-  // COOP/25-1234). Un orden de texto pondría "...-10" antes que "...-2"; el
-  // colador con numeric:true entiende los números dentro del texto.
+    .select("id, numero, fecha, total, cobrada, cliente, serie");
+  const rows = (data ?? []) as ExtRow[];
+
+  // Agrupar por serie (con su nombre de cabecera) y, dentro, orden natural por
+  // número: "...-2" antes que "...-10" (numeric:true entiende los dígitos).
   const collator = new Intl.Collator("es", { numeric: true, sensitivity: "base" });
-  const rows = ((data ?? []) as ExtRow[]).sort((a, b) => collator.compare(a.numero, b.numero));
+  const grupos = new Map<string, ExtRow[]>();
+  for (const r of rows) {
+    const k = r.serie?.trim() || "Sin serie";
+    (grupos.get(k) ?? grupos.set(k, []).get(k)!).push(r);
+  }
+  const series = [...grupos.entries()]
+    .map(([nombre, items]) => ({ nombre, items: items.sort((a, b) => collator.compare(a.numero, b.numero)) }))
+    .sort((a, b) => collator.compare(a.nombre, b.nombre));
 
   return (
     <>
@@ -49,13 +58,22 @@ export default async function FacturasExternasPage() {
         </div>
       ) : (
         <div className="stagger">
-          {rows.map((r) => (
-            <ExternalRow key={r.id} r={r} />
+          {series.map((g) => (
+            <div key={g.nombre}>
+              <SectionLabel>{g.nombre}</SectionLabel>
+              {g.items.map((r) => (
+                <ExternalRow key={r.id} r={r} />
+              ))}
+            </div>
           ))}
         </div>
       )}
     </>
   );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <div className="mx-1 mb-2 mt-[18px] text-xs font-bold uppercase tracking-[0.16em] text-dim">{children}</div>;
 }
 
 function ExternalRow({ r }: { r: ExtRow }) {

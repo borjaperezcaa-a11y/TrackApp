@@ -5,10 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { logEvent } from "@/lib/events";
-import { EXTERNAL_SOURCES } from "@/lib/external-invoice";
 
 const schema = z.object({
-  fuente: z.enum([...EXTERNAL_SOURCES] as [string, ...string[]]),
+  serie: z.string().trim().min(1, "Indica la serie de la factura").max(80),
   numero: z.string().trim().min(1, "Indica el número de la factura").max(60),
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha no válida"),
   cliente: z.string().trim().max(160).nullable(),
@@ -31,7 +30,7 @@ export type ExternalInvoiceState = { error?: string };
 function toRow(d: ExternalInvoicePayload, userId: string) {
   return {
     user_id: userId,
-    fuente: d.fuente,
+    serie: d.serie,
     numero: d.numero,
     fecha: d.fecha,
     cliente: d.cliente || null,
@@ -76,7 +75,7 @@ export async function createExternalInvoiceAction(
   if (error) return { error: "No se pudo guardar la factura." };
 
   await logEvent(supabase, "factura_externa_registrada", {
-    detalle: { numero: parsed.data.numero, total: parsed.data.total, fuente: parsed.data.fuente },
+    detalle: { numero: parsed.data.numero, total: parsed.data.total, serie: parsed.data.serie },
     entidad: "factura_externa",
     entidadId: inserted?.id as string | undefined,
   });

@@ -84,7 +84,8 @@ export type Invoice = {
 export type ExternalInvoice = {
   id: string;
   user_id: string;
-  fuente: "cooperativa" | "otra";
+  fuente: "cooperativa" | "otra"; // legado: ya no se usa en la app (ver `serie`)
+  serie: string | null; // nombre de la serie dado por el usuario
   numero: string;
   fecha: string;
   cliente: string | null;
