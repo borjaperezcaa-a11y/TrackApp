@@ -135,6 +135,56 @@ export async function emitRectificativaAction(
   return { invoiceId: inv.id as string };
 }
 
+const corrLineSchema = z.object({
+  cantidad: z.number().min(0).max(1_000_000),
+  precio: z.number().min(0).max(10_000_000),
+});
+
+export async function emitRectificativaDifAction(
+  originalId: string,
+  lines: { cantidad: number; precio: number }[],
+  motivo: string,
+): Promise<EmitResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  if (!z.string().uuid().safeParse(originalId).success) return { error: "Factura no válida." };
+  const parsedLines = z.array(corrLineSchema).min(1).max(500).safeParse(lines);
+  if (!parsedLines.success) return { error: "Importes no válidos." };
+
+  const { data, error } = await supabase.rpc("emit_rectificativa_dif", {
+    p_original_id: originalId,
+    p_lines: parsedLines.data,
+    p_motivo: motivo?.trim().slice(0, 300) || null,
+  });
+
+  if (error) {
+    const known = [
+      "No autenticado",
+      "Perfil no encontrado",
+      "Factura no encontrada",
+      "Solo se pueden rectificar",
+      "Esta factura ya tiene una rectificativa",
+      "Las líneas corregidas no cuadran",
+      "No hay cambios de importe",
+    ];
+    const msg = error.message ?? "";
+    if (known.some((k) => msg.includes(k))) return { error: msg };
+    console.error("[emitRectificativaDif] error:", error.code, error.message);
+    return { error: "No se pudo emitir la rectificativa. Inténtalo de nuevo." };
+  }
+
+  const inv = Array.isArray(data) ? data[0] : data;
+  if (!inv?.id) return { error: "No se pudo crear la rectificativa." };
+
+  revalidatePath("/facturas");
+  revalidatePath("/");
+  return { invoiceId: inv.id as string };
+}
+
 export async function togglePaidAction(id: string, pagada: boolean): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {

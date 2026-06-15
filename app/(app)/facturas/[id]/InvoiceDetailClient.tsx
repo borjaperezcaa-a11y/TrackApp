@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
 import { eur, amount, dateES } from "@/lib/format";
+import { computeInvoiceTotals } from "@/lib/invoice";
 import { verifyInvoice, type HuellaInput } from "@/lib/verifactu";
 import type { Invoice, InvoiceLine } from "@/lib/types";
-import { togglePaidAction, emitRectificativaAction } from "../actions";
+import { togglePaidAction, emitRectificativaAction, emitRectificativaDifAction } from "../actions";
 
 type Ref = { id: string; numero: string } | null;
 
@@ -37,13 +38,21 @@ export function InvoiceDetailClient({
   const [pending, startTransition] = useTransition();
   const [pdfBusy, setPdfBusy] = useState(false);
 
-  // Flujo de rectificativa (anulación)
-  const [rectOpen, setRectOpen] = useState(false);
+  // Flujo de rectificativa
+  const [rectMode, setRectMode] = useState<null | "menu" | "corregir" | "anular">(null);
   const [motivo, setMotivo] = useState("");
+  const [precios, setPrecios] = useState<string[]>(() => lines.map((l) => String(Number(l.precio))));
   const [rectBusy, rectStart] = useTransition();
   const [rectError, setRectError] = useState<string | null>(null);
 
-  function emitirRectificativa() {
+  function resetRect() {
+    setRectMode(null);
+    setRectError(null);
+    setMotivo("");
+    setPrecios(lines.map((l) => String(Number(l.precio))));
+  }
+
+  function anular() {
     setRectError(null);
     rectStart(async () => {
       const res = await emitRectificativaAction(invoice.id, motivo);
@@ -51,6 +60,27 @@ export function InvoiceDetailClient({
       else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
     });
   }
+
+  function corregir() {
+    setRectError(null);
+    const corrLines = lines.map((l, i) => ({
+      cantidad: Number(l.cantidad) || 0,
+      precio: Number(precios[i]) || 0,
+    }));
+    rectStart(async () => {
+      const res = await emitRectificativaDifAction(invoice.id, corrLines, motivo);
+      if (res.error) setRectError(res.error);
+      else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
+    });
+  }
+
+  // Totales corregidos (previsualización de la rectificativa por diferencias)
+  const corrected = computeInvoiceTotals(
+    lines.map((l, i) => ({ cantidad: Number(l.cantidad) || 0, precio: Number(precios[i]) || 0 })),
+    Number(invoice.iva_rate),
+    Number(invoice.irpf_rate),
+  );
+  const diffTotal = corrected.total - Number(invoice.total);
 
   // QR (carga diferida de qrcode)
   useEffect(() => {
@@ -253,30 +283,133 @@ export function InvoiceDetailClient({
         {pagada ? "Marcar como pendiente" : "Marcar como cobrada"}
       </button>
 
-      {/* Rectificativa: solo en facturas normales no anuladas */}
+      {/* Rectificativa: solo en facturas normales no rectificadas */}
       {!esRectificativa && !annulledBy && (
         <div className="mt-6 border-t border-line pt-4">
-          {!rectOpen ? (
+          {rectMode === null && (
             <>
               <button
                 type="button"
-                onClick={() => setRectOpen(true)}
-                className="w-full rounded-[18px] border border-red/40 bg-red-soft py-4 text-sm font-bold text-red transition-transform active:scale-[0.97]"
+                onClick={() => setRectMode("menu")}
+                className="w-full rounded-[18px] border border-amber-line bg-amber-soft py-4 text-sm font-bold text-amber transition-transform active:scale-[0.97]"
               >
-                Rectificar / anular esta factura
+                Rectificar esta factura
               </button>
               <p className="mt-2 px-1 text-center text-[11.5px] text-dim">
-                Una factura emitida no se edita ni se borra. Se emite una rectificativa que la anula
-                (importes en negativo) y libera sus viajes para volver a facturar.
+                Una factura emitida no se edita ni se borra: se corrige con una factura rectificativa
+                que la referencia y se encadena con su huella.
               </p>
             </>
-          ) : (
+          )}
+
+          {rectMode === "menu" && (
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => setRectMode("corregir")}
+                className="w-full rounded-[16px] border border-line bg-panel px-4 py-3.5 text-left"
+              >
+                <div className="text-sm font-bold">Corregir importe (por diferencias)</div>
+                <div className="mt-0.5 text-[12px] text-dim">
+                  Ajusta el precio; se emite una rectificativa solo por la diferencia. La original
+                  sigue válida.
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRectMode("anular")}
+                className="w-full rounded-[16px] border border-line bg-panel px-4 py-3.5 text-left"
+              >
+                <div className="text-sm font-bold text-red">Anular la factura</div>
+                <div className="mt-0.5 text-[12px] text-dim">
+                  Rectificativa que la deja a cero (importes en negativo) y libera sus viajes para
+                  volver a facturar.
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={resetRect}
+                className="w-full rounded-[16px] border border-line bg-panel py-3 text-sm font-bold text-dim"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+
+          {rectMode === "corregir" && (
             <div>
-              <p className="mb-2 text-sm font-bold">Emitir rectificativa de anulación</p>
+              <p className="mb-2 text-sm font-bold">Corregir importe</p>
+              <div className="space-y-2">
+                {lines.map((ln, i) => (
+                  <div key={ln.id} className="flex items-center gap-2 text-[13px]">
+                    <div className="min-w-0 flex-1 truncate">
+                      {ln.origen} → {ln.destino}
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      inputMode="decimal"
+                      value={precios[i]}
+                      onChange={(e) =>
+                        setPrecios((p) => p.map((v, idx) => (idx === i ? e.target.value : v)))
+                      }
+                      className="w-28 rounded-lg border-[1.5px] border-line bg-panel px-2.5 py-2 text-right font-display text-base outline-none focus:border-amber"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <Card soft className="my-3">
+                <Line label="Total original" value={eur(Number(invoice.total))} muted />
+                <Line label="Total corregido" value={eur(corrected.total)} />
+                <div className="mt-1.5 flex items-center justify-between border-t border-dashed border-line pt-2 font-bold">
+                  <span>Diferencia (rectificativa)</span>
+                  <b className={clsx("font-display tnum", diffTotal < 0 ? "text-red" : "text-green")}>
+                    {diffTotal >= 0 ? "+" : ""}
+                    {eur(diffTotal)}
+                  </b>
+                </div>
+              </Card>
+
               <textarea
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Motivo (opcional): error en importe, datos del cliente…"
+                placeholder="Motivo (opcional): error en el precio del porte…"
+                className="min-h-[60px] w-full rounded-xl border-[1.5px] border-line bg-panel px-3.5 py-3 text-sm font-medium outline-none focus:border-amber"
+              />
+              {rectError && (
+                <p className="mt-2 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
+                  {rectError}
+                </p>
+              )}
+              <div className="mt-2.5 flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={resetRect}
+                  className="flex-1 rounded-[18px] border border-line bg-panel py-4 text-sm font-bold text-text"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={corregir}
+                  disabled={rectBusy || diffTotal === 0}
+                  className="flex-1 rounded-[18px] bg-amber py-4 text-sm font-extrabold text-[#1a1205] transition-transform active:scale-[0.97] disabled:opacity-60"
+                >
+                  {rectBusy ? "Emitiendo…" : "Emitir rectificativa"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {rectMode === "anular" && (
+            <div>
+              <p className="mb-2 text-sm font-bold">Anular la factura</p>
+              <textarea
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Motivo (opcional): factura emitida por error, cliente incorrecto…"
                 className="min-h-[70px] w-full rounded-xl border-[1.5px] border-line bg-panel px-3.5 py-3 text-sm font-medium outline-none focus:border-amber"
               />
               {rectError && (
@@ -287,18 +420,18 @@ export function InvoiceDetailClient({
               <div className="mt-2.5 flex gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setRectOpen(false)}
+                  onClick={resetRect}
                   className="flex-1 rounded-[18px] border border-line bg-panel py-4 text-sm font-bold text-text"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  onClick={emitirRectificativa}
+                  onClick={anular}
                   disabled={rectBusy}
                   className="flex-1 rounded-[18px] bg-red py-4 text-sm font-extrabold text-white transition-transform active:scale-[0.97] disabled:opacity-60"
                 >
-                  {rectBusy ? "Emitiendo…" : "Emitir rectificativa"}
+                  {rectBusy ? "Anulando…" : "Emitir anulación"}
                 </button>
               </div>
             </div>
