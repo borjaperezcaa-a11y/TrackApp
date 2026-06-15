@@ -20,13 +20,14 @@ type ExtRow = {
 
 export default async function FacturasExternasPage() {
   const supabase = await createClient();
-  // Ordenadas por serie: el número libre incluye la serie (p. ej. COOP/25-1234),
-  // así que ordenar por `numero` agrupa cada serie y la deja correlativa.
   const { data, error } = await supabase
     .from("external_invoices")
-    .select("id, numero, fecha, total, cobrada, cliente")
-    .order("numero", { ascending: true });
-  const rows = (data ?? []) as ExtRow[];
+    .select("id, numero, fecha, total, cobrada, cliente");
+  // Orden natural por serie/número: el número libre incluye la serie (p. ej.
+  // COOP/25-1234). Un orden de texto pondría "...-10" antes que "...-2"; el
+  // colador con numeric:true entiende los números dentro del texto.
+  const collator = new Intl.Collator("es", { numeric: true, sensitivity: "base" });
+  const rows = ((data ?? []) as ExtRow[]).sort((a, b) => collator.compare(a.numero, b.numero));
 
   return (
     <>
