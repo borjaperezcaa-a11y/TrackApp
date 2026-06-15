@@ -7,7 +7,7 @@ import { isPwnedPassword } from "@/lib/validation/pwned";
 
 const credsSchema = z.object({
   email: z.string().email("Email no válido"),
-  password: z.string().min(6, "Mínimo 6 caracteres"),
+  password: z.string().min(8, "Mínimo 8 caracteres").max(200),
 });
 
 export type AuthState = { error?: string; message?: string };
@@ -64,11 +64,13 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
     ...parsed.data,
     options: { emailRedirectTo: `${siteUrl}/auth/callback` },
   });
+  // Mensaje neutro: no revelamos si el email ya existía (anti-enumeración).
   if (error) {
-    return { error: "No se pudo crear la cuenta. ¿Ya existe?" };
+    return { error: "No se pudo completar el registro. Inténtalo de nuevo en un momento." };
   }
 
   return {
-    message: "Cuenta creada. Revisa tu correo para confirmar el email y luego inicia sesión.",
+    message:
+      "Si los datos son correctos, te hemos enviado un correo para confirmar la cuenta. Luego inicia sesión.",
   };
 }

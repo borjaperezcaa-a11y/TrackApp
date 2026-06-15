@@ -18,9 +18,12 @@ function isPublic(pathname: string) {
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  // Sin Supabase configurado, no autenticamos (permite previsualizar la UI
-  // pública sin backend). Las páginas privadas seguirán necesitando sesión.
+  // Sin Supabase configurado: en DESARROLLO permite previsualizar la UI pública
+  // sin backend; en PRODUCCIÓN falla cerrado (no debe desplegarse sin claves).
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Supabase no configurado: faltan NEXT_PUBLIC_SUPABASE_URL/ANON_KEY");
+    }
     return response;
   }
 

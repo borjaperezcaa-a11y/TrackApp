@@ -56,6 +56,14 @@ export function ProfileForm({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadError(null);
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setUploadError("Formato no válido. Usa PNG, JPG o WebP.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("El logo supera los 2 MB.");
+      return;
+    }
     setUploading(true);
     try {
       const supabase = createClient();
@@ -121,7 +129,7 @@ export function ProfileForm({
         <input
           ref={fileRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          accept="image/png,image/jpeg,image/webp"
           onChange={onLogoChange}
           className="hidden"
         />

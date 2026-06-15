@@ -53,6 +53,15 @@ export default async function PerfilPage() {
         emitir.
       </p>
       <ProfileForm userId={user.id} values={values} nextNumero={nextNumero} />
+
+      <form action="/auth/signout" method="post" className="mt-6">
+        <button
+          type="submit"
+          className="w-full rounded-[18px] border border-line bg-panel py-4 text-sm font-bold text-dim transition-transform active:scale-[0.98]"
+        >
+          Cerrar sesión
+        </button>
+      </form>
     </>
   );
 }

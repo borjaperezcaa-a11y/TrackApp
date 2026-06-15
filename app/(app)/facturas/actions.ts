@@ -67,8 +67,21 @@ export async function emitInvoiceAction(payload: EmitPayload): Promise<EmitResul
   });
 
   if (error) {
-    // La función devuelve mensajes claros en español (viaje no válido, etc.).
-    return { error: error.message || "No se pudo emitir la factura." };
+    // Solo se muestran al cliente los mensajes controlados de la función (en
+    // español). Cualquier otro error de BD se registra y se devuelve genérico
+    // (no filtrar detalles internos del esquema).
+    const known = [
+      "No autenticado",
+      "Perfil no encontrado",
+      "No hay viajes seleccionados",
+      "Cliente no válido",
+      "Algún viaje no es válido",
+      "Completa tus datos de emisor",
+    ];
+    const msg = error.message ?? "";
+    if (known.some((k) => msg.includes(k))) return { error: msg };
+    console.error("[emitInvoice] error:", error.code, error.message);
+    return { error: "No se pudo emitir la factura. Inténtalo de nuevo." };
   }
 
   const invoice = Array.isArray(data) ? data[0] : data;

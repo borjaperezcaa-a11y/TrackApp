@@ -16,6 +16,7 @@ export async function isPwnedPassword(password: string): Promise<boolean> {
     const suffix = hash.slice(5);
     const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
       headers: { "Add-Padding": "true" },
+      signal: AbortSignal.timeout(2500), // no bloquear el registro si HIBP va lento
     });
     if (!res.ok) return false;
     const text = await res.text();

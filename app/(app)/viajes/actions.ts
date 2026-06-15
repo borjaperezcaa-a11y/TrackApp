@@ -85,6 +85,7 @@ export async function updateTripAction(
     .from("trips")
     .select("estado")
     .eq("id", id)
+    .eq("user_id", user.id)
     .maybeSingle();
   if (!existing) return { error: "Viaje no encontrado." };
   if (existing.estado === "facturado") {
@@ -116,6 +117,7 @@ export async function deleteTripAction(
     .from("trips")
     .select("estado")
     .eq("id", id)
+    .eq("user_id", user.id)
     .maybeSingle();
   if (!existing) return { error: "Viaje no encontrado." };
   if (existing.estado === "facturado") {

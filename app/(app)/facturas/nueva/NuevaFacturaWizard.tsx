@@ -94,7 +94,7 @@ export function NuevaFacturaWizard({
   const client = clients.find((c) => c.id === clientId);
 
   // Datos editables del emisor y del cliente (overrides del snapshot).
-  const [emisor, setEmisor] = useState({
+  const [emisor] = useState({
     nombre: profile.nombre,
     nif: profile.nif,
     direccion: profile.direccion,
@@ -297,33 +297,34 @@ export function NuevaFacturaWizard({
         ))}
       </div>
 
-      {/* Emisor / Cliente editables */}
+      {/* Emisor / Cliente (solo lectura: la identidad fiscal se ancla en el
+          servidor desde tu perfil y la ficha del cliente, no es editable aquí
+          por seguridad/integridad de la factura). */}
       <details className="mt-3 rounded-2xl border border-line bg-panel p-4">
-        <summary className="cursor-pointer text-sm font-bold">Datos del emisor (editable)</summary>
-        <div className="mt-3 space-y-2">
-          {(["nombre", "nif", "direccion", "cp_localidad", "iban"] as const).map((k) => (
-            <input
-              key={k}
-              value={emisor[k]}
-              onChange={(e) => setEmisor((s) => ({ ...s, [k]: e.target.value }))}
-              placeholder={k}
-              className={inputSm}
-            />
-          ))}
-        </div>
-      </details>
-      <details className="mt-2.5 rounded-2xl border border-line bg-panel p-4">
-        <summary className="cursor-pointer text-sm font-bold">Datos del cliente (editable)</summary>
-        <div className="mt-3 space-y-2">
-          {(["nombre", "nif", "direccion", "cp_localidad", "condiciones_pago"] as const).map((k) => (
-            <input
-              key={k}
-              value={cliente[k]}
-              onChange={(e) => setCliente((s) => ({ ...s, [k]: e.target.value }))}
-              placeholder={k}
-              className={inputSm}
-            />
-          ))}
+        <summary className="cursor-pointer text-sm font-bold">Emisor y cliente</summary>
+        <div className="mt-3 space-y-3 text-[13px]">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-dim">Emisor</div>
+            <div className="font-semibold">{emisor.nombre || "—"}</div>
+            <div className="text-dim">
+              {[emisor.nif, emisor.cp_localidad].filter(Boolean).join(" · ")}
+            </div>
+            <Link href="/ajustes/perfil" className="text-xs font-bold text-amber">
+              Editar en Mis datos ›
+            </Link>
+          </div>
+          <div className="border-t border-line pt-2.5">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-dim">Cliente</div>
+            <div className="font-semibold">{cliente.nombre || "—"}</div>
+            <div className="text-dim">
+              {[cliente.nif, cliente.cp_localidad].filter(Boolean).join(" · ")}
+            </div>
+            {clientId && (
+              <Link href={`/clientes/${clientId}`} className="text-xs font-bold text-amber">
+                Editar ficha del cliente ›
+              </Link>
+            )}
+          </div>
         </div>
       </details>
 

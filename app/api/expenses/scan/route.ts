@@ -51,7 +51,7 @@ Reglas:
 - Si un dato no es legible, ponlo a null. confianza refleja lo seguro que estás (0 a 1).`;
 
 const BodySchema = z.object({
-  imageBase64: z.string().min(10).max(11_000_000),
+  imageBase64: z.string().min(10).max(7_000_000), // ~5 MB binario
   mediaType: z.enum(["image/png", "image/jpeg", "image/webp"]),
 });
 
@@ -74,6 +74,15 @@ export async function POST(request: Request) {
     body = BodySchema.parse(await request.json());
   } catch {
     return Response.json({ error: "Imagen no válida" }, { status: 400 });
+  }
+
+  // Límite de uso por usuario (anti-abuso / coste de la API de IA).
+  const { data: allowed, error: rlError } = await supabase.rpc("allow_ai_scan", {});
+  if (rlError || allowed === false) {
+    return Response.json(
+      { error: "Has hecho demasiados escaneos seguidos. Espera un momento e inténtalo de nuevo." },
+      { status: 429 },
+    );
   }
 
   try {

@@ -7,7 +7,10 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  // Solo se permiten rutas internas: empieza por "/" pero no por "//" ni "/\"
+  // (evita open redirect a dominios externos protocol-relative).
+  const nextParam = searchParams.get("next") ?? "/";
+  const next = /^\/(?![/\\])/.test(nextParam) ? nextParam : "/";
 
   if (code) {
     const supabase = await createClient();

@@ -27,7 +27,11 @@ const profileSchema = z.object({
     .min(1, "La serie es obligatoria")
     .max(10)
     .regex(/^[A-Za-z0-9/_-]+$/, "Serie no válida (letras, números, / _ -)"),
-  logo_url: z.string().trim().max(500),
+  logo_url: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => v === "" || /^https:\/\//i.test(v), "URL de logo no válida"),
 });
 
 export type ProfileState = { error?: string; ok?: boolean; message?: string };
@@ -61,7 +65,7 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
     .eq("user_id", user.id);
 
   if (error) {
-    console.error("[saveProfile] supabase error:", JSON.stringify(error));
+    console.error("[saveProfile] error:", error.code, error.message);
     return { error: "No se pudieron guardar los datos." };
   }
 
