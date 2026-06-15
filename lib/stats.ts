@@ -9,7 +9,14 @@
  */
 import { isInPeriod, quarterOfMonth, dateParts, MONTH_SHORT, type Period } from "./fiscal";
 
-export type SInvoice = { fecha: string; base: number; total: number; clientName: string };
+export type SInvoice = {
+  fecha: string;
+  base: number;
+  total: number;
+  clientName: string;
+  // false = ingreso manual (cuenta como ingreso/€-km pero NO en el nº de facturas).
+  esFactura?: boolean;
+};
 export type STrip = {
   fecha: string;
   km: number | null;
@@ -69,7 +76,8 @@ export function periodKpis(
     margen: ingresos > 0 ? beneficio / ingresos : 0,
     eurKm: km > 0 ? ingresos / km : null,
     km,
-    nFacturas: inv.length,
+    // Solo cuentan como "factura" las que lo son (excluye ingresos manuales).
+    nFacturas: inv.filter((i) => i.esFactura !== false).length,
     gastoCombustible,
     eurKmCombustible: km > 0 ? gastoCombustible / km : null,
     beneficioKm: km > 0 ? beneficio / km : null,

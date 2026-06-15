@@ -37,6 +37,7 @@ export default async function EstadisticasPage() {
       base: i.base != null ? Number(i.base) : Number(i.total),
       total: Number(i.total),
       clientName: i.concepto ?? "Ingreso",
+      esFactura: false, // ingreso manual: no cuenta en el nº de facturas
     })),
   ];
   const trips: STrip[] = (tripData ?? []).map((t) => {

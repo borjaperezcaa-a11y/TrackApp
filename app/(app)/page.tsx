@@ -52,6 +52,7 @@ export default async function HomePage() {
       base: i.base != null ? Number(i.base) : Number(i.total),
       total: Number(i.total),
       clientName: i.concepto ?? "Ingreso",
+      esFactura: false, // ingreso manual: no cuenta en el nº de facturas
     })),
   ];
   const expenses: SExpense[] = (expData ?? []).map((e) => ({

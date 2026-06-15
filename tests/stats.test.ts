@@ -74,6 +74,17 @@ describe("stats · KPIs", () => {
     expect(k.beneficioKm).toBeCloseTo((2500 - 1600) / 1500, 4);
   });
 
+  it("ingreso manual cuenta en ingresos/€-km pero NO en nº de facturas", () => {
+    const conManual: SInvoice[] = [
+      ...invoices,
+      { fecha: "2025-05-10", base: 500, total: 605, clientName: "Manual", esFactura: false },
+    ];
+    const k = periodKpis(conManual, trips, expenses, 2025, "2");
+    expect(k.ingresos).toBe(3000); // 2500 facturas + 500 manual
+    expect(k.nFacturas).toBe(2); // sigue 2: el ingreso manual no cuenta
+    expect(k.eurKm).toBeCloseTo(3000 / 1500, 4); // sí entra en €/km
+  });
+
   it("t·km y €/t·km por periodo", () => {
     // T2: 1000 km · 20 t + 500 km · 10 t = 25.000 t·km; ingresos 2500 → 0,1 €/t·km
     const k = periodKpis(invoices, trips, expenses, 2025, "2");
