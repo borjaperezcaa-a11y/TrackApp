@@ -26,7 +26,7 @@ export default async function HomePage() {
       supabase.from("profiles").select("nombre, nif").maybeSingle(),
       supabase.from("invoices").select("fecha, base, total, pagada, cliente_snapshot"),
       supabase.from("external_invoices").select("fecha, base, total, cobrada"),
-      supabase.from("incomes").select("fecha, base, total, concepto"),
+      supabase.from("incomes").select("fecha, base, total, concepto, cobrada"),
       supabase.from("trips").select("fecha, km, importe, estado, origen, destino"),
       supabase.from("expenses").select("fecha, categoria, total"),
       supabase.from("clients").select("id", { count: "exact", head: true }),
@@ -71,7 +71,31 @@ export default async function HomePage() {
     const p = dateParts(t.fecha);
     return p.year === year && p.month0 === month0;
   }).length;
-  const pendingInvoices = (invData ?? []).filter((i) => !i.pagada).length;
+
+  // Pendiente de cobro: facturas (propias + externas) + ingresos sin cobrar.
+  const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+  const pendInv = (invData ?? []).filter((i) => !i.pagada);
+  const pendExt = (extData ?? []).filter((e) => !e.cobrada);
+  const pendInc = (incData ?? []).filter((i) => !i.cobrada);
+  const pendingInvoices = pendInv.length;
+  const pendienteCobro =
+    sum(pendInv.map((i) => Number(i.total))) +
+    sum(pendExt.map((e) => Number(e.total))) +
+    sum(pendInc.map((i) => Number(i.total)));
+  const pendienteCount = pendInv.length + pendExt.length + pendInc.length;
+
+  // Onboarding de primer uso: se muestra mientras no se complete un ciclo.
+  const profileComplete = Boolean(profile?.nombre && profile?.nif);
+  const hasClients = (clientCount ?? 0) > 0;
+  const hasTrips = (tripData ?? []).length > 0;
+  const hasInvoices = (invData ?? []).length > 0;
+  const onboardingSteps = [
+    { label: "Completa tus datos fiscales", href: "/ajustes/perfil", done: profileComplete },
+    { label: "Crea tu primer cliente", href: "/clientes/nuevo", done: hasClients },
+    { label: "Registra tu primer viaje", href: "/viajes/nuevo", done: hasTrips },
+    { label: "Emite tu primera factura", href: "/facturas/nueva", done: hasInvoices },
+  ];
+  const onboardingDone = onboardingSteps.every((s) => s.done);
 
   const dateLabel = new Intl.DateTimeFormat("es-ES", {
     timeZone: "Europe/Madrid",
@@ -101,12 +125,58 @@ export default async function HomePage() {
         <ThemeToggle />
       </header>
 
-      {(!profile?.nombre || !profile?.nif) && (
+      {/* Acceso rápido a lo más frecuente */}
+      <div className="mb-3.5 grid grid-cols-3 gap-2.5">
+        <QuickAction href="/gastos/nuevo" icon="image" label="Escanear gasto" color="var(--red)" />
+        <QuickAction href="/viajes/nuevo" icon="truck" label="Nuevo viaje" color="var(--blue)" />
+        <QuickAction href="/ingresos/nuevo" icon="income" label="Nuevo ingreso" color="var(--green)" />
+      </div>
+
+      {/* Onboarding de primer uso */}
+      {!onboardingDone && (
+        <section className="mb-3.5 rounded-[20px] border border-amber-line bg-amber-soft p-4">
+          <div className="text-[13px] font-extrabold text-amber">Primeros pasos</div>
+          <div className="mt-2.5 space-y-1">
+            {onboardingSteps.map((s, idx) => {
+              const isNext = !s.done && onboardingSteps.slice(0, idx).every((p) => p.done);
+              return (
+                <Link
+                  key={s.href}
+                  href={s.href}
+                  className="flex items-center gap-2.5 rounded-xl px-1 py-1.5 transition-transform active:scale-[0.99]"
+                >
+                  <span
+                    className={`grid h-5 w-5 flex-none place-items-center rounded-full border ${s.done ? "border-green bg-green text-[#0c0e12]" : "border-amber text-amber"}`}
+                  >
+                    {s.done ? <Icon name="check" size={13} /> : <span className="text-[11px] font-bold">{idx + 1}</span>}
+                  </span>
+                  <span className={`flex-1 text-[13px] font-semibold ${s.done ? "text-dim line-through" : "text-text"}`}>
+                    {s.label}
+                  </span>
+                  {isNext && <span className="text-[13px] font-bold text-amber">Empezar ›</span>}
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Pendiente de cobro */}
+      {pendienteCobro > 0 && (
         <Link
-          href="/ajustes/perfil"
-          className="mb-3.5 block rounded-2xl border border-amber-line bg-amber-soft px-4 py-3 text-[12.5px] font-semibold text-amber transition-transform active:scale-[0.99]"
+          href="/facturas"
+          className="mb-3.5 flex items-center justify-between rounded-[20px] border border-line bg-panel px-[18px] py-4 shadow-[var(--shadow)] transition-transform active:scale-[0.985]"
         >
-          Completa tus datos fiscales (nombre y NIF) para poder emitir facturas ›
+          <div>
+            <div className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-dim">Pendiente de cobro</div>
+            <div className="mt-1 font-display text-[26px] font-bold leading-none text-amber tnum">{eur(pendienteCobro)}</div>
+            <div className="mt-1 text-[12px] text-dim">
+              {pendienteCount} {pendienteCount === 1 ? "documento sin cobrar" : "documentos sin cobrar"}
+            </div>
+          </div>
+          <span className="grid h-11 w-11 flex-none place-items-center rounded-2xl bg-amber-soft text-amber">
+            <Icon name="euro" size={24} />
+          </span>
         </Link>
       )}
 
@@ -156,5 +226,19 @@ export default async function HomePage() {
         ))}
       </div>
     </div>
+  );
+}
+
+function QuickAction({ href, icon, label, color }: { href: string; icon: IconName; label: string; color: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex flex-col items-center gap-1.5 rounded-[16px] border border-line bg-panel px-2 py-3 text-center transition-transform active:scale-95"
+    >
+      <span className="grid h-9 w-9 place-items-center rounded-xl" style={{ color, background: `color-mix(in srgb, ${color} 16%, transparent)` }}>
+        <Icon name={icon} size={20} />
+      </span>
+      <span className="text-[11px] font-bold leading-tight">{label}</span>
+    </Link>
   );
 }
