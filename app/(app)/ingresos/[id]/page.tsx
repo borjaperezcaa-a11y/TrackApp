@@ -25,12 +25,16 @@ export default async function EditarIngresoPage({ params }: { params: Promise<{ 
   if (!data) notFound();
   const i = data as Income;
 
+  const { data: clientsData } = await supabase.from("clients").select("nombre").order("nombre");
+  const clients = (clientsData ?? []).map((c) => c.nombre as string).filter(Boolean);
+
   return (
     <>
       <PageHeader title="Editar ingreso" kicker="Ingresos" fallbackHref="/ingresos" />
       <IncomeForm
         action={updateIncomeAction.bind(null, id)}
         submitLabel="GUARDAR CAMBIOS"
+        clients={clients}
         values={{
           concepto: i.concepto ?? "",
           cliente: i.cliente ?? "",

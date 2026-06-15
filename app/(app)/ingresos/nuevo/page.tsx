@@ -13,12 +13,16 @@ export default async function NuevoIngresoPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const { data: clientsData } = await supabase.from("clients").select("nombre").order("nombre");
+  const clients = (clientsData ?? []).map((c) => c.nombre as string).filter(Boolean);
+
   return (
     <>
       <PageHeader title="Nuevo ingreso" kicker="Ingresos" fallbackHref="/ingresos" />
       <IncomeForm
         action={createIncomeAction}
         submitLabel="GUARDAR INGRESO"
+        clients={clients}
         values={{
           concepto: "",
           cliente: "",

@@ -32,10 +32,12 @@ export function IncomeForm({
   values,
   action,
   submitLabel,
+  clients = [],
 }: {
   values: IncomeValues;
   action: (payload: IncomePayload) => Promise<IncomeState>;
   submitLabel: string;
+  clients?: string[];
 }) {
   const router = useRouter();
   const [saving, startSave] = useTransition();
@@ -105,8 +107,23 @@ export function IncomeForm({
         <input id="concepto" value={concepto} onChange={(e) => setConcepto(e.target.value)} placeholder="Porte Madrid · cliente directo" className={inputSm} />
       </Field>
 
-      <Field label="Cliente / pagador" htmlFor="cliente" hint="Opcional">
-        <input id="cliente" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Transportes Ejemplo S.L." className={inputSm} />
+      <Field label="Cliente / pagador" htmlFor="cliente" hint="Elige uno de tu cartera o escribe uno nuevo">
+        <input
+          id="cliente"
+          value={cliente}
+          onChange={(e) => setCliente(e.target.value)}
+          placeholder="Transportes Ejemplo S.L."
+          list="ingreso-clientes"
+          autoComplete="off"
+          className={inputSm}
+        />
+        {clients.length > 0 && (
+          <datalist id="ingreso-clientes">
+            {clients.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+        )}
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
