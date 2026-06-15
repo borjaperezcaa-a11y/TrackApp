@@ -4,7 +4,7 @@ import { todayMadrid } from "@/lib/format";
 import { ExternalInvoiceForm } from "../ExternalInvoiceForm";
 import { createExternalInvoiceAction } from "../actions";
 
-export const metadata = { title: "Registrar factura de cooperativa · TrackApp" };
+export const metadata = { title: "Registrar factura externa · TrackApp" };
 
 export default async function NuevaFacturaExternaPage() {
   const supabase = await createClient();
@@ -15,7 +15,7 @@ export default async function NuevaFacturaExternaPage() {
 
   return (
     <>
-      <PageHeader title="Factura de cooperativa" kicker="Registrar" fallbackHref="/facturas/externas" />
+      <PageHeader title="Factura externa" kicker="Registrar" fallbackHref="/facturas/externas" />
       <ExternalInvoiceForm
         userId={user.id}
         action={createExternalInvoiceAction}

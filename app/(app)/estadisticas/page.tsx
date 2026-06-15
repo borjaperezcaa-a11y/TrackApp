@@ -28,7 +28,7 @@ export default async function EstadisticasPage() {
       fecha: e.fecha,
       base: Number(e.base),
       total: Number(e.total),
-      clientName: e.cliente ?? "Cooperativa",
+      clientName: e.cliente ?? "Factura externa",
     })),
   ];
   const trips: STrip[] = (tripData ?? []).map((t) => {

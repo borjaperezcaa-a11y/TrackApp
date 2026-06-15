@@ -96,7 +96,7 @@ function Tabs() {
         Emitidas
       </span>
       <Link href="/facturas/externas" className="rounded-[13px] border-[1.5px] border-line bg-panel px-4 py-2.5 text-sm font-bold text-text">
-        Cooperativa
+        Externas
       </Link>
     </div>
   );

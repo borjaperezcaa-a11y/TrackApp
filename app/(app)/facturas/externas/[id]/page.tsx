@@ -7,7 +7,7 @@ import { ExternalInvoiceForm } from "../ExternalInvoiceForm";
 import { updateExternalInvoiceAction, deleteExternalInvoiceAction } from "../actions";
 import type { ExternalInvoice } from "@/lib/types";
 
-export const metadata = { title: "Editar factura de cooperativa · TrackApp" };
+export const metadata = { title: "Editar factura externa · TrackApp" };
 
 export default async function EditarFacturaExternaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,7 +30,7 @@ export default async function EditarFacturaExternaPage({ params }: { params: Pro
 
   return (
     <>
-      <PageHeader title="Editar factura" kicker="Cooperativa" fallbackHref="/facturas/externas" />
+      <PageHeader title="Editar factura" kicker="Externa" fallbackHref="/facturas/externas" />
       {archivoUrl && (
         <Link
           href={archivoUrl}

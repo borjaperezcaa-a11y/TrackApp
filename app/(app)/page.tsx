@@ -43,7 +43,7 @@ export default async function HomePage() {
       fecha: e.fecha,
       base: Number(e.base),
       total: Number(e.total),
-      clientName: "Cooperativa",
+      clientName: "Factura externa",
     })),
   ];
   const expenses: SExpense[] = (expData ?? []).map((e) => ({
