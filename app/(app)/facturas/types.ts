@@ -5,7 +5,6 @@ export type EmitLine = {
   fecha: string; // YYYY-MM-DD
   origen: string;
   destino: string;
-  descripcion: string;
   cantidad: number;
   precio: number;
 };

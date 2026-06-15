@@ -200,9 +200,6 @@ export function InvoiceDetailClient({
               <div className="truncate font-semibold">
                 {ln.origen} → {ln.destino}
               </div>
-              {ln.descripcion && (
-                <div className="truncate text-[11.5px] font-medium text-dim">{ln.descripcion}</div>
-              )}
               <div className="text-[11.5px] text-dim">
                 {ln.fecha ? dateES(ln.fecha) : ""} · {amount(Number(ln.cantidad))} ×{" "}
                 {amount(Number(ln.precio))}

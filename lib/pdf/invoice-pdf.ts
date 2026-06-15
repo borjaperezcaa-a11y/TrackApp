@@ -155,13 +155,8 @@ export async function buildInvoicePdf(invoice: Invoice, lines: InvoiceLine[]): P
     text(amount(ln.cantidad), COLS.cantidad.x, ty, { size: 8.5, align: "right", w: COLS.cantidad.w });
     text(amount(ln.precio), COLS.precio.x, ty, { size: 8.5, align: "right", w: COLS.precio.w });
     text(amount(ln.importe), COLS.importe.x, ty, { size: 8.5, align: "right", w: COLS.importe.w - 2 });
-    if (ln.descripcion) {
-      ty += 9;
-      text(clip(ln.descripcion, COLS.origen.w + COLS.destino.w - 6, font, 7.5), COLS.origen.x + 2, ty, {
-        size: 7.5,
-        color: GRAY,
-      });
-    }
+    // La descripción de la carga es solo para uso interno del viaje; no se
+    // imprime en la factura (decisión del usuario).
     hline(ty + 5, M, W - M, rgb(0.9, 0.9, 0.92));
   }
 

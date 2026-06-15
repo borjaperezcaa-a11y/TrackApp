@@ -80,7 +80,7 @@ export function TripForm({
         </Field>
       </div>
 
-      <Field label="Descripción de la carga" htmlFor="descripcion" hint="Tipo de carga, observaciones…">
+      <Field label="Descripción de la carga" htmlFor="descripcion" hint="Opcional · tipo de carga, observaciones…">
         <input id="descripcion" name="descripcion" defaultValue={values.descripcion} placeholder="Fruta · carga completa" />
       </Field>
 

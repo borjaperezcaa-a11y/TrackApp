@@ -35,7 +35,6 @@ type PendingTrip = {
   fecha: string;
   origen: string;
   destino: string;
-  descripcion: string;
   importe: number;
   client_id: string;
 };
@@ -46,7 +45,6 @@ type LineState = {
   fecha: string;
   origen: string;
   destino: string;
-  descripcion: string;
   cantidad: string;
   precio: string;
 };
@@ -67,7 +65,6 @@ function buildLines(pendingTrips: PendingTrip[], clientId: string): LineState[] 
       fecha: t.fecha,
       origen: t.origen ?? "",
       destino: t.destino ?? "",
-      descripcion: t.descripcion ?? "",
       cantidad: "1",
       precio: String(t.importe),
     }));
@@ -168,7 +165,6 @@ export function NuevaFacturaWizard({
         fecha: l.fecha,
         origen: l.origen,
         destino: l.destino,
-        descripcion: l.descripcion,
         cantidad: Number(l.cantidad) || 0,
         precio: Number(l.precio) || 0,
       })),
@@ -277,12 +273,6 @@ export function NuevaFacturaWizard({
                 onChange={(e) => updateLine(i, { destino: e.target.value })}
                 placeholder="Destino (CP)"
                 className={inputSm}
-              />
-              <input
-                value={l.descripcion}
-                onChange={(e) => updateLine(i, { descripcion: e.target.value })}
-                placeholder="Descripción (peso, carga…)"
-                className={`${inputSm} col-span-2`}
               />
               <input
                 type="number"

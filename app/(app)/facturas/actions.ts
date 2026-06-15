@@ -10,7 +10,6 @@ const lineSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de línea no válida"),
   origen: z.string().max(200),
   destino: z.string().max(200),
-  descripcion: z.string().max(300),
   cantidad: z.number().min(0).max(1_000_000),
   precio: z.number().min(0).max(10_000_000),
 });
