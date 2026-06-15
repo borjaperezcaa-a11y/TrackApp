@@ -55,6 +55,7 @@ export default async function EditarGastoPage({ params }: { params: Promise<{ id
         userId={user.id}
         action={updateExpenseAction.bind(null, id)}
         submitLabel="GUARDAR CAMBIOS"
+        scanEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
         values={{
           categoria: e.categoria ?? "Gasoil",
           estacion: e.estacion ?? "",

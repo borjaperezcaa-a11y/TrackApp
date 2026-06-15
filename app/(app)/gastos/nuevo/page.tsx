@@ -20,6 +20,7 @@ export default async function NuevoGastoPage() {
         userId={user.id}
         action={createExpenseAction}
         submitLabel="GUARDAR GASTO"
+        scanEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
         values={{
           categoria: "Gasoil",
           estacion: "",

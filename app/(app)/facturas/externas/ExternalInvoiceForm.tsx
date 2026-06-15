@@ -81,12 +81,14 @@ export function ExternalInvoiceForm({
   action,
   submitLabel,
   knownSeries = {},
+  scanEnabled = true,
 }: {
   userId: string;
   values: ExternalInvoiceValues;
   action: (payload: ExternalInvoicePayload) => Promise<ExternalInvoiceState>;
   submitLabel: string;
   knownSeries?: Record<string, string>;
+  scanEnabled?: boolean;
 }) {
   const router = useRouter();
   const [saving, startSave] = useTransition();
@@ -277,7 +279,8 @@ export function ExternalInvoiceForm({
 
   return (
     <div className="stagger pb-4">
-      {/* Escaneo por foto / adjuntar PDF */}
+      {/* Escaneo por foto / adjuntar PDF (solo si la IA está configurada) */}
+      {scanEnabled && (
       <Card className="mb-3.5">
         <div className="flex items-center gap-3.5">
           <div className="grid h-16 w-16 flex-none place-items-center overflow-hidden rounded-2xl border border-line bg-panel2 text-amber">
@@ -318,6 +321,7 @@ export function ExternalInvoiceForm({
           <p className="mt-2.5 rounded-xl bg-red-soft px-3 py-2 text-xs font-semibold text-red">{scanError}</p>
         )}
       </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Nº factura" htmlFor="numero">

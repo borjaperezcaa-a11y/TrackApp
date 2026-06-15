@@ -49,6 +49,7 @@ export default async function EditarFacturaExternaPage({ params }: { params: Pro
         userId={user.id}
         action={updateExternalInvoiceAction.bind(null, id)}
         submitLabel="GUARDAR CAMBIOS"
+        scanEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
         values={{
           serie: f.serie ?? "",
           numero: f.numero,

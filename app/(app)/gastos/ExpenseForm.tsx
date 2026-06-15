@@ -73,11 +73,13 @@ export function ExpenseForm({
   values,
   action,
   submitLabel,
+  scanEnabled = true,
 }: {
   userId: string;
   values: ExpenseValues;
   action: (payload: ExpensePayload) => Promise<ExpenseState>;
   submitLabel: string;
+  scanEnabled?: boolean;
 }) {
   const router = useRouter();
   const [saving, startSave] = useTransition();
@@ -208,7 +210,8 @@ export function ExpenseForm({
 
   return (
     <div className="stagger pb-4">
-      {/* Escaneo por foto */}
+      {/* Escaneo por foto (solo si la IA está configurada en el servidor) */}
+      {scanEnabled && (
       <Card className="mb-3.5">
         <div className="flex items-center gap-3.5">
           <div className="grid h-16 w-16 flex-none place-items-center overflow-hidden rounded-2xl border border-line bg-panel2 text-amber">
@@ -252,6 +255,7 @@ export function ExpenseForm({
           </p>
         )}
       </Card>
+      )}
 
       {/* Categoría */}
       <Field label="Categoría">

@@ -30,6 +30,7 @@ export default async function NuevaFacturaExternaPage() {
         action={createExternalInvoiceAction}
         submitLabel="GUARDAR FACTURA"
         knownSeries={knownSeries}
+        scanEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
         values={{
           serie: "",
           numero: "",
