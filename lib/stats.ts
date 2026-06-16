@@ -22,7 +22,6 @@ export type STrip = {
   km: number | null;
   importe: number;
   ruta: string;
-  toneladas: number | null;
 };
 export type SExpense = { fecha: string; categoria: string; total: number };
 
@@ -39,10 +38,7 @@ export type Kpis = {
   gastoCombustible: number; // suma de gastos de categoría Gasoil
   eurKmCombustible: number | null; // gasto combustible / km
   beneficioKm: number | null; // beneficio / km
-  // Productividad por carga: tonelada-kilómetro (de los viajes con peso + km).
-  tkm: number; // Σ km · toneladas
-  eurTkm: number | null; // ingresos / t·km
-  combustibleTkm: number | null; // gasto combustible / t·km
+  gastoKm: number | null; // TODOS los gastos / km
 };
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
@@ -63,11 +59,6 @@ export function periodKpis(
   const km = sum(tr.map((t) => t.km ?? 0));
   const beneficio = ingresos - gastos;
   const gastoCombustible = sum(ex.filter((e) => e.categoria === "Gasoil").map((e) => e.total));
-  const tkm = sum(
-    tr
-      .filter((t) => (t.km ?? 0) > 0 && (t.toneladas ?? 0) > 0)
-      .map((t) => (t.km as number) * (t.toneladas as number)),
-  );
 
   return {
     ingresos,
@@ -81,9 +72,7 @@ export function periodKpis(
     gastoCombustible,
     eurKmCombustible: km > 0 ? gastoCombustible / km : null,
     beneficioKm: km > 0 ? beneficio / km : null,
-    tkm,
-    eurTkm: tkm > 0 ? ingresos / tkm : null,
-    combustibleTkm: tkm > 0 ? gastoCombustible / tkm : null,
+    gastoKm: km > 0 ? gastos / km : null,
   };
 }
 

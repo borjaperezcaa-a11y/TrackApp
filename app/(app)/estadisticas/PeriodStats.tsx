@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { clsx } from "@/lib/clsx";
-import { eur, intES } from "@/lib/format";
+import { eur } from "@/lib/format";
 import { type Period, periodLabel } from "@/lib/fiscal";
 import {
   periodKpis,
@@ -90,33 +90,23 @@ export function PeriodStats({
         <Kpi label="€/km (ingresos)" value={k.eurKm != null ? `${k.eurKm.toFixed(2).replace(".", ",")} €/km` : "—"} />
         <Kpi label="Facturas" value={String(k.nFacturas)} />
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-3 gap-3">
         <Kpi
-          label="€/km combustible"
-          value={k.eurKmCombustible != null ? `${k.eurKmCombustible.toFixed(2).replace(".", ",")} €/km` : "—"}
+          label="Gasto /km"
+          value={k.gastoKm != null ? `${k.gastoKm.toFixed(2).replace(".", ",")} €` : "—"}
+          color="var(--amber)"
+        />
+        <Kpi
+          label="Gasoil /km"
+          value={k.eurKmCombustible != null ? `${k.eurKmCombustible.toFixed(2).replace(".", ",")} €` : "—"}
           color="var(--amber)"
         />
         <Kpi
           label="Beneficio /km"
-          value={k.beneficioKm != null ? `${k.beneficioKm.toFixed(2).replace(".", ",")} €/km` : "—"}
+          value={k.beneficioKm != null ? `${k.beneficioKm.toFixed(2).replace(".", ",")} €` : "—"}
           color={k.beneficioKm != null && k.beneficioKm < 0 ? "var(--red)" : "var(--green)"}
         />
       </div>
-      {k.tkm > 0 && (
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          <Kpi label="t·km" value={intES(Math.round(k.tkm))} />
-          <Kpi
-            label="€/t·km"
-            value={k.eurTkm != null ? `${k.eurTkm.toFixed(3).replace(".", ",")}` : "—"}
-            color="var(--green)"
-          />
-          <Kpi
-            label="Gasoil €/t·km"
-            value={k.combustibleTkm != null ? `${k.combustibleTkm.toFixed(3).replace(".", ",")}` : "—"}
-            color="var(--amber)"
-          />
-        </div>
-      )}
 
       {/* Ingresos vs gastos */}
       <SectionLabel>Ingresos vs gastos</SectionLabel>

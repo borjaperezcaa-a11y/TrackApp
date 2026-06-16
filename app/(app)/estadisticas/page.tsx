@@ -13,7 +13,7 @@ export default async function EstadisticasPage() {
     supabase.from("invoices").select("fecha, base, total, cliente_snapshot"),
     supabase.from("external_invoices").select("fecha, base, total, cliente"),
     supabase.from("incomes").select("fecha, base, total, concepto, cliente"),
-    supabase.from("trips").select("fecha, km, importe, origen, destino, peso, peso_unidad"),
+    supabase.from("trips").select("fecha, km, importe, origen, destino"),
     supabase.from("expenses").select("fecha, categoria, total"),
   ]);
 
@@ -42,17 +42,12 @@ export default async function EstadisticasPage() {
       esFactura: false, // ingreso manual: no cuenta en el nº de facturas
     })),
   ];
-  const trips: STrip[] = (tripData ?? []).map((t) => {
-    const peso = t.peso != null ? Number(t.peso) : null;
-    const toneladas = peso == null ? null : t.peso_unidad === "kg" ? peso / 1000 : peso;
-    return {
-      fecha: t.fecha,
-      km: t.km != null ? Number(t.km) : null,
-      importe: Number(t.importe),
-      ruta: t.origen && t.destino ? `${t.origen} → ${t.destino}` : t.origen || t.destino || "",
-      toneladas,
-    };
-  });
+  const trips: STrip[] = (tripData ?? []).map((t) => ({
+    fecha: t.fecha,
+    km: t.km != null ? Number(t.km) : null,
+    importe: Number(t.importe),
+    ruta: t.origen && t.destino ? `${t.origen} → ${t.destino}` : t.origen || t.destino || "",
+  }));
   const expenses: SExpense[] = (expData ?? []).map((e) => ({
     fecha: e.fecha,
     categoria: e.categoria ?? "Otro",
