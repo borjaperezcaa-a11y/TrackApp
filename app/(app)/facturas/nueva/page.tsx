@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadError } from "@/components/ui/LoadError";
 import { createClient } from "@/lib/supabase/server";
 import { NuevaFacturaWizard } from "./NuevaFacturaWizard";
 
@@ -7,8 +8,15 @@ export const metadata = { title: "Nueva factura · TrackApp" };
 export default async function NuevaFacturaPage() {
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: clientsData }, { data: tripsData }] = await Promise.all([
-    supabase.from("profiles").select("*").maybeSingle(),
+  const [
+    { data: profile, error: profileErr },
+    { data: clientsData, error: clientsErr },
+    { data: tripsData, error: tripsErr },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("nombre, nif, direccion, cp_localidad, iban, logo_url, iva_def, irpf_def")
+      .maybeSingle(),
     supabase.from("clients").select("id, nombre, nif, direccion, cp_localidad, condiciones_pago").order("nombre"),
     supabase
       .from("trips")
@@ -16,6 +24,17 @@ export default async function NuevaFacturaPage() {
       .eq("estado", "pendiente")
       .order("fecha"),
   ]);
+
+  // Un fallo de carga no debe disfrazarse de "no hay viajes": mostramos error con
+  // reintento en lugar de un wizard vacío que llevaría a conclusiones equivocadas.
+  if (profileErr || clientsErr || tripsErr) {
+    return (
+      <>
+        <PageHeader title="Nueva factura" kicker="Desde viajes" fallbackHref="/facturas" />
+        <LoadError />
+      </>
+    );
+  }
 
   return (
     <>

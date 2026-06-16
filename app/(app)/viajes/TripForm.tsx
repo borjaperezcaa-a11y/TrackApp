@@ -1,14 +1,15 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { Field } from "@/components/ui/Field";
 import { Cta } from "@/components/ui/Cta";
 import { Icon } from "@/components/ui/Icon";
+import { PlaceAutocomplete, type ResolvedPlace } from "@/components/ui/PlaceAutocomplete";
+import { DateField } from "@/components/ui/DateField";
+import { quickCreateClient } from "../clientes/actions";
 import type { TripState } from "./actions";
-
-const TRIP_DRAFT = "trip-draft";
 
 export type TripValues = {
   fecha: string;
@@ -31,55 +32,93 @@ export function TripForm({
   values,
   clients,
   submitLabel,
+  routingEnabled = false,
 }: {
   action: (prev: TripState, formData: FormData) => Promise<TripState>;
   values: TripValues;
   clients: ClientOption[];
   submitLabel: string;
+  routingEnabled?: boolean;
 }) {
   const [state, formAction] = useActionState(action, initial);
-  const router = useRouter();
-  const pathname = usePathname();
-  const formRef = useRef<HTMLFormElement>(null);
 
-  // Al volver de crear un cliente, restaura lo que ya habías escrito en el viaje
-  // (el cliente lo fija la página con el recién creado).
+  // Lista de clientes y selección, en estado para poder añadir uno desde el modal.
+  const [clientList, setClientList] = useState(clients);
+  const [clientId, setClientId] = useState(values.client_id);
+
+  // Campos controlados que participan en el buscador de ruta / cálculo de km.
+  const [origen, setOrigen] = useState(values.origen);
+  const [destino, setDestino] = useState(values.destino);
+  const [km, setKm] = useState(values.km);
+  const [origenCoord, setOrigenCoord] = useState<ResolvedPlace>(null);
+  const [destinoCoord, setDestinoCoord] = useState<ResolvedPlace>(null);
+  const [kmStatus, setKmStatus] = useState<"idle" | "calc" | "done" | "error">("idle");
+
+  // Modal "Nuevo cliente" (crear sin salir del formulario de viaje).
+  const [modalOpen, setModalOpen] = useState(false);
+  const [newNombre, setNewNombre] = useState("");
+  const [newNif, setNewNif] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [clientError, setClientError] = useState<string | null>(null);
+
+  // Cuando origen y destino tienen coordenadas (elegidos del buscador), calcula
+  // los km de la ruta de camión y los rellena. El campo sigue siendo editable.
   useEffect(() => {
-    const form = formRef.current;
-    if (!form) return;
-    try {
-      const raw = sessionStorage.getItem(TRIP_DRAFT);
-      if (raw) {
-        const d = JSON.parse(raw) as Record<string, string>;
-        for (const [k, v] of Object.entries(d)) {
-          if (k === "client_id") continue; // lo preselecciona la página
-          const el = form.elements.namedItem(k) as HTMLInputElement | null;
-          if (el) el.value = v;
+    if (!routingEnabled || !origenCoord || !destinoCoord) return;
+    let alive = true;
+    setKmStatus("calc");
+    fetch("/api/distance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from: origenCoord, to: destinoCoord }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("distance"))))
+      .then((d: { km?: number }) => {
+        if (!alive) return;
+        if (typeof d.km === "number" && Number.isFinite(d.km)) {
+          setKm(String(d.km));
+          setKmStatus("done");
+        } else {
+          setKmStatus("error");
         }
-        sessionStorage.removeItem(TRIP_DRAFT);
-      }
-    } catch {
-      /* sessionStorage no disponible */
-    }
-  }, []);
+      })
+      .catch(() => {
+        if (alive) setKmStatus("error");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [origenCoord, destinoCoord, routingEnabled]);
 
-  function goNuevoCliente() {
-    const form = formRef.current;
-    if (form) {
-      try {
-        const draft: Record<string, string> = {};
-        new FormData(form).forEach((v, k) => {
-          draft[k] = String(v);
-        });
-        sessionStorage.setItem(TRIP_DRAFT, JSON.stringify(draft));
-      } catch {
-        /* ignore */
-      }
-    }
-    router.push(`/clientes/nuevo?next=${encodeURIComponent(pathname)}`);
+  function openClientModal() {
+    setClientError(null);
+    setNewNombre("");
+    setNewNif("");
+    setModalOpen(true);
   }
 
-  if (clients.length === 0) {
+  async function createClient() {
+    setClientError(null);
+    if (!newNombre.trim()) {
+      setClientError("El nombre es obligatorio");
+      return;
+    }
+    setCreating(true);
+    const res = await quickCreateClient({ nombre: newNombre.trim(), nif: newNif.trim() });
+    setCreating(false);
+    if (res.error || !res.id || !res.nombre) {
+      setClientError(res.error ?? "No se pudo crear el cliente.");
+      return;
+    }
+    const nuevo = { id: res.id, nombre: res.nombre };
+    setClientList((list) =>
+      [...list, nuevo].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    );
+    setClientId(nuevo.id); // queda seleccionado
+    setModalOpen(false);
+  }
+
+  if (clientList.length === 0) {
     return (
       <div className="mt-8 text-center">
         <p className="text-[15px] font-semibold">Primero necesitas un cliente</p>
@@ -96,18 +135,33 @@ export function TripForm({
     );
   }
 
+  const kmHint =
+    kmStatus === "calc"
+      ? "Calculando ruta de camión…"
+      : kmStatus === "done"
+        ? "≈ km por carretera (camión) · editable"
+        : kmStatus === "error"
+          ? "No se pudo calcular la ruta; ponlo a mano"
+          : undefined;
+
   return (
-    <form ref={formRef} action={formAction} className="stagger">
+    <form action={formAction} className="stagger">
       <Field label="Fecha" htmlFor="fecha">
-        <input id="fecha" name="fecha" type="date" defaultValue={values.fecha} required />
+        <DateField id="fecha" name="fecha" defaultISO={values.fecha} />
       </Field>
 
       <Field label="Cliente" htmlFor="client_id">
-        <select id="client_id" name="client_id" defaultValue={values.client_id} required>
+        <select
+          id="client_id"
+          name="client_id"
+          value={clientId}
+          onChange={(e) => setClientId(e.target.value)}
+          required
+        >
           <option value="" disabled>
             Selecciona un cliente…
           </option>
-          {clients.map((c) => (
+          {clientList.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nombre}
             </option>
@@ -115,19 +169,35 @@ export function TripForm({
         </select>
         <button
           type="button"
-          onClick={goNuevoCliente}
-          className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-bold text-amber"
+          onClick={openClientModal}
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-amber-line bg-amber-soft py-2.5 text-[13.5px] font-bold text-amber transition-transform active:scale-[0.98]"
         >
-          <Icon name="plus" size={15} /> Nuevo cliente
+          <Icon name="plus" size={16} /> Nuevo cliente
         </button>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Origen" htmlFor="origen" hint="Con CP: Santiago (15890)">
-          <input id="origen" name="origen" defaultValue={values.origen} placeholder="Santiago (15890)" />
+        <Field label="Origen" htmlFor="origen" hint={routingEnabled ? "Busca y elige un lugar" : "Con CP: Santiago (15890)"}>
+          <PlaceAutocomplete
+            id="origen"
+            name="origen"
+            value={origen}
+            onChange={setOrigen}
+            onResolve={setOrigenCoord}
+            enabled={routingEnabled}
+            placeholder="Santiago (15890)"
+          />
         </Field>
-        <Field label="Destino" htmlFor="destino" hint="Parma - IT (43122)">
-          <input id="destino" name="destino" defaultValue={values.destino} placeholder="Irún (20305)" />
+        <Field label="Destino" htmlFor="destino" hint={routingEnabled ? "Busca y elige un lugar" : "Parma - IT (43122)"}>
+          <PlaceAutocomplete
+            id="destino"
+            name="destino"
+            value={destino}
+            onChange={setDestino}
+            onResolve={setDestinoCoord}
+            enabled={routingEnabled}
+            placeholder="Irún (20305)"
+          />
         </Field>
       </div>
 
@@ -156,8 +226,18 @@ export function TripForm({
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Km" htmlFor="km">
-          <input id="km" name="km" type="number" step="1" min="0" inputMode="numeric" defaultValue={values.km} placeholder="940" />
+        <Field label="Km" htmlFor="km" hint={kmHint}>
+          <input
+            id="km"
+            name="km"
+            type="number"
+            step="1"
+            min="0"
+            inputMode="numeric"
+            value={km}
+            onChange={(e) => setKm(e.target.value)}
+            placeholder="940"
+          />
         </Field>
         <Field label="Importe (€)" htmlFor="importe">
           <input
@@ -182,6 +262,61 @@ export function TripForm({
       )}
 
       <Cta icon="save">{submitLabel}</Cta>
+
+      {modalOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/55 p-4 sm:items-center"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setModalOpen(false);
+            }}
+          >
+            <div className="w-full max-w-sm rounded-2xl border border-line bg-panel p-5 shadow-xl">
+              <h3 className="mb-3 font-display text-lg font-bold">Nuevo cliente</h3>
+              <Field label="Nombre" htmlFor="nc-nombre">
+                <input
+                  id="nc-nombre"
+                  value={newNombre}
+                  onChange={(e) => setNewNombre(e.target.value)}
+                  placeholder="Transportes García S.L."
+                  autoFocus
+                />
+              </Field>
+              <Field label="NIF / CIF" htmlFor="nc-nif" hint="Opcional">
+                <input
+                  id="nc-nif"
+                  value={newNif}
+                  onChange={(e) => setNewNif(e.target.value)}
+                  placeholder="B12345674"
+                />
+              </Field>
+              {clientError && (
+                <p className="mb-2 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
+                  {clientError}
+                </p>
+              )}
+              <div className="mt-1 flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="flex-1 rounded-[16px] border border-line bg-panel py-3.5 text-sm font-bold text-text"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={createClient}
+                  disabled={creating}
+                  className="flex-1 rounded-[16px] bg-amber py-3.5 text-sm font-extrabold text-[#1a1205] transition-transform active:scale-[0.97] disabled:opacity-60"
+                >
+                  {creating ? "Creando…" : "Crear cliente"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </form>
   );
 }

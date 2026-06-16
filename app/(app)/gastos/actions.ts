@@ -12,7 +12,7 @@ const expenseSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha no válida"),
   base: z.number().min(0).max(10_000_000).nullable(),
   iva: z.number().min(0).max(10_000_000).nullable(),
-  total: z.number().min(0, "Importe no válido").max(10_000_000),
+  total: z.number().gt(0, "El importe debe ser mayor que 0").max(10_000_000),
   trip_id: z.string().uuid().nullable(),
   foto_path: z.string().max(500).nullable(),
 });

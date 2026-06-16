@@ -63,6 +63,43 @@ export async function createClientAction(
   redirect("/clientes");
 }
 
+export type QuickClientResult = { id?: string; nombre?: string; error?: string };
+
+/**
+ * Crea un cliente con lo mínimo (nombre + NIF opcional) y DEVUELVE su id, para
+ * crearlo desde un modal sin salir de otra pantalla (p. ej. el formulario de
+ * viaje). No redirige: el llamador añade el cliente a su lista y lo selecciona.
+ */
+export async function quickCreateClient(input: {
+  nombre: string;
+  nif: string;
+}): Promise<QuickClientResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  const parsed = clientSchema.safeParse({
+    nombre: input.nombre,
+    nif: input.nif,
+    direccion: "",
+    cp_localidad: "",
+    condiciones_pago: "",
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
+
+  const { data, error } = await supabase
+    .from("clients")
+    .insert({ ...toRow(parsed.data), user_id: user.id })
+    .select("id, nombre")
+    .single();
+  if (error || !data) return { error: "No se pudo crear el cliente." };
+
+  revalidatePath("/clientes");
+  return { id: data.id as string, nombre: data.nombre as string };
+}
+
 export async function updateClientAction(
   id: string,
   _prev: ClientState,
@@ -104,8 +141,8 @@ export async function deleteClientAction(
     { count: invoiceCount, error: invErr },
     { count: tripCount, error: tripErr },
   ] = await Promise.all([
-    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("client_id", id),
-    supabase.from("trips").select("id", { count: "exact", head: true }).eq("client_id", id),
+    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("client_id", id).eq("user_id", user.id),
+    supabase.from("trips").select("id", { count: "exact", head: true }).eq("client_id", id).eq("user_id", user.id),
   ]);
 
   // Si la comprobación falla, NO borrar (evita borrar un cliente con

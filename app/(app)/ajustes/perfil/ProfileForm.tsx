@@ -2,7 +2,6 @@
 
 import { useActionState, useRef, useState } from "react";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { Cta } from "@/components/ui/Cta";
@@ -70,6 +69,8 @@ export function ProfileForm({
     }
     setUploading(true);
     try {
+      // Carga diferida del cliente de Supabase: solo al subir un logo.
+      const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
       const ext = file.name.split(".").pop()?.toLowerCase() || "png";
       const path = `${userId}/logo-${Date.now()}.${ext}`;

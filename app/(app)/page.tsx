@@ -4,7 +4,7 @@ import { Gauge } from "@/components/charts/Gauge";
 import { MiniBars } from "@/components/charts/MiniBars";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { eur, nowMadrid } from "@/lib/format";
+import { eur, nowMadrid, num } from "@/lib/format";
 import { monthlySeries, bestMonthBeneficio, type SInvoice, type SExpense } from "@/lib/stats";
 import { dateParts } from "@/lib/fiscal";
 
@@ -43,20 +43,20 @@ export default async function HomePage({
   const invoices: SInvoice[] = [
     ...(invData ?? []).map((i) => ({
       fecha: i.fecha,
-      base: Number(i.base),
-      total: Number(i.total),
+      base: num(i.base),
+      total: num(i.total),
       clientName: (i.cliente_snapshot as { nombre?: string })?.nombre ?? "Cliente",
     })),
     ...(extData ?? []).map((e) => ({
       fecha: e.fecha,
-      base: Number(e.base),
-      total: Number(e.total),
+      base: num(e.base),
+      total: num(e.total),
       clientName: "Factura externa",
     })),
     ...(incData ?? []).map((i) => ({
       fecha: i.fecha,
-      base: i.base != null ? Number(i.base) : Number(i.total),
-      total: Number(i.total),
+      base: i.base != null ? num(i.base) : num(i.total),
+      total: num(i.total),
       clientName: i.concepto ?? "Ingreso",
       esFactura: false, // ingreso manual: no cuenta en el nº de facturas
     })),
@@ -64,12 +64,14 @@ export default async function HomePage({
   const expenses: SExpense[] = (expData ?? []).map((e) => ({
     fecha: e.fecha,
     categoria: e.categoria ?? "Otro",
-    total: Number(e.total),
+    total: num(e.total),
   }));
   const trips = tripData ?? [];
 
   const series = monthlySeries(invoices, expenses, year);
-  const monthPoint = series[month0];
+  // Guarda: month0 viene de nowMadrid(); si por un runtime sin datos ICU fuera
+  // NaN, series[NaN] sería undefined y rompería el render del panel.
+  const monthPoint = series[month0] ?? series[0];
   const best = bestMonthBeneficio(invoices, expenses, year);
   const miniData = series.slice(Math.max(0, month0 - 5), month0 + 1);
 
@@ -85,9 +87,9 @@ export default async function HomePage({
   const pendInc = (incData ?? []).filter((i) => !i.cobrada);
   const pendingInvoices = pendInv.length;
   const pendienteCobro =
-    sum(pendInv.map((i) => Number(i.total))) +
-    sum(pendExt.map((e) => Number(e.total))) +
-    sum(pendInc.map((i) => Number(i.total)));
+    sum(pendInv.map((i) => num(i.total))) +
+    sum(pendExt.map((e) => num(e.total))) +
+    sum(pendInc.map((i) => num(i.total)));
   const pendienteCount = pendInv.length + pendExt.length + pendInc.length;
 
   // Onboarding de primer uso: se muestra mientras no se complete un ciclo.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -37,6 +38,9 @@ export function InvoiceDetailClient({
   const [pagada, setPagada] = useState(invoice.pagada);
   const [pending, startTransition] = useTransition();
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [pdf, setPdf] = useState<{ url: string; file: File } | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   // Flujo de rectificativa
   const [rectMode, setRectMode] = useState<null | "menu" | "corregir" | "anular">(null);
@@ -86,11 +90,14 @@ export function InvoiceDetailClient({
   useEffect(() => {
     let alive = true;
     if (invoice.qr) {
-      import("qrcode").then((m) =>
-        m.default.toDataURL(invoice.qr!, { margin: 1, width: 240 }).then((d) => {
+      import("qrcode")
+        .then((m) => m.default.toDataURL(invoice.qr!, { margin: 1, width: 240 }))
+        .then((d) => {
           if (alive) setQr(d);
-        }),
-      );
+        })
+        .catch(() => {
+          // El QR es decorativo: si falla la carga del chunk (offline) no rompemos la página.
+        });
     }
     return () => {
       alive = false;
@@ -113,28 +120,67 @@ export function InvoiceDetailClient({
   }, [invoice, em]);
 
   function togglePaid() {
+    setPayError(null);
     startTransition(async () => {
-      const r = await togglePaidAction(invoice.id, !pagada);
-      if (!r.error) setPagada(!pagada);
+      try {
+        const r = await togglePaidAction(invoice.id, !pagada);
+        if (r.error) setPayError(r.error);
+        else setPagada(!pagada);
+      } catch {
+        setPayError("No se pudo actualizar el cobro. Comprueba tu conexión e inténtalo de nuevo.");
+      }
     });
   }
 
-  async function downloadPdf() {
+  // Genera el PDF y abre una previsualización lista para compartir.
+  async function generatePdf() {
     setPdfBusy(true);
+    setPdfError(null);
     try {
       const { buildInvoicePdf } = await import("@/lib/pdf/invoice-pdf");
       const bytes = await buildInvoicePdf({ ...invoice, pagada }, lines);
-      const blob = new Blob([bytes as unknown as BlobPart], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${invoice.numero.replace(/\//g, "-")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const filename = `${invoice.numero.replace(/\//g, "-")}.pdf`;
+      const file = new File([bytes as unknown as BlobPart], filename, { type: "application/pdf" });
+      const url = URL.createObjectURL(file);
+      setPdf({ url, file });
+    } catch {
+      setPdfError("No se pudo generar el PDF. Inténtalo de nuevo.");
     } finally {
       setPdfBusy(false);
+    }
+  }
+
+  function closePdf() {
+    if (pdf) URL.revokeObjectURL(pdf.url);
+    setPdf(null);
+  }
+
+  function downloadPdf() {
+    if (!pdf) return;
+    const a = document.createElement("a");
+    a.href = pdf.url;
+    a.download = pdf.file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // Compartir por WhatsApp / email / Telegram… con la hoja de compartir nativa.
+  async function sharePdf() {
+    if (!pdf) return;
+    try {
+      if (navigator.canShare?.({ files: [pdf.file] })) {
+        await navigator.share({
+          files: [pdf.file],
+          title: `Factura ${invoice.numero}`,
+          text: `Factura ${invoice.numero}`,
+        });
+      } else {
+        // Escritorio o navegador sin compartir-archivos: descarga como alternativa.
+        downloadPdf();
+      }
+    } catch {
+      /* el usuario canceló la hoja de compartir: no es un error */
     }
   }
 
@@ -261,12 +307,17 @@ export function InvoiceDetailClient({
       {/* Acciones */}
       <button
         type="button"
-        onClick={downloadPdf}
+        onClick={generatePdf}
         disabled={pdfBusy}
         className="flex min-h-[60px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-amber px-5 py-4 text-[16px] font-extrabold text-[#1a1205] transition-transform active:scale-[0.97] disabled:opacity-60"
       >
-        <Icon name="save" size={20} /> {pdfBusy ? "Generando PDF…" : "Descargar PDF"}
+        <Icon name="doc" size={20} /> {pdfBusy ? "Generando PDF…" : "Generar PDF"}
       </button>
+      {pdfError && (
+        <p className="mt-2 rounded-xl bg-red-soft px-3 py-2 text-center text-sm font-semibold text-red">
+          {pdfError}
+        </p>
+      )}
 
       <button
         type="button"
@@ -282,6 +333,11 @@ export function InvoiceDetailClient({
         <Icon name="check" size={18} />
         {pagada ? "Marcar como pendiente" : "Marcar como cobrada"}
       </button>
+      {payError && (
+        <p className="mt-2 rounded-xl bg-red-soft px-3 py-2 text-center text-sm font-semibold text-red">
+          {payError}
+        </p>
+      )}
 
       {/* Rectificativa: solo en facturas normales no rectificadas */}
       {!esRectificativa && !annulledBy && (
@@ -438,6 +494,53 @@ export function InvoiceDetailClient({
           )}
         </div>
       )}
+
+      {pdf &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex flex-col bg-black/70 p-3"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) closePdf();
+            }}
+          >
+            <div className="mx-auto flex h-full w-full max-w-md flex-col rounded-2xl border border-line bg-panel p-3">
+              <div className="mb-2 flex items-center justify-between px-1">
+                <span className="font-display text-sm font-bold">{invoice.numero}</span>
+                <button
+                  type="button"
+                  onClick={closePdf}
+                  aria-label="Cerrar"
+                  className="px-2 text-lg leading-none text-dim hover:text-text"
+                >
+                  ✕
+                </button>
+              </div>
+              <iframe
+                src={pdf.url}
+                title={`Factura ${invoice.numero}`}
+                className="min-h-0 flex-1 rounded-lg bg-white"
+              />
+              <div className="mt-3 flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={downloadPdf}
+                  className="flex-1 rounded-[16px] border border-line bg-panel py-3.5 text-sm font-bold text-text"
+                >
+                  Descargar
+                </button>
+                <button
+                  type="button"
+                  onClick={sharePdf}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-[16px] bg-amber py-3.5 text-sm font-extrabold text-[#1a1205] transition-transform active:scale-[0.97]"
+                >
+                  <Icon name="send" size={17} /> Compartir
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

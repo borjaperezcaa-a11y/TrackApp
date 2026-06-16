@@ -110,7 +110,7 @@ body {
   width: 100%;
   max-width: 480px;
   margin-inline: auto;
-  padding: 6px 18px calc(130px + env(safe-area-inset-bottom));
+  padding: calc(6px + env(safe-area-inset-top)) 18px calc(130px + env(safe-area-inset-bottom));
   min-height: 100dvh;
 }
 

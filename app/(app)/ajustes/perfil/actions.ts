@@ -60,9 +60,16 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
   // La numeración de arranque (serie + nº inicial) solo se puede tocar mientras
   // no haya facturas emitidas en la app: una vez iniciada la cadena, cambiarla
   // rompería la correlación (Verifactu lo exige). Lo verificamos en servidor.
-  const { count: emittedCount } = await supabase
+  const { count: emittedCount, error: countErr } = await supabase
     .from("invoices")
-    .select("id", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+  // Fail-closed: si no podemos verificar cuántas facturas hay, NO tocamos la
+  // numeración (cambiarla con la cadena ya iniciada rompería la correlación
+  // Verifactu). Es preferible un reintento a un cambio peligroso.
+  if (countErr) {
+    return { error: "No se pudo verificar la numeración. Inténtalo de nuevo en un momento." };
+  }
   const locked = (emittedCount ?? 0) > 0;
 
   // Si está bloqueado, no se toca la numeración. Si no, se actualiza la serie

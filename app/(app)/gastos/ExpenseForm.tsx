@@ -2,7 +2,6 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -178,6 +177,9 @@ export function ExpenseForm({
     startSave(async () => {
       let fotoPath = values.foto_path;
       if (photo?.blob) {
+        // Carga diferida del cliente de Supabase: solo se descarga (~70 kB) si de
+        // verdad se sube una foto, no al abrir la página.
+        const { createClient } = await import("@/lib/supabase/client");
         const supabase = createClient();
         const path = `${userId}/${Date.now()}.jpg`;
         const { error: upErr } = await supabase.storage

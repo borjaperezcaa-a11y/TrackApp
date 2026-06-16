@@ -2,7 +2,6 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -240,6 +239,8 @@ export function ExternalInvoiceForm({
     startSave(async () => {
       let archivoPath = values.archivo_path;
       if (file?.blob) {
+        // Carga diferida del cliente de Supabase: solo al subir el archivo.
+        const { createClient } = await import("@/lib/supabase/client");
         const supabase = createClient();
         const path = `${userId}/${Date.now()}.${file.ext}`;
         const { error: upErr } = await supabase.storage

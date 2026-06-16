@@ -66,6 +66,16 @@ export function round2(n: number): number {
 }
 
 /**
+ * Convierte un valor a número de forma SEGURA: si no es finito (null, undefined,
+ * texto, NaN) devuelve 0. Imprescindible al agregar importes que vienen de la BD,
+ * para que un dato corrupto no contamine un KPI entero con "NaN €".
+ */
+export function num(x: unknown): number {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
  * Parsea un importe escrito por el usuario a número.
  * - Los <input type="number"> entregan el decimal con PUNTO y sin separador de
  *   millares (formato en-US): "1500.00", "87.4" → se usan tal cual.
@@ -82,9 +92,17 @@ export function parseDecimal(s: string): number {
   return Number(t);
 }
 
-/** Date | string ISO → "31/03/2025" */
+/** Date | string ISO ("YYYY-MM-DD") → "31/03/2025" (DD/MM/AAAA) */
 export function dateES(d: Date | string): string {
+  // Caso normal: fechas de Postgres "YYYY-MM-DD". Se formatea desde las propias
+  // partes del texto, sin pasar por `new Date`, para que la zona horaria del
+  // runtime NO pueda desplazar el día (y se garantice siempre DD/MM/AAAA).
+  if (typeof d === "string") {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  }
   const date = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "2-digit",
@@ -92,10 +110,39 @@ export function dateES(d: Date | string): string {
   }).format(date);
 }
 
-/** "2025-03-31" (para inputs date / Postgres) */
+/**
+ * "31/03/2025" (DD/MM/AAAA) → "2025-03-31" (ISO). Devuelve "" si la fecha no es
+ * válida o está incompleta. Rechaza fechas imposibles (ej. 31/02/2025).
+ */
+export function dmyToISO(s: string): string {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s.trim());
+  if (!m) return "";
+  const d = Number(m[1]);
+  const mo = Number(m[2]);
+  const y = Number(m[3]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return "";
+  // Verifica que la fecha existe de verdad (descarta 31/02, 30/02, etc.).
+  const dt = new Date(y, mo - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${y}-${pad(mo)}-${pad(d)}`;
+}
+
+/** "2025-03-31" (para inputs date / Postgres). Estable en zona España. */
 export function dateISO(d: Date | string): string {
+  if (typeof d === "string") {
+    const m = /^(\d{4}-\d{2}-\d{2})/.exec(d);
+    if (m) return m[1];
+  }
   const date = typeof d === "string" ? new Date(d) : d;
-  return date.toISOString().slice(0, 10);
+  if (Number.isNaN(date.getTime())) return "";
+  // en-CA produce "YYYY-MM-DD"; fijamos Europe/Madrid para no depender del runtime.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
 /**

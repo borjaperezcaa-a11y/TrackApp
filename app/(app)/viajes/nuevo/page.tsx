@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { todayMadrid } from "@/lib/format";
+import { routingEnabled } from "@/lib/routing";
 import { TripForm } from "../TripForm";
 import { createTripAction } from "../actions";
 
@@ -38,6 +39,7 @@ export default async function NuevoViajePage({
           importe: "",
         }}
         submitLabel="GUARDAR VIAJE"
+        routingEnabled={routingEnabled()}
       />
     </>
   );

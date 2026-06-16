@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { ConfirmDelete } from "@/components/ui/ConfirmDelete";
 import { createClient } from "@/lib/supabase/server";
 import { eur, dateES, amount } from "@/lib/format";
+import { routingEnabled } from "@/lib/routing";
 import type { Trip } from "@/lib/types";
 import { TripForm } from "../TripForm";
 import { updateTripAction, deleteTripAction } from "../actions";
@@ -80,6 +81,7 @@ export default async function EditarViajePage({ params }: { params: Promise<{ id
           importe: String(t.importe),
         }}
         submitLabel="GUARDAR CAMBIOS"
+        routingEnabled={routingEnabled()}
       />
       <ConfirmDelete
         action={deleteTripAction.bind(null, id)}
