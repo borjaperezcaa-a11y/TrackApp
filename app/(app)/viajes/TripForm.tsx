@@ -205,7 +205,7 @@ export function TripForm({
         <input id="descripcion" name="descripcion" defaultValue={values.descripcion} placeholder="Fruta · carga completa" />
       </Field>
 
-      <Field label="Peso de la carga" htmlFor="peso" hint="Para el €/tonelada-km en estadísticas">
+      <Field label="Peso de la carga" htmlFor="peso" hint="Opcional · se guarda para futuras estadísticas por carga">
         <div className="flex gap-2">
           <input
             id="peso"
