@@ -9,28 +9,31 @@ import { eur, dateES, amount } from "@/lib/format";
 
 export const metadata = { title: "Viajes · TrackApp" };
 
-type TripRow = {
-  id: string;
-  fecha: string;
-  origen: string | null;
-  destino: string | null;
-  descripcion: string | null;
-  km: number | null;
-  importe: number;
-  estado: "pendiente" | "facturado";
-};
+type ViajeRow = { id: string; fecha: string; origen: string | null; destino: string | null; km: number | null };
+type PorteAgg = { total: number; n: number; pendientes: number };
 
 export default async function ViajesPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("trips")
-    .select("id, fecha, origen, destino, descripcion, km, importe, estado")
-    // pendientes primero; dentro de cada grupo, los más recientes arriba.
-    .order("estado", { ascending: false }) // 'pendiente' > 'facturado' alfabéticamente
-    .order("fecha", { ascending: false });
-  const trips = (data ?? []) as TripRow[];
-  const pendientes = trips.filter((t) => t.estado === "pendiente");
-  const facturados = trips.filter((t) => t.estado === "facturado");
+  const [{ data: vData, error: vErr }, { data: pData, error: pErr }] = await Promise.all([
+    supabase.from("viajes").select("id, fecha, origen, destino, km").order("fecha", { ascending: false }),
+    supabase.from("trips").select("viaje_id, importe, estado"),
+  ]);
+  const error = vErr || pErr;
+  const viajes = (vData ?? []) as ViajeRow[];
+
+  // Agrega los portes por viaje: total facturable, nº y cuántos pendientes.
+  const agg = new Map<string, PorteAgg>();
+  for (const p of (pData ?? []) as { viaje_id: string | null; importe: number; estado: string }[]) {
+    if (!p.viaje_id) continue;
+    const a = agg.get(p.viaje_id) ?? { total: 0, n: 0, pendientes: 0 };
+    a.total += Number(p.importe);
+    a.n += 1;
+    if (p.estado !== "facturado") a.pendientes += 1;
+    agg.set(p.viaje_id, a);
+  }
+
+  const conPendientes = viajes.filter((v) => (agg.get(v.id)?.pendientes ?? 0) > 0);
+  const cerrados = viajes.filter((v) => (agg.get(v.id)?.pendientes ?? 0) === 0);
 
   return (
     <>
@@ -38,28 +41,28 @@ export default async function ViajesPage() {
 
       {error ? (
         <LoadError />
-      ) : trips.length === 0 ? (
+      ) : viajes.length === 0 ? (
         <div className="mt-10 text-center">
           <p className="text-[15px] font-semibold">Aún no has registrado viajes</p>
           <p className="mx-auto mt-1.5 max-w-[260px] text-[13px] text-dim">
-            Registra tus portes para calcular rentabilidad y generar facturas.
+            Registra un viaje y sus portes para calcular rentabilidad y generar facturas.
           </p>
         </div>
       ) : (
         <div className="stagger">
-          {pendientes.length > 0 && (
+          {conPendientes.length > 0 && (
             <>
-              <SectionLabel>Pendientes</SectionLabel>
-              {pendientes.map((t) => (
-                <TripRowItem key={t.id} t={t} />
+              <SectionLabel>Con portes pendientes</SectionLabel>
+              {conPendientes.map((v) => (
+                <ViajeRowItem key={v.id} v={v} agg={agg.get(v.id)} />
               ))}
             </>
           )}
-          {facturados.length > 0 && (
+          {cerrados.length > 0 && (
             <>
               <SectionLabel>Facturados</SectionLabel>
-              {facturados.map((t) => (
-                <TripRowItem key={t.id} t={t} />
+              {cerrados.map((v) => (
+                <ViajeRowItem key={v.id} v={v} agg={agg.get(v.id)} />
               ))}
             </>
           )}
@@ -69,32 +72,32 @@ export default async function ViajesPage() {
   );
 }
 
-function TripRowItem({ t }: { t: TripRow }) {
-  const ek = eurPerKm(t.importe, t.km);
+function ViajeRowItem({ v, agg }: { v: ViajeRow; agg?: PorteAgg }) {
+  const total = agg?.total ?? 0;
+  const n = agg?.n ?? 0;
+  const ek = eurPerKm(total, v.km);
   const prof = profitability(ek);
-  const ruta =
-    t.origen && t.destino ? `${t.origen} → ${t.destino}` : t.origen || t.destino || "Viaje";
+  const ruta = v.origen && v.destino ? `${v.origen} → ${v.destino}` : v.origen || v.destino || "Viaje";
   const sub = [
-    dateES(t.fecha),
-    t.descripcion || null,
-    t.km != null ? `${amount(t.km).replace(",00", "")} km` : null,
+    dateES(v.fecha),
+    v.km != null ? `${amount(v.km).replace(",00", "")} km` : null,
+    `${n} ${n === 1 ? "porte" : "portes"}`,
     ek != null ? `${ek.toFixed(2).replace(".", ",")} €/km` : null,
     prof?.label,
   ]
     .filter(Boolean)
     .join(" · ");
+  const facturado = (agg?.pendientes ?? 0) === 0 && n > 0;
   return (
     <Row
-      href={`/viajes/${t.id}`}
+      href={`/viajes/${v.id}`}
       icon={<Icon name="truck" />}
       title={ruta}
       subtitle={sub}
       right={
         <div className="flex flex-col items-end gap-1">
-          <div className="font-display text-xl font-bold tnum">{eur(t.importe)}</div>
-          <Badge tone={t.estado === "facturado" ? "good" : "mid"}>
-            {t.estado === "facturado" ? "Facturado" : "Pendiente"}
-          </Badge>
+          <div className="font-display text-xl font-bold tnum">{eur(total)}</div>
+          <Badge tone={facturado ? "good" : "mid"}>{facturado ? "Facturado" : "Pendiente"}</Badge>
         </div>
       }
     />

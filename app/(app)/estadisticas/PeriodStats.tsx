@@ -14,6 +14,7 @@ import {
   type SInvoice,
   type STrip,
   type SExpense,
+  type SViaje,
 } from "@/lib/stats";
 import { BarChart } from "@/components/charts/BarChart";
 import { Donut } from "@/components/charts/Donut";
@@ -56,12 +57,14 @@ const CATEGORY_COLORS: Record<string, string> = {
 export function PeriodStats({
   invoices,
   trips,
+  viajes,
   expenses,
   years,
   defaultYear,
 }: {
   invoices: SInvoice[];
-  trips: STrip[];
+  trips: STrip[]; // portes (para rankings de rutas por importe)
+  viajes: SViaje[]; // viajes físicos (para los km, contados una vez)
   expenses: SExpense[];
   years: number[];
   defaultYear: number;
@@ -72,7 +75,10 @@ export function PeriodStats({
 
   // Memoizados: solo se recalculan al cambiar año/periodo (o los datos), no en
   // cada render. Mantiene la pantalla fluida en móviles con muchos registros.
-  const k = useMemo(() => periodKpis(invoices, trips, expenses, year, period), [invoices, trips, expenses, year, period]);
+  const k = useMemo(
+    () => periodKpis(invoices, viajes, expenses, year, period),
+    [invoices, viajes, expenses, year, period],
+  );
   const bkts = useMemo(() => buckets(invoices, expenses, year, period), [invoices, expenses, year, period]);
   const cats = useMemo(
     () =>

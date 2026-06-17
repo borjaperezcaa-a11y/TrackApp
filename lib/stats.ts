@@ -30,6 +30,10 @@ export type STrip = {
 // `iva` = IVA soportado (deducible) del gasto. Opcional → 0 si no consta.
 export type SExpense = { fecha: string; categoria: string; total: number; iva?: number };
 
+// Viaje FÍSICO para el cálculo de km: los km se cuentan UNA vez por viaje (no por
+// porte), así no se duplican cuando un viaje lleva carga para varios clientes.
+export type SViaje = { fecha: string; km: number | null };
+
 export type Kpis = {
   ingresos: number;
   gastos: number;
@@ -55,18 +59,20 @@ const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
 export function periodKpis(
   invoices: SInvoice[],
-  trips: STrip[],
+  // Fuente de km = VIAJES físicos (una vez por viaje). STrip[] también encaja por
+  // estructura (tiene fecha+km), de modo que los tests siguen valiendo.
+  viajes: SViaje[],
   expenses: SExpense[],
   year: number,
   period: Period,
 ): Kpis {
   const inv = invoices.filter((i) => isInPeriod(i.fecha, year, period));
-  const tr = trips.filter((t) => isInPeriod(t.fecha, year, period));
+  const vj = viajes.filter((v) => isInPeriod(v.fecha, year, period));
   const ex = expenses.filter((e) => isInPeriod(e.fecha, year, period));
 
   const ingresos = sum(inv.map((i) => i.base));
   const gastos = sum(ex.map((e) => e.total));
-  const km = sum(tr.map((t) => t.km ?? 0));
+  const km = sum(vj.map((v) => v.km ?? 0));
   const beneficio = ingresos - gastos;
   const gastoCombustible = sum(ex.filter((e) => e.categoria === "Gasoil").map((e) => e.total));
   const ivaRepercutido = sum(inv.map((i) => i.iva ?? 0));

@@ -9,6 +9,7 @@ import {
   type SInvoice,
   type STrip,
   type SExpense,
+  type SViaje,
 } from "@/lib/stats";
 
 const invoices: SInvoice[] = [
@@ -131,6 +132,15 @@ describe("stats · KPIs", () => {
     expect(k.ingresos).toBe(0); // 1000 − 1000
     expect(k.ivaRepercutido).toBe(0); // 210 − 210
     expect(k.nFacturas).toBe(1); // solo la original cuenta; la rectificativa no
+  });
+
+  it("km salen de los viajes (una vez), no de cada porte", () => {
+    // Un viaje de 1000 km aunque lleve carga para varios clientes: km = 1000, no 3000.
+    const viajes: SViaje[] = [{ fecha: "2025-05-10", km: 1000 }];
+    const inv: SInvoice[] = [{ fecha: "2025-05-10", base: 3000, total: 3630, clientName: "A" }];
+    const k = periodKpis(inv, viajes, [], 2025, "2");
+    expect(k.km).toBe(1000);
+    expect(k.eurKm).toBeCloseTo(3, 4); // 3000 / 1000
   });
 
   it("gasto /km: todos los gastos del periodo / km del periodo", () => {
