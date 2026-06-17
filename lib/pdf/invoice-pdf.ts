@@ -6,6 +6,7 @@
  * Se ejecuta en el cliente. pdf-lib (vectorial, fuentes estándar).
  */
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type RGB } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
 import type { Invoice, InvoiceLine } from "@/lib/types";
 import { amount, eur, dateES } from "@/lib/format";
@@ -15,6 +16,11 @@ export type FacturaPlantilla = "trackapp" | "elegante" | "moderna";
 // A4 en puntos
 const W = 595.28;
 const H = 841.89;
+
+// Tamaño máximo del logo: IGUAL en las 3 plantillas, para que el mismo logo se
+// vea consistente en todas. Se escala para caber sin ampliar (cap a 1x).
+const LOGO_MAX_W = 130;
+const LOGO_MAX_H = 52;
 
 function format1(n: number): string {
   return n.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -38,6 +44,22 @@ async function embedLogo(pdf: PDFDocument, url?: string | null): Promise<PDFImag
     }
   } catch {
     return null;
+  }
+}
+
+/**
+ * Carga e incrusta una fuente TTF desde /public (subset: solo los glifos usados).
+ * Si falla (offline, o en tests Node sin servidor), devuelve la fuente estándar
+ * de respaldo, de modo que el PDF siempre se genera.
+ */
+async function loadFont(pdf: PDFDocument, url: string, fallback: PDFFont): Promise<PDFFont> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return fallback;
+    const bytes = await res.arrayBuffer();
+    return await pdf.embedFont(bytes, { subset: true });
+  } catch {
+    return fallback;
   }
 }
 
@@ -140,7 +162,7 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
 
   const logo = await embedLogo(pdf, em.logo_url);
   if (logo) {
-    const s = Math.min(1, 120 / logo.width, 64 / logo.height);
+    const s = Math.min(1, LOGO_MAX_W / logo.width, LOGO_MAX_H / logo.height);
     page.drawImage(logo, { x: W - M - logo.width * s, y: H - 40 - logo.height * s, width: logo.width * s, height: logo.height * s });
   }
 
@@ -256,10 +278,11 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
 // ════════════════════════════════════════════════════════════════════════════
 async function buildElegante(invoice: Invoice, lines: InvoiceLine[]): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
+  pdf.registerFontkit(fontkit);
   const page = pdf.addPage([W, H]);
-  const sans = await pdf.embedFont(StandardFonts.Helvetica);
-  const sansB = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const serif = await pdf.embedFont(StandardFonts.TimesRomanBold);
+  const sans = await loadFont(pdf, "/fonts/Inter-Regular.ttf", await pdf.embedFont(StandardFonts.Helvetica));
+  const sansB = await loadFont(pdf, "/fonts/Inter-Bold.ttf", await pdf.embedFont(StandardFonts.HelveticaBold));
+  const serif = await loadFont(pdf, "/fonts/Spectral-SemiBold.ttf", await pdf.embedFont(StandardFonts.TimesRomanBold));
 
   const ACCENT = rgb(0.106, 0.227, 0.357); // #1B3A5B
   const INK = rgb(0.102, 0.122, 0.169);
@@ -292,7 +315,7 @@ async function buildElegante(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
   // Logo (izq) + wordmark FACTURA y meta (der)
   const logo = await embedLogo(pdf, em.logo_url);
   if (logo) {
-    const s = Math.min(1, 130 / logo.width, 56 / logo.height);
+    const s = Math.min(1, LOGO_MAX_W / logo.width, LOGO_MAX_H / logo.height);
     page.drawImage(logo, { x: m, y: H - 44 - logo.height * s, width: logo.width * s, height: logo.height * s });
   }
   text((invoice.tipo && invoice.tipo !== "F1" ? "RECTIFICATIVA" : "FACTURA").toUpperCase(), W - m - 200, 56, {
@@ -421,9 +444,11 @@ async function buildElegante(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
 // ════════════════════════════════════════════════════════════════════════════
 async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
+  pdf.registerFontkit(fontkit);
   const page = pdf.addPage([W, H]);
-  const sans = await pdf.embedFont(StandardFonts.Helvetica);
-  const sansB = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const sans = await loadFont(pdf, "/fonts/DMSans-Regular.ttf", await pdf.embedFont(StandardFonts.Helvetica));
+  const sansB = await loadFont(pdf, "/fonts/DMSans-Bold.ttf", await pdf.embedFont(StandardFonts.HelveticaBold));
+  const display = await loadFont(pdf, "/fonts/SpaceGrotesk-Bold.ttf", sansB);
 
   const ACCENT = rgb(0.31, 0.275, 0.898); // #4F46E5
   const SOFT = rgb(0.933, 0.941, 1); // #EEF0FF
@@ -456,7 +481,7 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
   // Logo en chip blanco (izq)
   const logo = await embedLogo(pdf, em.logo_url);
   if (logo) {
-    const s = Math.min(1, 120 / logo.width, 40 / logo.height);
+    const s = Math.min(1, LOGO_MAX_W / logo.width, LOGO_MAX_H / logo.height);
     const cw = logo.width * s + 20;
     const ch = logo.height * s + 16;
     page.drawRectangle({ x: m, y: H - 34 - ch, width: cw, height: ch, color: WHITE });
@@ -464,7 +489,7 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
   }
   // Wordmark + meta (der)
   text(invoice.tipo && invoice.tipo !== "F1" ? "Rectificativa" : "Factura", W - m - 220, 56, {
-    font: sansB,
+    font: display,
     size: 30,
     color: WHITE,
     align: "right",
@@ -497,7 +522,7 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
     let yy = cardY + 18;
     text(label.toUpperCase(), x + 14, yy, { size: 9, font: sansB, color: ACCENT });
     yy += 16;
-    text(clip(name, cardW - 28, sansB, 13), x + 14, yy, { font: sansB, size: 13 });
+    text(clip(name, cardW - 28, display, 13), x + 14, yy, { font: display, size: 13 });
     yy += 14;
     for (const l of lns) {
       if (l) {
@@ -557,7 +582,7 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
   tr += 2;
   page.drawRectangle({ x: tboxX, y: H - tr - 18, width: tboxW, height: 30, color: ACCENT });
   text("TOTAL FACTURA", tboxX + 12, tr + 3, { size: 9.5, font: sansB, color: WHITE });
-  text(eur(invoice.total), tboxX, tr + 5, { size: 16, font: sansB, color: WHITE, align: "right", w: tboxW - 12 });
+  text(eur(invoice.total), tboxX, tr + 5, { size: 16, font: display, color: WHITE, align: "right", w: tboxW - 12 });
 
   // Datos de pago (izq, bajo la tabla)
   const payY = ty + 26;
