@@ -176,7 +176,7 @@ export function ViajeForm({
               !multi ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
             )}
           >
-            No · un cliente
+            No · un porte
           </button>
           <button
             type="button"
@@ -187,13 +187,13 @@ export function ViajeForm({
               multi ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
             )}
           >
-            Sí · varios clientes
+            Sí · varios portes
           </button>
         </div>
         <p className="mt-2 text-[11.5px] text-dim">
           {multi
-            ? "Añadirás varios portes, cada uno con su cliente, ruta e importe."
-            : "Un solo cliente: pones el origen y el destino una sola vez."}
+            ? "Añadirás varios portes, cada uno con su carga, ruta e importe."
+            : "Un solo porte: pones el origen y el destino una sola vez."}
         </p>
       </div>
 
