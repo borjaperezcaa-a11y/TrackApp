@@ -21,11 +21,13 @@ export function InvoiceDetailClient({
   lines,
   annulledBy,
   original,
+  profileLogoUrl,
 }: {
   invoice: Invoice;
   lines: InvoiceLine[];
   annulledBy: Ref;
   original: Ref;
+  profileLogoUrl?: string | null;
 }) {
   const router = useRouter();
   const em = invoice.emisor_snapshot;
@@ -153,7 +155,12 @@ export function InvoiceDetailClient({
 
   async function buildPdfFile(): Promise<File> {
     const { buildInvoicePdf } = await import("@/lib/pdf/invoice-pdf");
-    const bytes = await buildInvoicePdf({ ...invoice, pagada }, lines);
+    // Si la factura no grabó logo (emitida antes de tenerlo), usa el del perfil actual.
+    const emisor = {
+      ...invoice.emisor_snapshot,
+      logo_url: invoice.emisor_snapshot?.logo_url || profileLogoUrl || null,
+    };
+    const bytes = await buildInvoicePdf({ ...invoice, pagada, emisor_snapshot: emisor }, lines);
     return new File([bytes as unknown as BlobPart], pdfFilename, { type: "application/pdf" });
   }
 

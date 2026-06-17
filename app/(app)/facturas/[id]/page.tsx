@@ -58,6 +58,11 @@ export default async function FacturaDetallePage({
     original = orig ?? null;
   }
 
+  // Logo actual del perfil: respaldo para facturas emitidas antes de tener logo
+  // (el logo es branding, no dato fiscal; los importes/huella siguen del snapshot).
+  const { data: prof } = await supabase.from("profiles").select("logo_url").maybeSingle();
+  const profileLogoUrl = (prof?.logo_url as string | null) ?? null;
+
   return (
     <>
       <PageHeader title={invoice.numero} kicker="Factura" fallbackHref="/facturas" />
@@ -66,6 +71,7 @@ export default async function FacturaDetallePage({
         lines={(linesData ?? []) as InvoiceLine[]}
         annulledBy={rect ?? null}
         original={original}
+        profileLogoUrl={profileLogoUrl}
       />
     </>
   );

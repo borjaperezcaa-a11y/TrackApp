@@ -62,6 +62,7 @@ export async function buildInvoicePdf(invoice: Invoice, lines: InvoiceLine[]): P
   if (em.logo_url) {
     try {
       const res = await fetch(em.logo_url);
+      if (!res.ok) throw new Error(`logo ${res.status}`);
       const bytes = new Uint8Array(await res.arrayBuffer());
       let img: PDFImage | null = null;
       try {
