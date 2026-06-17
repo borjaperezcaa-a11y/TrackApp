@@ -32,8 +32,14 @@ export default async function ViajesPage() {
     agg.set(p.viaje_id, a);
   }
 
-  const conPendientes = viajes.filter((v) => (agg.get(v.id)?.pendientes ?? 0) > 0);
-  const cerrados = viajes.filter((v) => (agg.get(v.id)?.pendientes ?? 0) === 0);
+  // Un viaje está "facturado" solo si tiene portes y todos están facturados.
+  // Un viaje sin portes (se quitaron todos) cuenta como pendiente (hay que añadirlos).
+  const estaFacturado = (v: ViajeRow) => {
+    const a = agg.get(v.id);
+    return !!a && a.n > 0 && a.pendientes === 0;
+  };
+  const cerrados = viajes.filter(estaFacturado);
+  const conPendientes = viajes.filter((v) => !estaFacturado(v));
 
   return (
     <>
