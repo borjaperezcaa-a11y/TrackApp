@@ -15,8 +15,8 @@ import { quickCreateClient } from "../clientes/actions";
 type ClientOption = { id: string; nombre: string };
 type PorteDraft = {
   client_id: string;
-  origen: string;
-  destino: string;
+  origenes: string[]; // cargas (puede haber varias = grupaje)
+  destinos: string[]; // descargas
   descripcion: string;
   peso: string;
   peso_unidad: "t" | "kg";
@@ -24,10 +24,10 @@ type PorteDraft = {
 };
 
 const initial: TripState = {};
-const emptyPorte = (origen = "", destino = ""): PorteDraft => ({
+const emptyPorte = (): PorteDraft => ({
   client_id: "",
-  origen,
-  destino,
+  origenes: [""],
+  destinos: [""],
   descripcion: "",
   peso: "",
   peso_unidad: "kg", // por defecto kg
@@ -107,11 +107,59 @@ export function ViajeForm({
     setPortes((ps) => ps.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
   }
   function addPorte() {
-    // El nuevo porte hereda la ruta del trayecto (editable).
-    setPortes((ps) => [...ps, emptyPorte(origen, destino)]);
+    setPortes((ps) => [...ps, emptyPorte()]);
   }
   function removePorte(i: number) {
     setPortes((ps) => (ps.length > 1 ? ps.filter((_, idx) => idx !== i) : ps));
+  }
+
+  // Paradas de carga/descarga de un porte (grupaje: varias por porte).
+  type StopField = "origenes" | "destinos";
+  function setStop(i: number, field: StopField, j: number, val: string) {
+    setPortes((ps) => ps.map((p, idx) => (idx === i ? { ...p, [field]: p[field].map((s, k) => (k === j ? val : s)) } : p)));
+  }
+  function addStop(i: number, field: StopField) {
+    setPortes((ps) => ps.map((p, idx) => (idx === i ? { ...p, [field]: [...p[field], ""] } : p)));
+  }
+  function removeStop(i: number, field: StopField, j: number) {
+    setPortes((ps) =>
+      ps.map((p, idx) => (idx === i ? { ...p, [field]: p[field].length > 1 ? p[field].filter((_, k) => k !== j) : p[field] } : p)),
+    );
+  }
+  // En "un porte" la ruta se hereda del trayecto; este flag revela las paradas
+  // por si ese porte único lleva grupaje (varias cargas/descargas).
+  const [grupaje, setGrupaje] = useState(false);
+
+  function renderStops(i: number, field: StopField, label: string, placeholder: string) {
+    const stops = portes[i][field];
+    return (
+      <div>
+        <div className="mb-1 px-1 text-[11px] font-bold uppercase tracking-[0.1em] text-dim">{label}</div>
+        {stops.map((s, j) => (
+          <div key={j} className="mb-1.5 flex gap-2">
+            <input
+              value={s}
+              onChange={(e) => setStop(i, field, j, e.target.value)}
+              placeholder={placeholder}
+              className="flex-1"
+            />
+            {stops.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeStop(i, field, j)}
+                aria-label="Quitar parada"
+                className="flex-none rounded-xl border border-line px-3 font-bold text-dim"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+        <button type="button" onClick={() => addStop(i, field)} className="inline-flex items-center gap-1 text-[12.5px] font-bold text-amber">
+          <Icon name="plus" size={13} /> Añadir {field === "origenes" ? "carga" : "descarga"}
+        </button>
+      </div>
+    );
   }
 
   async function createClient() {
@@ -265,16 +313,21 @@ export function ViajeForm({
             </button>
           </Field>
 
-          {/* La ruta del porte solo se pide en multiporte; con un solo porte usa la del viaje. */}
-          {multi && (
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="Origen" htmlFor={`po-${i}`}>
-                <input id={`po-${i}`} value={p.origen} onChange={(e) => setPorte(i, { origen: e.target.value })} placeholder="Santiago (15890)" />
-              </Field>
-              <Field label="Destino" htmlFor={`pd-${i}`}>
-                <input id={`pd-${i}`} value={p.destino} onChange={(e) => setPorte(i, { destino: e.target.value })} placeholder="Irún (20305)" />
-              </Field>
+          {/* Cargas/descargas del porte. En "un porte" se hereda la ruta del viaje;
+              con grupaje (o en multiporte) se detallan las paradas (varias por porte). */}
+          {multi || grupaje ? (
+            <div className="mt-1 space-y-2.5">
+              {renderStops(i, "origenes", "Cargas (orígenes)", "Santiago (15890)")}
+              {renderStops(i, "destinos", "Descargas (destinos)", "Irún (20305)")}
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setGrupaje(true)}
+              className="mt-1 inline-flex items-center gap-1.5 text-[12.5px] font-bold text-amber"
+            >
+              <Icon name="plus" size={14} /> Varias cargas/descargas (grupaje)
+            </button>
           )}
 
           <Field label="Descripción" htmlFor={`pdesc-${i}`} hint="Opcional">

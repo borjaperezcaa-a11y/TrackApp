@@ -110,9 +110,13 @@ export async function createViajeAction(_prev: TripState, formData: FormData): P
     if (!uuid.safeParse(client_id).success) return { error: "Cada porte necesita un cliente." };
     const importe = num(String(d?.importe ?? ""));
     if (!Number.isFinite(importe) || importe <= 0) return { error: "Cada porte necesita un importe mayor que 0." };
+    // Cargas/descargas: pueden ser varias por porte (grupaje). Se unen con " · ".
     // Si el porte no trae ruta propia, hereda la del trayecto.
-    const origen = String(d?.origen ?? "").trim() || v.row.origen;
-    const destino = String(d?.destino ?? "").trim() || v.row.destino;
+    const asList = (x: unknown) => (Array.isArray(x) ? x.map((s) => String(s).trim()).filter(Boolean) : []);
+    const origenes = asList(d?.origenes);
+    const destinos = asList(d?.destinos);
+    const origen = origenes.length ? origenes.join(" · ") : v.row.origen;
+    const destino = destinos.length ? destinos.join(" · ") : v.row.destino;
     const descripcion = String(d?.descripcion ?? "").trim() || null;
     // Carga (peso) del porte, opcional. Unidad por defecto kg.
     const pesoStr = String(d?.peso ?? "").trim();
