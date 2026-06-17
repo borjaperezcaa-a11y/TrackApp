@@ -124,7 +124,7 @@ function MockFactura() {
         <Icon name="doc" size={12} /> Descargar PDF
       </div>
       <div className="mt-1.5 flex items-center justify-center gap-1.5 rounded-[12px] border border-line bg-panel2 py-2 text-[10px] font-bold">
-        <span className="grid h-4 w-4 place-items-center rounded-full text-white" style={{ background: "#25D366" }}>
+        <span className="wm-pulse grid h-4 w-4 place-items-center rounded-full text-white" style={{ background: "#25D366" }}>
           <Icon name="send" size={9} />
         </span>
         Enviar por WhatsApp
@@ -137,7 +137,8 @@ function MockGasto() {
   return (
     <div className="flex h-full flex-col items-center justify-center">
       {/* ticket */}
-      <div className="w-[112px] rounded-t-[8px] bg-white px-2.5 pt-2.5 pb-4 shadow-[var(--shadow)]" style={{ clipPath: "polygon(0 0,100% 0,100% 94%,90% 100%,80% 94%,70% 100%,60% 94%,50% 100%,40% 94%,30% 100%,20% 94%,10% 100%,0 94%)" }}>
+      <div className="relative w-[112px] rounded-t-[8px] bg-white px-2.5 pt-2.5 pb-4 shadow-[var(--shadow)]" style={{ clipPath: "polygon(0 0,100% 0,100% 94%,90% 100%,80% 94%,70% 100%,60% 94%,50% 100%,40% 94%,30% 100%,20% 94%,10% 100%,0 94%)" }}>
+        <div className="wm-scan absolute left-0 right-0 h-[2px]" style={{ background: "var(--amber)", boxShadow: "0 0 6px var(--amber)" }} />
         <div className="mx-auto h-1.5 w-12 rounded bg-[#222]" />
         <div className="mt-2 space-y-1">
           <div className="h-1 w-full rounded bg-[#ddd]" />
@@ -251,6 +252,14 @@ export function WelcomeSlides() {
 
   return (
     <div className="fixed inset-0 z-[200] flex flex-col" style={{ background: "var(--bg)" }} role="dialog" aria-modal="true">
+      <style>{`
+        @keyframes wmReveal { from { opacity:0; transform: translateY(12px) scale(.97) } to { opacity:1; transform:none } }
+        .wm-reveal { animation: wmReveal .38s ease-out both }
+        @keyframes wmScan { 0%{ top:10% } 100%{ top:72% } }
+        .wm-scan { animation: wmScan 1.7s ease-in-out infinite alternate }
+        @keyframes wmPulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.08) } }
+        .wm-pulse { animation: wmPulse 1.5s ease-in-out infinite }
+      `}</style>
       <div className="flex justify-end px-5 pt-5">
         <button type="button" onClick={close} className="text-[13px] font-bold text-dim">
           Saltar
@@ -258,9 +267,11 @@ export function WelcomeSlides() {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-2 text-center">
-        {slide.visual}
-        <h2 className="mt-5 font-display text-[23px] font-bold leading-tight">{slide.title}</h2>
-        <p className="mx-auto mt-2 max-w-[320px] text-[14px] leading-relaxed text-dim">{slide.text}</p>
+        <div key={i} className="wm-reveal flex w-full flex-col items-center">
+          {slide.visual}
+          <h2 className="mt-5 font-display text-[23px] font-bold leading-tight">{slide.title}</h2>
+          <p className="mx-auto mt-2 max-w-[320px] text-[14px] leading-relaxed text-dim">{slide.text}</p>
+        </div>
       </div>
 
       <div className="flex justify-center gap-2 pb-4">
