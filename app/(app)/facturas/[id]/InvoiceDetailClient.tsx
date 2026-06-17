@@ -407,8 +407,8 @@ export function InvoiceDetailClient({
               >
                 <div className="text-sm font-bold">Corregir importe (por diferencias)</div>
                 <div className="mt-0.5 text-[12px] text-dim">
-                  Ajusta el precio; se emite una rectificativa solo por la diferencia. La original
-                  sigue válida.
+                  Ajusta el <b>precio</b> de los portes; se emite una rectificativa solo por la
+                  diferencia. La original sigue válida. <b>No cambia el IVA ni el IRPF.</b>
                 </div>
               </button>
               <button
@@ -418,8 +418,9 @@ export function InvoiceDetailClient({
               >
                 <div className="text-sm font-bold text-red">Anular la factura</div>
                 <div className="mt-0.5 text-[12px] text-dim">
-                  Rectificativa que la deja a cero (importes en negativo) y libera sus viajes para
-                  volver a facturar.
+                  La deja a cero (importes en negativo) y libera sus viajes. Úsala si te equivocaste
+                  en el <b>IVA / IRPF</b>, en el cliente o en algo de fondo: anula y vuelve a emitir
+                  una factura nueva correcta.
                 </div>
               </button>
               <button
@@ -434,7 +435,11 @@ export function InvoiceDetailClient({
 
           {rectMode === "corregir" && (
             <div>
-              <p className="mb-2 text-sm font-bold">Corregir importe</p>
+              <p className="mb-1 text-sm font-bold">Corregir importe</p>
+              <p className="mb-2.5 text-[12px] text-dim">
+                Solo cambia el <b>precio</b> de cada porte. Si el error es del <b>IVA o IRPF</b>,
+                vuelve atrás y usa <b>Anular</b> para reemitir con el tipo correcto.
+              </p>
               <div className="space-y-2">
                 {lines.map((ln, i) => (
                   <div key={ln.id} className="flex items-center gap-2 text-[13px]">
