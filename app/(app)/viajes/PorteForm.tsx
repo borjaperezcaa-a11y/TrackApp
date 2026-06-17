@@ -24,13 +24,11 @@ export function PorteForm({
   clients,
   defaults,
   submitLabel = "AÑADIR PORTE",
-  rutaPlaceholder,
 }: {
   action: (prev: TripState, formData: FormData) => Promise<TripState>;
   clients: ClientOption[];
   defaults?: PorteDefaults;
   submitLabel?: string;
-  rutaPlaceholder?: { origen?: string; destino?: string };
 }) {
   const [state, formAction] = useActionState(action, {});
 
@@ -40,11 +38,11 @@ export function PorteForm({
         <ClientSelect clients={clients} name="client_id" defaultValue={defaults?.client_id ?? ""} />
       </Field>
 
-      <Field label="Origen del porte" htmlFor="p-origen" hint="Si lo dejas vacío, usa la ruta del viaje">
-        <input id="p-origen" name="origen" defaultValue={defaults?.origen ?? ""} placeholder={rutaPlaceholder?.origen ?? "Origen"} />
+      <Field label="Origen del porte" htmlFor="p-origen" hint="Viene de la ruta del viaje; cámbialo si este porte es distinto">
+        <input id="p-origen" name="origen" defaultValue={defaults?.origen ?? ""} placeholder="Santiago (15890)" required />
       </Field>
-      <Field label="Destino del porte" htmlFor="p-destino" hint="Si lo dejas vacío, usa la ruta del viaje">
-        <input id="p-destino" name="destino" defaultValue={defaults?.destino ?? ""} placeholder={rutaPlaceholder?.destino ?? "Destino"} />
+      <Field label="Destino del porte" htmlFor="p-destino">
+        <input id="p-destino" name="destino" defaultValue={defaults?.destino ?? ""} placeholder="Irún (20305)" required />
       </Field>
 
       <Field label="Descripción de la carga" htmlFor="p-descripcion" hint="Opcional">

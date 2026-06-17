@@ -122,7 +122,7 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
       <PorteForm
         action={addPorteAction.bind(null, id)}
         clients={clients}
-        rutaPlaceholder={{ origen: v.origen ?? undefined, destino: v.destino ?? undefined }}
+        defaults={{ origen: v.origen ?? "", destino: v.destino ?? "" }}
       />
 
       {/* Editar trayecto */}

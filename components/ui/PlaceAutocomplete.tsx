@@ -24,6 +24,7 @@ export function PlaceAutocomplete({
   onResolve,
   placeholder,
   enabled,
+  required,
 }: {
   id: string;
   name: string;
@@ -32,6 +33,7 @@ export function PlaceAutocomplete({
   onResolve: (c: ResolvedPlace) => void;
   placeholder?: string;
   enabled: boolean;
+  required?: boolean;
 }) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [open, setOpen] = useState(false);
@@ -133,6 +135,7 @@ export function PlaceAutocomplete({
         }}
         placeholder={placeholder}
         autoComplete="off"
+        required={required}
       />
       {enabled &&
         open &&

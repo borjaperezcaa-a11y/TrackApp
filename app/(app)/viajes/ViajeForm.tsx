@@ -106,6 +106,7 @@ export function ViajeForm({
           onResolve={setOrigenCoord}
           enabled={routingEnabled}
           placeholder="Santiago (15890)"
+          required
         />
       </Field>
       <Field label="Destino" htmlFor="destino" hint={routingEnabled ? "Busca y elige un lugar" : "Parma - IT (43122)"}>
@@ -117,6 +118,7 @@ export function ViajeForm({
           onResolve={setDestinoCoord}
           enabled={routingEnabled}
           placeholder="Irún (20305)"
+          required
         />
       </Field>
 
