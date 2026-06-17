@@ -52,45 +52,40 @@ function parseViaje(formData: FormData):
 }
 
 // ─── PORTE (carga de un cliente: lo que se factura) ───────────────────────────
-const porteSchema = z.object({
-  client_id: z.string().uuid("Selecciona un cliente"),
-  origen: z.string().trim().max(160),
-  destino: z.string().trim().max(160),
-  descripcion: z.string().trim().max(300),
-  peso: z.string().trim(),
-  peso_unidad: z.enum(["t", "kg"]).default("kg"),
-  importe: z.string().trim(),
-});
+// Un porte llega como objeto: { client_id, origenes:[{lugar,cp}], destinos:[...],
+// descripcion, peso, peso_unidad, importe }. Las cargas/descargas (grupaje) se
+// apilan con salto de línea; si no traen ruta propia, heredan la del trayecto.
+type StopDraft = { lugar?: string; cp?: string };
+function porteRowFromDraft(
+  d: Record<string, unknown>,
+  fb: { origen: string | null; destino: string | null },
+): { ok: true; row: Record<string, unknown> } | { ok: false; error: string } {
+  const client_id = typeof d?.client_id === "string" ? d.client_id : "";
+  if (!z.string().uuid().safeParse(client_id).success) return { ok: false, error: "Cada porte necesita un cliente." };
 
-function parsePorte(formData: FormData):
-  | { ok: true; row: Record<string, unknown> }
-  | { ok: false; error: string } {
-  const parsed = porteSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
-  const d = parsed.data;
+  const importe = num(String(d?.importe ?? ""));
+  if (!Number.isFinite(importe) || importe <= 0) return { ok: false, error: "Cada porte necesita un importe mayor que 0." };
 
-  const importe = num(d.importe);
-  if (!Number.isFinite(importe) || importe <= 0) return { ok: false, error: "El importe debe ser mayor que 0" };
+  const asList = (x: unknown) =>
+    Array.isArray(x)
+      ? x.map((s) => conCp((s as StopDraft)?.lugar, (s as StopDraft)?.cp)).filter((t): t is string => Boolean(t))
+      : [];
+  const origenes = asList(d?.origenes);
+  const destinos = asList(d?.destinos);
+  const origen = origenes.length ? origenes.join("\n") : fb.origen;
+  const destino = destinos.length ? destinos.join("\n") : fb.destino;
 
+  const descripcion = String(d?.descripcion ?? "").trim() || null;
+  const pesoStr = String(d?.peso ?? "").trim();
   let peso: number | null = null;
-  if (d.peso !== "") {
-    const p = num(d.peso);
-    if (!Number.isFinite(p) || p < 0) return { ok: false, error: "Peso no válido" };
-    peso = p;
+  if (pesoStr !== "") {
+    const pn = num(pesoStr);
+    if (!Number.isFinite(pn) || pn < 0) return { ok: false, error: "Peso de un porte no válido." };
+    peso = pn;
   }
+  const peso_unidad = d?.peso_unidad === "t" ? "t" : "kg";
 
-  return {
-    ok: true,
-    row: {
-      client_id: d.client_id,
-      origen: d.origen || null,
-      destino: d.destino || null,
-      descripcion: d.descripcion || null,
-      peso,
-      peso_unidad: d.peso_unidad,
-      importe,
-    },
-  };
+  return { ok: true, row: { client_id, origen, destino, descripcion, peso, peso_unidad, importe } };
 }
 
 async function getUser() {
@@ -118,37 +113,11 @@ export async function createViajeAction(_prev: TripState, formData: FormData): P
   }
   if (!Array.isArray(drafts) || drafts.length === 0) return { error: "Añade al menos un porte." };
 
-  const uuid = z.string().uuid();
   const rows: Record<string, unknown>[] = [];
   for (const d of drafts as Record<string, unknown>[]) {
-    const client_id = typeof d?.client_id === "string" ? d.client_id : "";
-    if (!uuid.safeParse(client_id).success) return { error: "Cada porte necesita un cliente." };
-    const importe = num(String(d?.importe ?? ""));
-    if (!Number.isFinite(importe) || importe <= 0) return { error: "Cada porte necesita un importe mayor que 0." };
-    // Cargas/descargas: varias por porte (grupaje), cada una localidad + CP. Se
-    // apilan con salto de línea para que en la factura salgan una bajo otra.
-    // Si el porte no trae ruta propia, hereda la del trayecto.
-    const asList = (x: unknown) =>
-      Array.isArray(x)
-        ? x
-            .map((s) => conCp((s as { lugar?: string })?.lugar, (s as { cp?: string })?.cp))
-            .filter((t): t is string => Boolean(t))
-        : [];
-    const origenes = asList(d?.origenes);
-    const destinos = asList(d?.destinos);
-    const origen = origenes.length ? origenes.join("\n") : v.row.origen;
-    const destino = destinos.length ? destinos.join("\n") : v.row.destino;
-    const descripcion = String(d?.descripcion ?? "").trim() || null;
-    // Carga (peso) del porte, opcional. Unidad por defecto kg.
-    const pesoStr = String(d?.peso ?? "").trim();
-    let peso: number | null = null;
-    if (pesoStr !== "") {
-      const pn = num(pesoStr);
-      if (!Number.isFinite(pn) || pn < 0) return { error: "Peso de un porte no válido." };
-      peso = pn;
-    }
-    const peso_unidad = d?.peso_unidad === "t" ? "t" : "kg";
-    rows.push({ client_id, origen, destino, descripcion, peso, peso_unidad, importe });
+    const r = porteRowFromDraft(d, { origen: v.row.origen, destino: v.row.destino });
+    if (!r.ok) return { error: r.error };
+    rows.push(r.row);
   }
 
   // 1) Viaje físico
@@ -228,17 +197,18 @@ export async function addPorteAction(viajeId: string, _prev: TripState, formData
     .maybeSingle();
   if (!viaje) return { error: "Viaje no encontrado." };
 
-  const p = parsePorte(formData);
+  let draft: unknown;
+  try {
+    draft = JSON.parse(String(formData.get("porte") ?? "{}"));
+  } catch {
+    return { error: "Porte no válido." };
+  }
+  const p = porteRowFromDraft(draft as Record<string, unknown>, { origen: viaje.origen, destino: viaje.destino });
   if (!p.ok) return { error: p.error };
-
-  // Si el porte no trae ruta propia, hereda la del viaje.
-  const porteRow = p.row as { origen: string | null; destino: string | null } & Record<string, unknown>;
-  if (!porteRow.origen) porteRow.origen = viaje.origen;
-  if (!porteRow.destino) porteRow.destino = viaje.destino;
 
   const { error } = await supabase
     .from("trips")
-    .insert({ ...porteRow, fecha: viaje.fecha, viaje_id: viajeId, user_id: user.id, estado: "pendiente" });
+    .insert({ ...p.row, fecha: viaje.fecha, viaje_id: viajeId, user_id: user.id, estado: "pendiente" });
   if (error) return { error: "No se pudo añadir el porte." };
 
   revalidatePath("/viajes");

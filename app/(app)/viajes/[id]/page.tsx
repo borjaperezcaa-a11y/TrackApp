@@ -123,11 +123,7 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
 
       {/* Añadir porte */}
       <div className="mb-2 mt-6 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Añadir porte</div>
-      <PorteForm
-        action={addPorteAction.bind(null, id)}
-        clients={clients}
-        defaults={{ origen: v.origen ?? "", destino: v.destino ?? "" }}
-      />
+      <PorteForm action={addPorteAction.bind(null, id)} clients={clients} />
 
       {/* Editar trayecto */}
       <div className="mb-2 mt-8 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Editar trayecto</div>

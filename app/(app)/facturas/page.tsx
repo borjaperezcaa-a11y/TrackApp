@@ -24,15 +24,18 @@ type InvoiceRow = {
 // Estado de una factura original respecto a sus rectificativas.
 type Mark = "anulada" | "rectificada";
 
-export default async function FacturasPage() {
+export default async function FacturasPage({ searchParams }: { searchParams: Promise<{ n?: string }> }) {
+  const n = Math.min(500, Math.max(20, Number((await searchParams).n) || 50));
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("invoices")
     .select("id, numero, fecha, total, pagada, tipo, rectifica_id, cliente_snapshot")
     // pagada=false (pendientes) primero; dentro de cada grupo, las más recientes arriba.
     .order("pagada", { ascending: true })
-    .order("emitida_at", { ascending: false });
+    .order("emitida_at", { ascending: false })
+    .range(0, n - 1);
   const invoices = (data ?? []) as InvoiceRow[];
+  const hayMas = invoices.length === n; // puede haber más páginas
 
   // Marca las facturas ORIGINALES que tienen una rectificativa apuntándolas:
   // "anulada" si la rectificativa las deja a cero (importe negativo equivalente),
@@ -82,6 +85,14 @@ export default async function FacturasPage() {
                 <InvoiceRowItem key={inv.id} inv={inv} mark={markById.get(inv.id)} />
               ))}
             </>
+          )}
+          {hayMas && (
+            <Link
+              href={`/facturas?n=${n + 50}`}
+              className="mt-3 flex items-center justify-center rounded-2xl border border-line bg-panel py-3.5 text-sm font-bold text-amber transition-transform active:scale-[0.98]"
+            >
+              Ver más
+            </Link>
           )}
         </div>
       )}

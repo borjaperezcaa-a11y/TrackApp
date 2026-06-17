@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Row } from "@/components/ui/Row";
 import { Badge } from "@/components/ui/Badge";
@@ -12,14 +13,26 @@ export const metadata = { title: "Viajes · TrackApp" };
 type ViajeRow = { id: string; fecha: string; origen: string | null; destino: string | null; km: number | null };
 type PorteAgg = { total: number; n: number; pendientes: number };
 
-export default async function ViajesPage() {
+export default async function ViajesPage({ searchParams }: { searchParams: Promise<{ n?: string }> }) {
+  const n = Math.min(500, Math.max(20, Number((await searchParams).n) || 50));
   const supabase = await createClient();
-  const [{ data: vData, error: vErr }, { data: pData, error: pErr }] = await Promise.all([
-    supabase.from("viajes").select("id, fecha, origen, destino, km").order("fecha", { ascending: false }),
-    supabase.from("trips").select("viaje_id, importe, estado"),
-  ]);
-  const error = vErr || pErr;
+  const { data: vData, error: vErr } = await supabase
+    .from("viajes")
+    .select("id, fecha, origen, destino, km")
+    .order("fecha", { ascending: false })
+    .range(0, n - 1);
   const viajes = (vData ?? []) as ViajeRow[];
+  const hayMas = viajes.length === n;
+
+  // Solo los portes de los viajes mostrados (no todo el histórico).
+  const { data: pData, error: pErr } = await supabase
+    .from("trips")
+    .select("viaje_id, importe, estado")
+    .in(
+      "viaje_id",
+      viajes.map((v) => v.id),
+    );
+  const error = vErr || pErr;
 
   // Agrega los portes por viaje: total facturable, nº y cuántos pendientes.
   const agg = new Map<string, PorteAgg>();
@@ -71,6 +84,14 @@ export default async function ViajesPage() {
                 <ViajeRowItem key={v.id} v={v} agg={agg.get(v.id)} />
               ))}
             </>
+          )}
+          {hayMas && (
+            <Link
+              href={`/viajes?n=${n + 50}`}
+              className="mt-3 flex items-center justify-center rounded-2xl border border-line bg-panel py-3.5 text-sm font-bold text-amber transition-transform active:scale-[0.98]"
+            >
+              Ver más
+            </Link>
           )}
         </div>
       )}
