@@ -4,7 +4,6 @@ import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Field } from "@/components/ui/Field";
-import { Cta } from "@/components/ui/Cta";
 import { Icon } from "@/components/ui/Icon";
 import { PlaceAutocomplete, type ResolvedPlace } from "@/components/ui/PlaceAutocomplete";
 import { DateField } from "@/components/ui/DateField";
@@ -130,6 +129,22 @@ export function ViajeForm({
   // por si ese porte único lleva grupaje (varias cargas/descargas).
   const [grupaje, setGrupaje] = useState(false);
 
+  // Asistente por pasos: 1) tipo · 2) trayecto · 3) carga(s).
+  const [step, setStep] = useState(1);
+  const [stepError, setStepError] = useState<string | null>(null);
+  function goNext() {
+    setStepError(null);
+    if (step === 2 && (!origen.trim() || !destino.trim())) {
+      setStepError("Indica el origen y el destino del viaje.");
+      return;
+    }
+    setStep((s) => Math.min(3, s + 1));
+  }
+  function goBack() {
+    setStepError(null);
+    setStep((s) => Math.max(1, s - 1));
+  }
+
   function renderStops(i: number, field: StopField, label: string, placeholder: string) {
     const stops = portes[i][field];
     return (
@@ -211,9 +226,22 @@ export function ViajeForm({
       {/* Los portes viajan serializados aquí */}
       <input type="hidden" name="portes" value={JSON.stringify(portes)} />
 
-      {/* ¿Multiporte? Define si el viaje lleva carga para uno o varios clientes. */}
-      <div className="mb-4 rounded-2xl border border-line bg-panel p-3.5">
-        <div className="mb-2 text-[13.5px] font-bold">¿Es un viaje multiporte?</div>
+      {/* Progreso 1 · 2 · 3 */}
+      <div className="mb-4 flex items-center justify-center gap-2">
+        {[1, 2, 3].map((n) => (
+          <span
+            key={n}
+            className={clsx("h-2 rounded-full transition-all", n === step ? "w-7 bg-amber" : n < step ? "w-2 bg-amber" : "w-2 bg-line")}
+          />
+        ))}
+      </div>
+
+      {/* ─── PASO 1 · Tipo ─── */}
+      <section className={clsx(step !== 1 && "hidden")}>
+        <div className="mb-1.5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Paso 1 · Tipo de viaje</div>
+        {/* ¿Multiporte? Define si el viaje lleva una o varias cargas/portes. */}
+        <div className="rounded-2xl border border-line bg-panel p-3.5">
+          <div className="mb-2 text-[13.5px] font-bold">¿Es un viaje multiporte?</div>
         <div className="flex gap-2">
           <button
             type="button"
@@ -243,9 +271,12 @@ export function ViajeForm({
             ? "Añadirás varios portes, cada uno con su carga, ruta e importe."
             : "Un solo porte: pones el origen y el destino una sola vez."}
         </p>
-      </div>
+        </div>
+      </section>
 
-      <div className="mb-1.5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">El viaje (trayecto)</div>
+      {/* ─── PASO 2 · Trayecto ─── */}
+      <section className={clsx(step !== 2 && "hidden")}>
+        <div className="mb-1.5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Paso 2 · El viaje (trayecto)</div>
 
       <Field label="Fecha" htmlFor="fecha">
         <DateField id="fecha" name="fecha" defaultISO={defaultFecha} />
@@ -272,10 +303,13 @@ export function ViajeForm({
           </select>
         </Field>
       )}
+      </section>
 
-      <div className="mb-1.5 mt-5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">
-        {multi ? `Portes (${portes.length})` : "La carga"}
-      </div>
+      {/* ─── PASO 3 · Carga(s) ─── */}
+      <section className={clsx(step !== 3 && "hidden")}>
+        <div className="mb-1.5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">
+          Paso 3 · {multi ? `Portes (${portes.length})` : "La carga del viaje"}
+        </div>
 
       {portes.map((p, i) => (
         <div key={i} className="mb-3 rounded-2xl border border-line bg-panel p-3.5">
@@ -390,10 +424,39 @@ export function ViajeForm({
           Cada porte tiene su cliente, ruta e importe. Los km solo se ponen en el viaje (una vez).
         </p>
       )}
+      </section>
 
+      {stepError && <p className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{stepError}</p>}
       {state.error && <p className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{state.error}</p>}
 
-      <Cta icon="save">GUARDAR VIAJE</Cta>
+      {/* Navegación del asistente */}
+      <div className="flex gap-3">
+        {step > 1 && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="flex-none rounded-[18px] border border-line bg-panel px-5 py-4 text-sm font-bold text-text transition-transform active:scale-[0.97]"
+          >
+            Atrás
+          </button>
+        )}
+        {step < 3 ? (
+          <button
+            type="button"
+            onClick={goNext}
+            className="flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-[18px] bg-amber py-4 text-[16px] font-extrabold text-[#1a1205] transition-transform active:scale-[0.97]"
+          >
+            Siguiente
+          </button>
+        ) : (
+          <button
+            type="submit"
+            className="flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-[18px] bg-amber py-4 text-[16px] font-extrabold text-[#1a1205] transition-transform active:scale-[0.97]"
+          >
+            <Icon name="save" size={20} /> GUARDAR VIAJE
+          </button>
+        )}
+      </div>
 
       {modalIdx != null &&
         typeof document !== "undefined" &&
