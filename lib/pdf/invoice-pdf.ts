@@ -92,15 +92,17 @@ export async function buildInvoicePdf(
   invoice: Invoice,
   lines: InvoiceLine[],
   template: FacturaPlantilla = "trackapp",
+  opts: { borrador?: boolean } = {},
 ): Promise<Uint8Array> {
+  const borrador = opts.borrador ?? false;
   // Clásica/Moderna: render fiel del HTML original (solo navegador). Las
   // librerías html2canvas+jspdf se cargan en diferido dentro de buildHtmlPdf.
   if (template === "elegante" || template === "moderna") {
     const { buildHtmlPdf } = await import("./invoice-html");
-    return buildHtmlPdf(invoice, lines, template);
+    return buildHtmlPdf(invoice, lines, template, borrador);
   }
   // TrackApp: vectorial con pdf-lib (también funciona en Node, para los tests).
-  return buildTrackApp(invoice, lines);
+  return buildTrackApp(invoice, lines, borrador);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -121,7 +123,7 @@ const COLS = {
   importe: { x: M + 460, w: W - M - (M + 460) },
 };
 
-async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[]): Promise<Uint8Array> {
+async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = false): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([W, H]);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -163,7 +165,12 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
   }
 
   const esRect = invoice.tipo && invoice.tipo !== "F1";
-  text(esRect ? "FACTURA RECTIFICATIVA" : "FACTURA", M, 120, { font: bold, size: esRect ? 15 : 18 });
+  const titulo = esRect ? "FACTURA RECTIFICATIVA" : "FACTURA";
+  const tsize = esRect ? 15 : 18;
+  text(titulo, M, 120, { font: bold, size: tsize });
+  if (borrador) {
+    text("· BORRADOR", M + bold.widthOfTextAtSize(titulo, tsize) + 8, 120, { font: bold, size: 13, color: rgb(0.78, 0.2, 0.2) });
+  }
   hline(128);
 
   let yc = 150;
@@ -247,14 +254,26 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
   text("Total Factura", tx + 6, tot + 6, { font: bold, size: 10 });
   text(eur(invoice.total), tx, tot + 6, { font: bold, size: 12, align: "right", w: tw - 6 });
 
-  const qrImg = await embedQr(pdf, invoice.qr);
-  if (qrImg) page.drawImage(qrImg, { x: M, y: 40, width: 78, height: 78 });
-  const fx = M + 92;
-  page.drawText("Huella Verifactu (SHA-256):", { x: fx, y: 110, size: 8, font: bold, color: BLACK });
-  page.drawText(huella.slice(0, 48), { x: fx, y: 99, size: 7, font, color: GRAY });
-  page.drawText(huella.slice(48), { x: fx, y: 90, size: 7, font, color: GRAY });
-  page.drawText("Documento de prueba: Verifactu NO oficial. No se ha enviado a la AEAT", { x: fx, y: 70, size: 7.5, font, color: GRAY });
-  page.drawText("ni se ha firmado con certificado digital.", { x: fx, y: 61, size: 7.5, font, color: GRAY });
+  if (borrador) {
+    // Vista previa: sin huella ni QR (se generan al emitir).
+    page.drawText("BORRADOR · SIN VALIDEZ FISCAL", { x: M, y: 80, size: 12, font: bold, color: rgb(0.78, 0.2, 0.2) });
+    page.drawText("Vista previa. La factura definitiva (con huella y QR Veri*factu) se genera al emitir.", {
+      x: M,
+      y: 64,
+      size: 8.5,
+      font,
+      color: GRAY,
+    });
+  } else {
+    const qrImg = await embedQr(pdf, invoice.qr);
+    if (qrImg) page.drawImage(qrImg, { x: M, y: 40, width: 78, height: 78 });
+    const fx = M + 92;
+    page.drawText("Huella Verifactu (SHA-256):", { x: fx, y: 110, size: 8, font: bold, color: BLACK });
+    page.drawText(huella.slice(0, 48), { x: fx, y: 99, size: 7, font, color: GRAY });
+    page.drawText(huella.slice(48), { x: fx, y: 90, size: 7, font, color: GRAY });
+    page.drawText("Documento de prueba: Verifactu NO oficial. No se ha enviado a la AEAT", { x: fx, y: 70, size: 7.5, font, color: GRAY });
+    page.drawText("ni se ha firmado con certificado digital.", { x: fx, y: 61, size: 7.5, font, color: GRAY });
+  }
 
   return pdf.save();
 }

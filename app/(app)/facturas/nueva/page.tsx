@@ -16,7 +16,7 @@ export default async function NuevaFacturaPage() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("nombre, nif, direccion, cp_localidad, iban, logo_url, iva_def, irpf_def, serie")
+      .select("nombre, nif, direccion, cp_localidad, iban, logo_url, iva_def, irpf_def, serie, factura_plantilla")
       .maybeSingle(),
     supabase.from("clients").select("id, nombre, nif, direccion, cp_localidad, condiciones_pago").order("nombre"),
     supabase
@@ -75,6 +75,7 @@ export default async function NuevaFacturaPage() {
         }))}
         esPrimeraFactura={esPrimeraFactura}
         serie={serie}
+        facturaPlantilla={(profile?.factura_plantilla as "trackapp" | "elegante" | "moderna") ?? "trackapp"}
       />
     </>
   );

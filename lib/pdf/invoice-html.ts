@@ -117,7 +117,7 @@ function rowsHtml(lines: InvoiceLine[]): string {
 }
 
 // ── plantilla CLÁSICA (elegante.html) ────────────────────────────────────────
-function eleganteHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr: string | null): string {
+function eleganteHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr: string | null, borrador = false): string {
   const em = inv.emisor_snapshot ?? ({} as Invoice["emisor_snapshot"]);
   const cl = inv.cliente_snapshot ?? ({} as Invoice["cliente_snapshot"]);
   const titulo = inv.tipo && inv.tipo !== "F1" ? "Rectificativa" : "Factura";
@@ -222,18 +222,22 @@ function eleganteHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, q
     </div>
   </section>
   <footer class="docfoot">
-    ${qr ? `<div class="qr-slot"><img class="qr-img" src="${qr}" alt="QR Veri*factu"></div>` : ""}
+    ${
+      borrador
+        ? `<div class="foot-text"><p class="eyebrow" style="color:#c0392b">Borrador · sin validez fiscal</p><p class="notice">Vista previa. La factura definitiva (con huella y QR Veri*factu) se genera al emitir.</p></div>`
+        : `${qr ? `<div class="qr-slot"><img class="qr-img" src="${qr}" alt="QR Veri*factu"></div>` : ""}
     <div class="foot-text">
       <p class="eyebrow">Huella Veri*factu (SHA-256)</p>
       <p class="hash">${esc(inv.huella ?? "")}</p>
       <p class="notice">${esc(NOTICE)}</p>
-    </div>
+    </div>`
+    }
   </footer>
 </article>`;
 }
 
 // ── plantilla MODERNA (moderna.html) ─────────────────────────────────────────
-function modernaHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr: string | null): string {
+function modernaHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr: string | null, borrador = false): string {
   const em = inv.emisor_snapshot ?? ({} as Invoice["emisor_snapshot"]);
   const cl = inv.cliente_snapshot ?? ({} as Invoice["cliente_snapshot"]);
   const titulo = inv.tipo && inv.tipo !== "F1" ? "Rectificativa" : "Factura";
@@ -345,12 +349,16 @@ function modernaHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr
       </div>
     </section>
     <footer class="docfoot">
-      ${qr ? `<div class="qr-chip"><img class="qr-img" src="${qr}" alt="QR Veri*factu"></div>` : ""}
+      ${
+        borrador
+          ? `<div class="foot-text"><p class="eyebrow" style="color:#c0392b">Borrador · sin validez fiscal</p><p class="notice">Vista previa. La factura definitiva (con huella y QR Veri*factu) se genera al emitir.</p></div>`
+          : `${qr ? `<div class="qr-chip"><img class="qr-img" src="${qr}" alt="QR Veri*factu"></div>` : ""}
       <div class="foot-text">
         <p class="eyebrow">Huella Veri*factu (SHA-256)</p>
         <p class="hash">${esc(inv.huella ?? "")}</p>
         <p class="notice">${esc(NOTICE)}</p>
-      </div>
+      </div>`
+      }
     </footer>
   </div>
 </article>`;
@@ -361,14 +369,20 @@ export async function buildHtmlPdf(
   invoice: Invoice,
   lines: InvoiceLine[],
   template: FacturaPlantilla,
+  borrador = false,
 ): Promise<Uint8Array> {
   // Carga diferida: estas librerías SOLO se descargan al generar el PDF.
   const [h2cMod, jspdfMod] = await Promise.all([import("html2canvas"), import("jspdf")]);
   const html2canvas = h2cMod.default;
   const { jsPDF } = jspdfMod;
 
-  const [logo, qr] = await Promise.all([toDataUrl(invoice.emisor_snapshot?.logo_url), qrToDataUrl(invoice.qr)]);
-  const html = template === "moderna" ? modernaHtml(invoice, lines, logo, qr) : eleganteHtml(invoice, lines, logo, qr);
+  // En borrador no hay QR (se genera al emitir).
+  const [logo, qr] = await Promise.all([
+    toDataUrl(invoice.emisor_snapshot?.logo_url),
+    borrador ? Promise.resolve(null) : qrToDataUrl(invoice.qr),
+  ]);
+  const html =
+    template === "moderna" ? modernaHtml(invoice, lines, logo, qr, borrador) : eleganteHtml(invoice, lines, logo, qr, borrador);
 
   const host = document.createElement("div");
   host.style.cssText = "position:fixed;left:-10000px;top:0;background:#fff;z-index:-1;";

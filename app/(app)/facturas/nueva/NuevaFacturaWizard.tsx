@@ -11,6 +11,7 @@ import { computeInvoiceTotals } from "@/lib/invoice";
 import { eur, amount, dateES } from "@/lib/format";
 import { emitInvoiceAction } from "../actions";
 import type { EmitPayload } from "../types";
+import type { Invoice, InvoiceLine } from "@/lib/types";
 
 type ProfileData = {
   nombre: string;
@@ -76,12 +77,14 @@ export function NuevaFacturaWizard({
   pendingTrips,
   esPrimeraFactura = false,
   serie = "FACT",
+  facturaPlantilla = "trackapp",
 }: {
   profile: ProfileData;
   clients: ClientData[];
   pendingTrips: PendingTrip[];
   esPrimeraFactura?: boolean;
   serie?: string;
+  facturaPlantilla?: "trackapp" | "elegante" | "moderna";
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -89,6 +92,9 @@ export function NuevaFacturaWizard({
   const [error, setError] = useState<string | null>(null);
   // Primera factura: hay que confirmar que la serie quedará fija antes de emitir.
   const [serieAck, setSerieAck] = useState(false);
+  // Previsualización en borrador (sin Veri*factu, sin escribir en BD).
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   // Clientes que tienen al menos un viaje pendiente.
   const billableClients = useMemo(() => {
@@ -190,6 +196,79 @@ export function NuevaFacturaWizard({
         inFlight.current = false;
       }
     });
+  }
+
+  function triggerDownload(url: string, name: string) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // Borrador: genera el PDF con los datos actuales, SIN Veri*factu y sin tocar la
+  // base de datos. Solo para revisar antes de la emisión definitiva.
+  async function previewBorrador() {
+    setPreviewError(null);
+    if (included.length === 0) {
+      setPreviewError("Selecciona al menos un viaje.");
+      return;
+    }
+    setPreviewBusy(true);
+    try {
+      const { buildInvoicePdf } = await import("@/lib/pdf/invoice-pdf");
+      const draft = {
+        numero: "BORRADOR (nº al emitir)",
+        fecha,
+        forma_pago: formaPago || "Transferencia",
+        tipo: "F1",
+        base: totals.base,
+        iva_rate: ivaRate,
+        iva: totals.iva,
+        irpf_rate: Number(irpfRate) || 0,
+        irpf: totals.irpf,
+        total: totals.total,
+        huella: null,
+        qr: null,
+        emisor_snapshot: {
+          nombre: emisor.nombre,
+          nif: emisor.nif,
+          direccion: emisor.direccion,
+          cp_localidad: emisor.cp_localidad,
+          iban: emisor.iban,
+          logo_url: profile.logo_url,
+        },
+        cliente_snapshot: {
+          nombre: cliente.nombre,
+          nif: cliente.nif,
+          direccion: cliente.direccion,
+          cp_localidad: cliente.cp_localidad,
+          condiciones_pago: cliente.condiciones_pago,
+        },
+      } as unknown as Invoice;
+      const draftLines = included.map(
+        (l, i) =>
+          ({
+            fecha: l.fecha,
+            origen: l.origen,
+            destino: l.destino,
+            cantidad: Number(l.cantidad) || 0,
+            precio: Number(l.precio) || 0,
+            importe: (Number(l.cantidad) || 0) * (Number(l.precio) || 0),
+            orden: i,
+          }) as unknown as InvoiceLine,
+      );
+      const bytes = await buildInvoicePdf(draft, draftLines, facturaPlantilla, { borrador: true });
+      const file = new File([bytes as unknown as BlobPart], "Borrador factura.pdf", { type: "application/pdf" });
+      const url = URL.createObjectURL(file);
+      triggerDownload(url, file.name);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setPreviewError(`No se pudo generar el borrador: ${e instanceof Error ? e.message : ""}`);
+    } finally {
+      setPreviewBusy(false);
+    }
   }
 
   // Sin datos de emisor (nombre + NIF) no se puede facturar: el camionero debe
@@ -425,6 +504,18 @@ export function NuevaFacturaWizard({
 
       {error && (
         <p className="mt-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{error}</p>
+      )}
+
+      <button
+        type="button"
+        onClick={previewBorrador}
+        disabled={previewBusy || included.length === 0}
+        className="mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[18px] border border-line bg-panel py-4 text-[15px] font-bold text-text transition-transform active:scale-[0.97] disabled:opacity-60"
+      >
+        <Icon name="doc" size={18} /> {previewBusy ? "Generando borrador…" : "Previsualizar (borrador)"}
+      </button>
+      {previewError && (
+        <p className="mt-2 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{previewError}</p>
       )}
 
       <button
