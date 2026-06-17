@@ -37,7 +37,7 @@ export default async function CamionesPage() {
             <Row
               key={v.id}
               href={`/camiones/${v.id}`}
-              icon={<Icon name="truck" />}
+              icon={<Icon name="rig" />}
               title={v.nombre}
               subtitle={v.matricula ?? undefined}
             />

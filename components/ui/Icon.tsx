@@ -10,6 +10,8 @@ export const ICON_PATHS = {
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7.7A1.6 1.6 0 0 0 12 22a2 2 0 0 1-4 0 1.6 1.6 0 0 0-2.7-.6 2 2 0 1 1-2.8-2.8A1.6 1.6 0 0 0 2 12a2 2 0 0 1 0-4 1.6 1.6 0 0 0 .6-2.7 2 2 0 1 1 2.8-2.8A1.6 1.6 0 0 0 8 2a2 2 0 0 1 4 0 1.6 1.6 0 0 0 2.7.6 2 2 0 1 1 2.8 2.8A1.6 1.6 0 0 0 22 8a2 2 0 0 1 0 4 1.6 1.6 0 0 0-1.6 1z"/>',
   truck:
     '<path d="M1 16V7h13v9M14 9h4l3 4v3h-7M1 16h13M3 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>',
+  // Cabeza tractora / tráiler articulado (para "Camiones", distinto del furgón).
+  rig: '<path d="M1 6h11v9H1z"/><path d="M12 9h4l4 3.5V15h-8z"/><path d="M1 15h19"/><circle cx="6" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>',
   euro: '<path d="M18 7a6 6 0 1 0 0 10M5 10h7M5 14h7"/>',
   chart: '<path d="M3 3v18h18M8 16V9M13 16V5M18 16v-4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
