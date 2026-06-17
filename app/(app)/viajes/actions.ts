@@ -30,7 +30,8 @@ function parseTrip(formData: FormData):
   const d = parsed.data;
 
   const importe = num(d.importe);
-  if (!Number.isFinite(importe) || importe < 0) return { ok: false, error: "Importe no válido" };
+  if (!Number.isFinite(importe) || importe <= 0)
+    return { ok: false, error: "El importe debe ser mayor que 0" };
 
   let km: number | null = null;
   if (d.km !== "") {

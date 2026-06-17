@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadError } from "@/components/ui/LoadError";
 import { createClient } from "@/lib/supabase/server";
 import { dateParts } from "@/lib/fiscal";
 import type { SInvoice, STrip, SExpense } from "@/lib/stats";
@@ -9,13 +10,29 @@ export const metadata = { title: "Estadísticas · TrackApp" };
 export default async function EstadisticasPage() {
   const supabase = await createClient();
 
-  const [{ data: invData }, { data: extData }, { data: incData }, { data: tripData }, { data: expData }] = await Promise.all([
+  const [
+    { data: invData, error: invErr },
+    { data: extData, error: extErr },
+    { data: incData, error: incErr },
+    { data: tripData, error: tripErr },
+    { data: expData, error: expErr },
+  ] = await Promise.all([
     supabase.from("invoices").select("fecha, base, total, cliente_snapshot"),
     supabase.from("external_invoices").select("fecha, base, total, cliente"),
     supabase.from("incomes").select("fecha, base, total, concepto, cliente"),
     supabase.from("trips").select("fecha, km, importe, origen, destino"),
     supabase.from("expenses").select("fecha, categoria, total"),
   ]);
+
+  // No disfrazar un fallo de carga de "sin actividad": mostrar error con reintento.
+  if (invErr || extErr || incErr || tripErr || expErr) {
+    return (
+      <>
+        <PageHeader title="Estadísticas" kicker="Periodo fiscal" hideBack />
+        <LoadError />
+      </>
+    );
+  }
 
   // Contabilidad total: ingresos de facturas (propias + externas) + ingresos
   // manuales apuntados por el usuario.

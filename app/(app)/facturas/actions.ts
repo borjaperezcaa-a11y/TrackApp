@@ -81,6 +81,11 @@ export async function emitInvoiceAction(payload: EmitPayload): Promise<EmitResul
     ];
     const msg = error.message ?? "";
     if (known.some((k) => msg.includes(k))) return { error: msg };
+    // Violación de unicidad (numeración/cadena): dos emisiones a la vez. La BD lo
+    // impide (no se duplica), y reintentar resuelve. Mensaje claro en vez de genérico.
+    if (error.code === "23505") {
+      return { error: "Se emitió otra factura a la vez. Vuelve a pulsar Emitir." };
+    }
     console.error("[emitInvoice] error:", error.code, error.message);
     return { error: "No se pudo emitir la factura. Inténtalo de nuevo." };
   }
@@ -211,12 +216,16 @@ export async function togglePaidAction(id: string, pagada: boolean): Promise<{ e
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sesión expirada." };
 
-  const { error } = await supabase
+  // .select() para comprobar que se actualizó realmente una fila (si el id no
+  // existe o es de otro usuario, RLS deja 0 filas: no lo damos por bueno).
+  const { data, error } = await supabase
     .from("invoices")
     .update({ pagada })
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select("id");
   if (error) return { error: "No se pudo actualizar el estado de pago." };
+  if (!data || data.length === 0) return { error: "No se encontró la factura." };
 
   revalidatePath(`/facturas/${id}`);
   revalidatePath("/facturas");

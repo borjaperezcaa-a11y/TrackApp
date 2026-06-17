@@ -57,7 +57,7 @@ export function PlaceAutocomplete({
       setOpen(false);
     }
     function onScrollOrResize() {
-      setOpen(false);
+      reposition(); // sigue al campo (no cierra) al hacer scroll / abrir teclado
     }
     document.addEventListener("mousedown", onDown);
     window.addEventListener("scroll", onScrollOrResize, true);

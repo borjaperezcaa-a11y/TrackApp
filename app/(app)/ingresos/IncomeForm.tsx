@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -47,6 +47,7 @@ export function IncomeForm({
   const pathname = usePathname();
   const [saving, startSave] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false); // guard anti doble-submit (toque rápido en móvil)
 
   const [concepto, setConcepto] = useState(values.concepto);
   const [cliente, setCliente] = useState(values.cliente);
@@ -69,21 +70,22 @@ export function IncomeForm({
   });
 
   // Al volver de crear un cliente: restaura el borrador y preselecciona el nuevo.
+  // Solo se restaura si REALMENTE venimos de crear un cliente (hay preselectCliente);
+  // si no, se descarta el borrador huérfano para no reaparecer datos viejos.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(DRAFT_KEY);
-      if (raw) {
+      if (raw && preselectCliente) {
         const d = JSON.parse(raw) as Partial<IncomeValues> & { ivaRate?: number };
         if (d.concepto != null) setConcepto(d.concepto);
-        if (d.cliente != null) setCliente(d.cliente);
         if (d.fecha != null) setFecha(d.fecha);
         if (d.base != null) setBase(d.base);
         if (d.iva != null) setIva(d.iva);
         if (d.total != null) setTotal(d.total);
         if (typeof d.cobrada === "boolean") setCobrada(d.cobrada);
         if (typeof d.ivaRate === "number") setIvaRate(d.ivaRate);
-        sessionStorage.removeItem(DRAFT_KEY);
       }
+      if (raw) sessionStorage.removeItem(DRAFT_KEY);
     } catch {
       /* sessionStorage no disponible */
     }
@@ -130,21 +132,27 @@ export function IncomeForm({
       setError("Indica el importe del ingreso.");
       return;
     }
+    if (inFlight.current) return; // ya hay un guardado en curso
+    inFlight.current = true;
     startSave(async () => {
-      const payload: IncomePayload = {
-        concepto: concepto.trim(),
-        cliente: cliente.trim(),
-        fecha,
-        base: optNum(base),
-        iva_rate: optNum(String(ivaRate)),
-        iva: optNum(iva),
-        total: round2(totalNum),
-        cobrada,
-        notas: "",
-      };
-      const res = await action(payload);
-      if (res?.error) setError(res.error);
-      else router.refresh();
+      try {
+        const payload: IncomePayload = {
+          concepto: concepto.trim(),
+          cliente: cliente.trim(),
+          fecha,
+          base: optNum(base),
+          iva_rate: optNum(String(ivaRate)),
+          iva: optNum(iva),
+          total: round2(totalNum),
+          cobrada,
+          notas: "",
+        };
+        const res = await action(payload);
+        if (res?.error) setError(res.error);
+        else router.refresh();
+      } finally {
+        inFlight.current = false;
+      }
     });
   }
 
@@ -170,12 +178,20 @@ export function IncomeForm({
             onBlur={() => setTimeout(() => setShowClientes(false), 120)}
             placeholder="Transportes Ejemplo S.L."
             autoComplete="off"
+            role="combobox"
+            aria-expanded={showClientes}
+            aria-controls="cliente-listbox"
+            aria-autocomplete="list"
             className={inputSm}
           />
           {showClientes && (
-            <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-auto rounded-xl border border-line bg-panel py-1 shadow-[var(--shadow)]">
+            <ul
+              id="cliente-listbox"
+              role="listbox"
+              className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-auto rounded-xl border border-line bg-panel py-1 shadow-[var(--shadow)]"
+            >
               {sugeridos.map((c) => (
-                <li key={c}>
+                <li key={c} role="option" aria-selected={false}>
                   <button
                     type="button"
                     onMouseDown={(e) => {

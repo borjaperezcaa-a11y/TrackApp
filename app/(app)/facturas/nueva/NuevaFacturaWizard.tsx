@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
@@ -81,6 +81,7 @@ export function NuevaFacturaWizard({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const inFlight = useRef(false); // guard anti doble-emisión (toque rápido en móvil)
   const [error, setError] = useState<string | null>(null);
 
   // Clientes que tienen al menos un viaje pendiente.
@@ -139,11 +140,12 @@ export function NuevaFacturaWizard({
   const totals = useMemo(
     () =>
       computeInvoiceTotals(
-        included.map((l) => ({ cantidad: Number(l.cantidad) || 0, precio: Number(l.precio) || 0 })),
+        lines
+          .filter((l) => l.include)
+          .map((l) => ({ cantidad: Number(l.cantidad) || 0, precio: Number(l.precio) || 0 })),
         ivaRate,
         Number(irpfRate) || 0,
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [lines, ivaRate, irpfRate],
   );
 
@@ -171,10 +173,16 @@ export function NuevaFacturaWizard({
       emisor: { ...emisor, logo_url: profile.logo_url },
       cliente,
     };
+    if (inFlight.current) return; // ya hay una emisión en curso
+    inFlight.current = true;
     startTransition(async () => {
-      const res = await emitInvoiceAction(payload);
-      if (res.error) setError(res.error);
-      else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
+      try {
+        const res = await emitInvoiceAction(payload);
+        if (res.error) setError(res.error);
+        else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
+      } finally {
+        inFlight.current = false;
+      }
     });
   }
 

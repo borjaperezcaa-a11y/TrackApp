@@ -120,7 +120,7 @@ export function categoryBreakdown(
   const byCat = new Map<string, number>();
   for (const e of ex) byCat.set(e.categoria || "Otro", (byCat.get(e.categoria || "Otro") ?? 0) + e.total);
   return [...byCat.entries()]
-    .map(([categoria, t]) => ({ categoria, total: t, pct: t / total }))
+    .map(([categoria, t]) => ({ categoria, total: t, pct: Math.max(0, t / total) }))
     .sort((a, b) => b.total - a.total);
 }
 

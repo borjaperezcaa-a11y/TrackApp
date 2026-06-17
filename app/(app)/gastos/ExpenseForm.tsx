@@ -62,7 +62,10 @@ function compressImage(file: File): Promise<Compressed> {
         0.7,
       );
     };
-    img.onerror = reject;
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("no se pudo cargar la imagen"));
+    };
     img.src = url;
   });
 }
@@ -83,6 +86,7 @@ export function ExpenseForm({
   const router = useRouter();
   const [saving, startSave] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false); // guard anti doble-submit (toque rápido en móvil)
 
   const [categoria, setCategoria] = useState(values.categoria || "Gasoil");
   const [estacion, setEstacion] = useState(values.estacion);
@@ -174,7 +178,10 @@ export function ExpenseForm({
       setError("Indica el importe total del gasto.");
       return;
     }
+    if (inFlight.current) return; // ya hay un guardado en curso
+    inFlight.current = true;
     startSave(async () => {
+      try {
       let fotoPath = values.foto_path;
       if (photo?.blob) {
         // Carga diferida del cliente de Supabase: solo se descarga (~70 kB) si de
@@ -204,6 +211,9 @@ export function ExpenseForm({
       const res = await action(payload);
       if (res?.error) setError(res.error);
       else router.refresh();
+      } finally {
+        inFlight.current = false;
+      }
     });
   }
 

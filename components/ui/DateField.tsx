@@ -51,6 +51,15 @@ export function DateField({
   const boxRef = useRef<HTMLDivElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
+  // Si el padre cambia defaultISO (p. ej. autorrelleno), refleja el nuevo valor.
+  const lastISO = useRef(defaultISO);
+  useEffect(() => {
+    if (defaultISO !== lastISO.current) {
+      lastISO.current = defaultISO;
+      setDisplay(defaultISO ? dateES(defaultISO) : "");
+    }
+  }, [defaultISO]);
+
   // Cerrar al hacer clic fuera (contemplando que el popup vive en otro sitio del DOM).
   useEffect(() => {
     if (!open) return;
@@ -60,7 +69,12 @@ export function DateField({
       setOpen(false);
     }
     function onScrollOrResize() {
-      setOpen(false); // evita que el popup quede descolocado al hacer scroll
+      // Reposicionar el calendario para que siga al campo (no cerrarlo).
+      if (!boxRef.current) return;
+      const r = boxRef.current.getBoundingClientRect();
+      const width = 268;
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+      setPos({ top: r.bottom + 4, left });
     }
     document.addEventListener("mousedown", onDown);
     window.addEventListener("scroll", onScrollOrResize, true);

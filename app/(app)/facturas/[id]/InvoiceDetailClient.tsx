@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +46,13 @@ export function InvoiceDetailClient({
   const [precios, setPrecios] = useState<string[]>(() => lines.map((l) => String(Number(l.precio))));
   const [rectBusy, rectStart] = useTransition();
   const [rectError, setRectError] = useState<string | null>(null);
+  const rectInFlight = useRef(false); // guard anti doble-emisión de rectificativa
+  const pdfUrlRef = useRef<string | null>(null); // URL del PDF en curso (se revoca al regenerar/desmontar)
+
+  // Revoca la URL del PDF al desmontar (evita fugas sin cortar la previsualización antes de tiempo).
+  useEffect(() => () => {
+    if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+  }, []);
 
   function resetRect() {
     setRectMode(null);
@@ -56,23 +63,35 @@ export function InvoiceDetailClient({
 
   function anular() {
     setRectError(null);
+    if (rectInFlight.current) return;
+    rectInFlight.current = true;
     rectStart(async () => {
-      const res = await emitRectificativaAction(invoice.id, motivo);
-      if (res.error) setRectError(res.error);
-      else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
+      try {
+        const res = await emitRectificativaAction(invoice.id, motivo);
+        if (res.error) setRectError(res.error);
+        else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
+      } finally {
+        rectInFlight.current = false;
+      }
     });
   }
 
   function corregir() {
     setRectError(null);
+    if (rectInFlight.current) return;
+    rectInFlight.current = true;
     const corrLines = lines.map((l, i) => ({
       cantidad: Number(l.cantidad) || 0,
       precio: Number(precios[i]) || 0,
     }));
     rectStart(async () => {
-      const res = await emitRectificativaDifAction(invoice.id, corrLines, motivo);
-      if (res.error) setRectError(res.error);
-      else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
+      try {
+        const res = await emitRectificativaDifAction(invoice.id, corrLines, motivo);
+        if (res.error) setRectError(res.error);
+        else if (res.invoiceId) router.push(`/facturas/${res.invoiceId}`);
+      } finally {
+        rectInFlight.current = false;
+      }
     });
   }
 
@@ -155,10 +174,11 @@ export function InvoiceDetailClient({
     setPdfError(null);
     buildPdfFile()
       .then((file) => {
+        if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current); // libera el anterior
         const url = URL.createObjectURL(file);
+        pdfUrlRef.current = url;
         if (win) win.location.href = url;
         else triggerDownload(url, file.name); // pestaña bloqueada: descarga
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
       })
       .catch(() => {
         win?.close();

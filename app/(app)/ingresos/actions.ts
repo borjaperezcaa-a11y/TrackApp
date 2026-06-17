@@ -12,7 +12,7 @@ const incomeSchema = z.object({
   base: z.number().min(0).max(10_000_000).nullable(),
   iva_rate: z.number().min(0).max(100).nullable(),
   iva: z.number().min(0).max(10_000_000).nullable(),
-  total: z.number().min(0, "Importe no válido").max(10_000_000),
+  total: z.number().gt(0, "El importe debe ser mayor que 0").max(10_000_000),
   cobrada: z.boolean(),
   notas: z.string().trim().max(500),
 });

@@ -4,6 +4,7 @@ import { Gauge } from "@/components/charts/Gauge";
 import { MiniBars } from "@/components/charts/MiniBars";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { LoadError } from "@/components/ui/LoadError";
 import { eur, nowMadrid, num } from "@/lib/format";
 import { monthlySeries, bestMonthBeneficio, type SInvoice, type SExpense } from "@/lib/stats";
 import { dateParts } from "@/lib/fiscal";
@@ -27,7 +28,15 @@ export default async function HomePage({
   // daría el saludo y el mes equivocados para el usuario.
   const { year, month0, hour } = nowMadrid();
 
-  const [{ data: profile }, { data: invData }, { data: extData }, { data: incData }, { data: tripData }, { data: expData }, { count: clientCount }] =
+  const [
+    { data: profile },
+    { data: invData, error: invErr },
+    { data: extData, error: extErr },
+    { data: incData, error: incErr },
+    { data: tripData, error: tripErr },
+    { data: expData, error: expErr },
+    { count: clientCount },
+  ] =
     await Promise.all([
       supabase.from("profiles").select("nombre, nif").maybeSingle(),
       supabase.from("invoices").select("fecha, base, total, pagada, cliente_snapshot"),
@@ -37,6 +46,9 @@ export default async function HomePage({
       supabase.from("expenses").select("fecha, categoria, total"),
       supabase.from("clients").select("id", { count: "exact", head: true }),
     ]);
+
+  // Si falló alguna carga, lo avisamos (las cifras podrían estar incompletas).
+  const loadError = Boolean(invErr || extErr || incErr || tripErr || expErr);
 
   // Contabilidad total: ingresos de facturas (propias + externas) + ingresos
   // manuales apuntados por el usuario.
@@ -132,6 +144,10 @@ export default async function HomePage({
         </div>
         <ThemeToggle />
       </header>
+
+      {loadError && (
+        <LoadError message="No se pudieron cargar algunos datos; las cifras pueden estar incompletas." />
+      )}
 
       {/* Acceso rápido a lo más frecuente */}
       <div className="mb-3.5 grid grid-cols-3 gap-2.5">

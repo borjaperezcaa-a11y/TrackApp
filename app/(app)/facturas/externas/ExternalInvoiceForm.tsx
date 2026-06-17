@@ -69,7 +69,10 @@ function compressImage(file: File): Promise<{ base64: string; blob: Blob; previe
         0.72,
       );
     };
-    img.onerror = reject;
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("no se pudo cargar la imagen"));
+    };
     img.src = url;
   });
 }
@@ -92,6 +95,7 @@ export function ExternalInvoiceForm({
   const router = useRouter();
   const [saving, startSave] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false); // guard anti doble-submit (toque rápido en móvil)
 
   const [serie, setSerie] = useState(values.serie);
   // Mientras el usuario no toque la serie a mano, se autorrellena del número.
@@ -236,7 +240,10 @@ export function ExternalInvoiceForm({
       setError("El total es negativo: la retención de IRPF no puede superar a base + IVA.");
       return;
     }
+    if (inFlight.current) return; // ya hay un guardado en curso
+    inFlight.current = true;
     startSave(async () => {
+      try {
       let archivoPath = values.archivo_path;
       if (file?.blob) {
         // Carga diferida del cliente de Supabase: solo al subir el archivo.
@@ -272,6 +279,9 @@ export function ExternalInvoiceForm({
       const res = await action(payload);
       if (res?.error) setError(res.error);
       else router.refresh();
+      } finally {
+        inFlight.current = false;
+      }
     });
   }
 

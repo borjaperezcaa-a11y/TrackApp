@@ -60,9 +60,13 @@ export function amount(n: number): string {
   return num2.format(n);
 }
 
-/** Redondeo a céntimo, medio hacia arriba (coherente con el motor Verifactu). */
+/**
+ * Redondeo a céntimo, medio hacia arriba EN MAGNITUD (coherente con `round()` de
+ * Postgres y con el motor Verifactu). Simétrico para negativos: round2(-1.005) = -1.01.
+ */
 export function round2(n: number): number {
-  return Math.round((n + Number.EPSILON) * 100) / 100;
+  const sign = n < 0 ? -1 : 1;
+  return (sign * Math.round(Math.abs(n) * 100 + Number.EPSILON)) / 100;
 }
 
 /**

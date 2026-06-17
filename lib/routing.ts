@@ -38,7 +38,8 @@ export async function geocodeAutocomplete(text: string): Promise<Place[]> {
   // los puntos en zona peatonal que no son transitables para camión.
   // lang=es → nombres en español (provincia y país): "La Coruña", "España".
   const url = `${ORS}/geocode/autocomplete?text=${encodeURIComponent(text)}&size=6&layers=coarse&lang=es`;
-  const res = await fetch(url, { headers: { Authorization: key } });
+  // Timeout: si ORS tarda/cuelga, no bloqueamos la petición indefinidamente.
+  const res = await fetch(url, { headers: { Authorization: key }, signal: AbortSignal.timeout(4000) });
   if (!res.ok) throw new Error(`ORS geocode ${res.status}`);
   const data = (await res.json()) as {
     features?: {
@@ -88,6 +89,7 @@ export async function routeKm(from: Coord, to: Coord): Promise<number> {
       method: "POST",
       headers: { Authorization: key, "Content-Type": "application/json" },
       body,
+      signal: AbortSignal.timeout(6000), // no bloquear si ORS tarda/cuelga
     });
     if (res.ok) {
       const data = (await res.json()) as { routes?: { summary?: { distance?: number } }[] };
