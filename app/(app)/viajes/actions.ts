@@ -83,15 +83,36 @@ async function getUser() {
   return { supabase, user };
 }
 
-// ─── Crear viaje (trayecto + primer porte) ────────────────────────────────────
+// ─── Crear viaje (trayecto + uno o varios portes) ─────────────────────────────
+// Los portes llegan serializados en el campo `portes` (JSON) del formulario.
 export async function createViajeAction(_prev: TripState, formData: FormData): Promise<TripState> {
   const { supabase, user } = await getUser();
   if (!user) return { error: "Sesión expirada." };
 
   const v = parseViaje(formData);
   if (!v.ok) return { error: v.error };
-  const p = parsePorte(formData);
-  if (!p.ok) return { error: p.error };
+
+  let drafts: unknown;
+  try {
+    drafts = JSON.parse(String(formData.get("portes") ?? "[]"));
+  } catch {
+    return { error: "Portes no válidos." };
+  }
+  if (!Array.isArray(drafts) || drafts.length === 0) return { error: "Añade al menos un porte." };
+
+  const uuid = z.string().uuid();
+  const rows: Record<string, unknown>[] = [];
+  for (const d of drafts as Record<string, unknown>[]) {
+    const client_id = typeof d?.client_id === "string" ? d.client_id : "";
+    if (!uuid.safeParse(client_id).success) return { error: "Cada porte necesita un cliente." };
+    const importe = num(String(d?.importe ?? ""));
+    if (!Number.isFinite(importe) || importe <= 0) return { error: "Cada porte necesita un importe mayor que 0." };
+    // Si el porte no trae ruta propia, hereda la del trayecto.
+    const origen = String(d?.origen ?? "").trim() || v.row.origen;
+    const destino = String(d?.destino ?? "").trim() || v.row.destino;
+    const descripcion = String(d?.descripcion ?? "").trim() || null;
+    rows.push({ client_id, origen, destino, descripcion, peso: null, peso_unidad: "t", importe });
+  }
 
   // 1) Viaje físico
   const { data: viaje, error: vErr } = await supabase
@@ -101,17 +122,14 @@ export async function createViajeAction(_prev: TripState, formData: FormData): P
     .single();
   if (vErr || !viaje) return { error: "No se pudo crear el viaje." };
 
-  // 2) Primer porte. Si no trae ruta propia, hereda la del trayecto.
-  const porteRow = p.row as { origen: string | null; destino: string | null } & Record<string, unknown>;
-  if (!porteRow.origen) porteRow.origen = v.row.origen;
-  if (!porteRow.destino) porteRow.destino = v.row.destino;
+  // 2) Portes del viaje
   const { error: pErr } = await supabase
     .from("trips")
-    .insert({ ...porteRow, fecha: v.row.fecha, viaje_id: viaje.id, user_id: user.id, estado: "pendiente" });
+    .insert(rows.map((r) => ({ ...r, fecha: v.row.fecha, viaje_id: viaje.id, user_id: user.id, estado: "pendiente" })));
   if (pErr) {
-    // Si el porte falla, no dejamos un viaje vacío huérfano.
+    // Si fallan los portes, no dejamos un viaje vacío huérfano.
     await supabase.from("viajes").delete().eq("id", viaje.id).eq("user_id", user.id);
-    return { error: "No se pudo crear el porte del viaje." };
+    return { error: "No se pudieron crear los portes del viaje." };
   }
 
   revalidatePath("/viajes");
