@@ -11,7 +11,6 @@ const TABS: Tab[] = [
   { href: "/", label: "Inicio", icon: "home" },
   { href: "/viajes", label: "Viajes", icon: "truck" },
   { href: "/facturas", label: "Facturación", icon: "doc" },
-  { href: "/ingresos", label: "Ingresos", icon: "income" },
   { href: "/gastos", label: "Gastos", icon: "euro" },
   { href: "/ajustes/perfil", label: "Mi Perfil", icon: "user" },
 ];
@@ -40,11 +39,11 @@ export function BottomNav() {
                 href={t.href}
                 aria-current={active ? "page" : undefined}
                 className={clsx(
-                  "flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-0.5 py-1.5 text-[9.5px] font-bold leading-none tracking-tight transition-colors",
+                  "flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-2xl px-0.5 py-2 text-[11px] font-bold leading-none tracking-tight transition-colors",
                   active ? "text-amber" : "text-dim",
                 )}
               >
-                <Icon name={t.icon} size={21} />
+                <Icon name={t.icon} size={25} />
                 <span className="max-w-full truncate">{t.label}</span>
               </Link>
             </li>
