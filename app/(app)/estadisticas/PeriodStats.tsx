@@ -18,6 +18,27 @@ import {
 import { BarChart } from "@/components/charts/BarChart";
 import { Donut } from "@/components/charts/Donut";
 import { Ranking } from "@/components/charts/Ranking";
+import { InfoHint } from "@/components/ui/InfoHint";
+
+// Explicaciones en lenguaje llano para los iconos ⓘ de cada KPI.
+const INFO = {
+  ingresos: "Lo que facturas sin el IVA (la base imponible). Es tu dinero real; el IVA solo está de paso.",
+  gastos: "Todo lo que registras como gasto del periodo: gasoil, peajes, taller, dietas, etc.",
+  beneficio: "Ingresos menos gastos. Lo que te queda antes de pagar impuestos.",
+  margen: "Qué porcentaje de tus ingresos es beneficio. 82 % significa que de cada 100 € te quedan 82.",
+  eurKm: "Cuánto ingresas por cada kilómetro recorrido en el periodo. Es tu precio medio del km.",
+  facturas: "Número de facturas emitidas en el periodo. Los ingresos manuales no cuentan aquí.",
+  gastoKm: "Lo que te cuesta cada kilómetro: todos los gastos del periodo divididos entre los km.",
+  gasoilKm: "Solo el gasoil por kilómetro. El mejor indicador para vigilar el consumo de combustible.",
+  beneficioKm: "Lo que ganas limpio por kilómetro. Si sale en rojo, ese periodo das pérdidas por km.",
+  ivaRepercutido:
+    "El IVA que cobras a tus clientes en tus facturas. No es tuyo: se lo debes a Hacienda. Va en el modelo 303. Lo calcula la app al emitir cada factura, así que es fiable.",
+  ivaSoportado:
+    "El IVA que tú pagas en tus gastos. Hacienda te lo descuenta del IVA que debes. Va en el modelo 303. Sale del IVA que apuntas en cada gasto.",
+  ivaLiquidar:
+    "IVA repercutido menos IVA soportado. Si es positivo, es lo que ingresas a Hacienda cada trimestre (modelo 303); si es negativo, queda a tu favor (a compensar en el siguiente).",
+  irpf: "El IRPF que tus clientes ya te han retenido en las facturas. Es un adelanto de tu declaración de la renta (modelo 130). No tienes que volver a pagarlo.",
+} as const;
 
 // Trimestres primero y "Año" al final; por defecto se abre en el trimestre actual.
 const PERIODS: Period[] = ["1", "2", "3", "4", "Y"];
@@ -89,46 +110,59 @@ export function PeriodStats({
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">
-        <Kpi label="Ingresos" value={eur(k.ingresos)} color="var(--green)" />
-        <Kpi label="Gastos" value={eur(k.gastos)} color="var(--amber)" />
-        <Kpi label="Beneficio" value={eur(k.beneficio)} color={k.beneficio >= 0 ? "var(--green)" : "var(--red)"} />
-        <Kpi label="Margen" value={`${Math.round(k.margen * 100)}%`} />
+        <Kpi label="Ingresos" value={eur(k.ingresos)} color="var(--green)" info={INFO.ingresos} />
+        <Kpi label="Gastos" value={eur(k.gastos)} color="var(--amber)" info={INFO.gastos} />
+        <Kpi
+          label="Beneficio"
+          value={eur(k.beneficio)}
+          color={k.beneficio >= 0 ? "var(--green)" : "var(--red)"}
+          info={INFO.beneficio}
+        />
+        <Kpi label="Margen" value={`${Math.round(k.margen * 100)}%`} info={INFO.margen} />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3">
-        <Kpi label="€/km (ingresos)" value={k.eurKm != null ? `${k.eurKm.toFixed(2).replace(".", ",")} €/km` : "—"} />
-        <Kpi label="Facturas" value={String(k.nFacturas)} />
+        <Kpi
+          label="€/km (ingresos)"
+          value={k.eurKm != null ? `${k.eurKm.toFixed(2).replace(".", ",")} €/km` : "—"}
+          info={INFO.eurKm}
+        />
+        <Kpi label="Facturas" value={String(k.nFacturas)} info={INFO.facturas} />
       </div>
       <div className="mt-3 grid grid-cols-3 gap-3">
         <Kpi
           label="Gasto /km"
           value={k.gastoKm != null ? `${k.gastoKm.toFixed(2).replace(".", ",")} €` : "—"}
           color="var(--amber)"
+          info={INFO.gastoKm}
         />
         <Kpi
           label="Gasoil /km"
           value={k.eurKmCombustible != null ? `${k.eurKmCombustible.toFixed(2).replace(".", ",")} €` : "—"}
           color="var(--amber)"
+          info={INFO.gasoilKm}
         />
         <Kpi
           label="Beneficio /km"
           value={k.beneficioKm != null ? `${k.beneficioKm.toFixed(2).replace(".", ",")} €` : "—"}
           color={k.beneficioKm != null && k.beneficioKm < 0 ? "var(--red)" : "var(--green)"}
+          info={INFO.beneficioKm}
         />
       </div>
 
       {/* Resumen fiscal del periodo */}
       <SectionLabel>Resumen fiscal {periodLabel(period).toLowerCase()}</SectionLabel>
       <div className="grid grid-cols-3 gap-3">
-        <Kpi label="IVA repercutido" value={eur(k.ivaRepercutido)} />
-        <Kpi label="IVA soportado" value={eur(k.ivaSoportado)} />
+        <Kpi label="IVA repercutido" value={eur(k.ivaRepercutido)} info={INFO.ivaRepercutido} />
+        <Kpi label="IVA soportado" value={eur(k.ivaSoportado)} info={INFO.ivaSoportado} />
         <Kpi
           label={k.ivaLiquidar >= 0 ? "IVA a ingresar" : "IVA a tu favor"}
           value={eur(Math.abs(k.ivaLiquidar))}
           color={k.ivaLiquidar > 0 ? "var(--red)" : "var(--green)"}
+          info={INFO.ivaLiquidar}
         />
       </div>
       <div className="mt-3 grid grid-cols-1 gap-3">
-        <Kpi label="IRPF retenido por tus clientes" value={eur(k.irpfRetenido)} />
+        <Kpi label="IRPF retenido por tus clientes" value={eur(k.irpfRetenido)} info={INFO.irpf} />
       </div>
       <p className="mx-1 mt-2 text-[11.5px] leading-snug text-dim">
         Estimación orientativa para tus modelos 303 (IVA) y 130 (IRPF). El IVA a ingresar es el repercutido en tus
@@ -210,10 +244,13 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
-function Kpi({ label, value, color }: { label: string; value: string; color?: string }) {
+function Kpi({ label, value, color, info }: { label: string; value: string; color?: string; info?: string }) {
   return (
     <div className="rounded-2xl border border-line bg-panel px-4 py-3.5">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-dim">{label}</div>
+      <div className="flex items-start justify-between gap-1.5">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-dim">{label}</div>
+        {info && <InfoHint title={label}>{info}</InfoHint>}
+      </div>
       <div className="mt-1.5 font-display text-[28px] font-bold leading-none tnum" style={color ? { color } : undefined}>
         {value}
       </div>
