@@ -17,18 +17,36 @@ type InvoiceRow = {
   total: number;
   pagada: boolean;
   tipo: string;
+  rectifica_id: string | null;
   cliente_snapshot: ClienteSnapshot;
 };
+
+// Estado de una factura original respecto a sus rectificativas.
+type Mark = "anulada" | "rectificada";
 
 export default async function FacturasPage() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("invoices")
-    .select("id, numero, fecha, total, pagada, tipo, cliente_snapshot")
+    .select("id, numero, fecha, total, pagada, tipo, rectifica_id, cliente_snapshot")
     // pagada=false (pendientes) primero; dentro de cada grupo, las más recientes arriba.
     .order("pagada", { ascending: true })
     .order("emitida_at", { ascending: false });
   const invoices = (data ?? []) as InvoiceRow[];
+
+  // Marca las facturas ORIGINALES que tienen una rectificativa apuntándolas:
+  // "anulada" si la rectificativa las deja a cero (importe negativo equivalente),
+  // "rectificada" si solo las corrige por diferencias (la original sigue válida).
+  const byId = new Map(invoices.map((i) => [i.id, i]));
+  const markById = new Map<string, Mark>();
+  for (const inv of invoices) {
+    if (inv.rectifica_id && byId.has(inv.rectifica_id)) {
+      const orig = byId.get(inv.rectifica_id)!;
+      const esAnulacion = Number(inv.total) < 0 && Math.abs(Number(inv.total) + Number(orig.total)) < 0.01;
+      markById.set(orig.id, esAnulacion ? "anulada" : "rectificada");
+    }
+  }
+
   const pendientes = invoices.filter((i) => !i.pagada);
   const cobradas = invoices.filter((i) => i.pagada);
 
@@ -53,7 +71,7 @@ export default async function FacturasPage() {
             <>
               <SectionLabel>Pendientes de cobro</SectionLabel>
               {pendientes.map((inv) => (
-                <InvoiceRowItem key={inv.id} inv={inv} />
+                <InvoiceRowItem key={inv.id} inv={inv} mark={markById.get(inv.id)} />
               ))}
             </>
           )}
@@ -61,7 +79,7 @@ export default async function FacturasPage() {
             <>
               <SectionLabel>Cobradas</SectionLabel>
               {cobradas.map((inv) => (
-                <InvoiceRowItem key={inv.id} inv={inv} />
+                <InvoiceRowItem key={inv.id} inv={inv} mark={markById.get(inv.id)} />
               ))}
             </>
           )}
@@ -71,17 +89,29 @@ export default async function FacturasPage() {
   );
 }
 
-function InvoiceRowItem({ inv }: { inv: InvoiceRow }) {
+function InvoiceRowItem({ inv, mark }: { inv: InvoiceRow; mark?: Mark }) {
+  const esRectificativa = inv.tipo !== "F1";
   return (
     <Row
       href={`/facturas/${inv.id}`}
       icon={<Icon name="doc" />}
       title={inv.cliente_snapshot?.nombre ?? "Cliente"}
-      subtitle={`${inv.numero} · ${dateES(inv.fecha)}${inv.tipo !== "F1" ? " · Rectificativa" : ""}`}
+      subtitle={`${inv.numero} · ${dateES(inv.fecha)}`}
       right={
         <div className="flex flex-col items-end gap-1">
           <div className="font-display text-xl font-bold tnum">{eur(Number(inv.total))}</div>
-          <Badge tone={inv.pagada ? "good" : "mid"}>{inv.pagada ? "Cobrada" : "Pendiente de cobro"}</Badge>
+          {esRectificativa ? (
+            // La fila ES una rectificativa.
+            <Badge tone="mid">Rectificativa</Badge>
+          ) : mark === "anulada" ? (
+            // Factura anulada por una rectificativa: queda sin efecto.
+            <Badge tone="bad">Anulada</Badge>
+          ) : (
+            <>
+              <Badge tone={inv.pagada ? "good" : "mid"}>{inv.pagada ? "Cobrada" : "Pendiente de cobro"}</Badge>
+              {mark === "rectificada" && <Badge tone="mid">Rectificada</Badge>}
+            </>
+          )}
         </div>
       }
     />

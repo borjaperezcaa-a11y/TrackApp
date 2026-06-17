@@ -121,6 +121,18 @@ describe("stats · KPIs", () => {
     expect(k.irpfRetenido).toBe(0);
   });
 
+  it("rectificativa de anulación: netea ingresos a 0 y no cuenta como factura", () => {
+    const conRect: SInvoice[] = [
+      { fecha: "2025-05-10", base: 1000, iva: 210, irpf: 10, total: 1200, clientName: "A" },
+      // Anulación (R1): importes en negativo, esFactura=false (no es factura nueva).
+      { fecha: "2025-05-20", base: -1000, iva: -210, irpf: -10, total: -1200, clientName: "A", esFactura: false },
+    ];
+    const k = periodKpis(conRect, trips, expenses, 2025, "2");
+    expect(k.ingresos).toBe(0); // 1000 − 1000
+    expect(k.ivaRepercutido).toBe(0); // 210 − 210
+    expect(k.nFacturas).toBe(1); // solo la original cuenta; la rectificativa no
+  });
+
   it("gasto /km: todos los gastos del periodo / km del periodo", () => {
     const ex: SExpense[] = [
       { fecha: "2025-05-10", categoria: "Gasoil", total: 600 },

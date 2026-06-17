@@ -17,7 +17,7 @@ export default async function EstadisticasPage() {
     { data: tripData, error: tripErr },
     { data: expData, error: expErr },
   ] = await Promise.all([
-    supabase.from("invoices").select("fecha, base, iva, irpf, total, cliente_snapshot"),
+    supabase.from("invoices").select("fecha, base, iva, irpf, total, tipo, cliente_snapshot"),
     supabase.from("external_invoices").select("fecha, base, iva, irpf, total, cliente"),
     supabase.from("incomes").select("fecha, base, iva, total, concepto, cliente"),
     supabase.from("trips").select("fecha, km, importe, origen, destino"),
@@ -44,6 +44,9 @@ export default async function EstadisticasPage() {
       irpf: Number(i.irpf ?? 0),
       total: Number(i.total),
       clientName: (i.cliente_snapshot as { nombre?: string })?.nombre ?? "Cliente",
+      // Las rectificativas (R1) ajustan importes pero NO cuentan como una factura
+      // nueva: su importe (con signo) ya compensa el de la original.
+      esFactura: i.tipo === "F1",
     })),
     ...(extData ?? []).map((e) => ({
       fecha: e.fecha,
