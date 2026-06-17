@@ -101,8 +101,11 @@ function InvoiceRowItem({ inv, mark }: { inv: InvoiceRow; mark?: Mark }) {
         <div className="flex flex-col items-end gap-1">
           <div className="font-display text-xl font-bold tnum">{eur(Number(inv.total))}</div>
           {esRectificativa ? (
-            // La fila ES una rectificativa.
-            <Badge tone="mid">Rectificativa</Badge>
+            // La fila ES una rectificativa: muestra su cobro y la marca.
+            <>
+              <Badge tone={inv.pagada ? "good" : "mid"}>{inv.pagada ? "Cobrada" : "Pendiente de cobro"}</Badge>
+              <Badge tone="mid">Rectificativa</Badge>
+            </>
           ) : mark === "anulada" ? (
             // Factura anulada por una rectificativa: queda sin efecto.
             <Badge tone="bad">Anulada</Badge>
