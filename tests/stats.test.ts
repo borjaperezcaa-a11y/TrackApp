@@ -6,6 +6,7 @@ import {
   routeRanking,
   clientRanking,
   bestMonthBeneficio,
+  vehicleStats,
   type SInvoice,
   type STrip,
   type SExpense,
@@ -173,6 +174,29 @@ describe("stats · buckets y rankings", () => {
     expect(r[0].ruta).toBe("X → Y");
     expect(r[0].eurKm).toBeCloseTo(2.0, 3);
   });
+  it("estadísticas por camión: km del viaje (una vez) + importe de sus portes", () => {
+    const vehiculos = [
+      { id: "v1", nombre: "Camión 1" },
+      { id: "v2", nombre: "Camión 2" },
+    ];
+    const vjs: SViaje[] = [
+      { id: "j1", fecha: "2025-05-10", km: 600, vehiculo_id: "v1" },
+      { id: "j2", fecha: "2025-05-20", km: 400, vehiculo_id: "v2" },
+    ];
+    const portes: STrip[] = [
+      { fecha: "2025-05-10", km: null, importe: 1300, ruta: "", viaje_id: "j1" },
+      { fecha: "2025-05-10", km: null, importe: 900, ruta: "", viaje_id: "j1" },
+      { fecha: "2025-05-20", km: null, importe: 1000, ruta: "", viaje_id: "j2" },
+    ];
+    const r = vehicleStats(vjs, portes, vehiculos, 2025, "2");
+    expect(r[0].nombre).toBe("Camión 1"); // ordenado por lo facturado (desc)
+    expect(r[0].km).toBe(600);
+    expect(r[0].ingresos).toBe(2200);
+    expect(r[0].eurKm).toBeCloseTo(2200 / 600, 4);
+    expect(r[1].nombre).toBe("Camión 2");
+    expect(r[1].ingresos).toBe(1000);
+  });
+
   it("mejor mes (referencia del medidor)", () => {
     expect(bestMonthBeneficio(invoices, expenses, 2025)).toBe(2000);
     expect(bestMonthBeneficio([], [], 2025)).toBe(0);

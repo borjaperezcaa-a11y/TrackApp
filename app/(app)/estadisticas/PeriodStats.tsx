@@ -11,6 +11,7 @@ import {
   categoryBreakdown,
   routeRanking,
   clientRanking,
+  vehicleStats,
   type SInvoice,
   type STrip,
   type SExpense,
@@ -58,6 +59,7 @@ export function PeriodStats({
   invoices,
   trips,
   viajes,
+  vehiculos = [],
   expenses,
   years,
   defaultYear,
@@ -65,6 +67,7 @@ export function PeriodStats({
   invoices: SInvoice[];
   trips: STrip[]; // portes (para rankings de rutas por importe)
   viajes: SViaje[]; // viajes físicos (para los km, contados una vez)
+  vehiculos?: { id: string; nombre: string }[];
   expenses: SExpense[];
   years: number[];
   defaultYear: number;
@@ -92,6 +95,12 @@ export function PeriodStats({
   );
   const routes = useMemo(() => routeRanking(trips, year, period), [trips, year, period]);
   const clients = useMemo(() => clientRanking(invoices, year, period), [invoices, year, period]);
+  // Solo tiene sentido desglosar por camión si hay 2 o más; con uno (o ninguno),
+  // los totales de arriba ya son de ese camión.
+  const vehs = useMemo(
+    () => (vehiculos.length >= 2 ? vehicleStats(viajes, trips, vehiculos, year, period) : []),
+    [viajes, trips, vehiculos, year, period],
+  );
   const hasGastos = k.gastos > 0;
 
   return (
@@ -220,6 +229,19 @@ export function PeriodStats({
               title: c.name,
               sub: `${c.nFacturas} ${c.nFacturas === 1 ? "factura" : "facturas"}`,
               value: eur(c.total),
+            }))}
+          />
+        </>
+      )}
+
+      {vehs.length > 0 && (
+        <>
+          <SectionLabel>Por camión</SectionLabel>
+          <Ranking
+            items={vehs.map((v) => ({
+              title: v.nombre,
+              sub: `${eur(v.ingresos)} · ${Math.round(v.km).toLocaleString("es-ES")} km · ${v.nViajes} ${v.nViajes === 1 ? "viaje" : "viajes"}`,
+              value: v.eurKm != null ? `${v.eurKm.toFixed(2).replace(".", ",")} €/km` : "—",
             }))}
           />
         </>

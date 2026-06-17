@@ -17,13 +17,15 @@ export default async function EstadisticasPage() {
     { data: tripData, error: tripErr },
     { data: viajeData, error: viajeErr },
     { data: expData, error: expErr },
+    { data: vehData },
   ] = await Promise.all([
     supabase.from("invoices").select("fecha, base, iva, irpf, total, tipo, cliente_snapshot"),
     supabase.from("external_invoices").select("fecha, base, iva, irpf, total, cliente"),
     supabase.from("incomes").select("fecha, base, iva, total, concepto, cliente"),
-    supabase.from("trips").select("fecha, km, importe, origen, destino"),
-    supabase.from("viajes").select("fecha, km"),
+    supabase.from("trips").select("fecha, km, importe, origen, destino, viaje_id"),
+    supabase.from("viajes").select("id, fecha, km, vehiculo_id"),
     supabase.from("expenses").select("fecha, categoria, iva, total"),
+    supabase.from("vehiculos").select("id, nombre").order("nombre"),
   ]);
 
   // No disfrazar un fallo de carga de "sin actividad": mostrar error con reintento.
@@ -75,11 +77,15 @@ export default async function EstadisticasPage() {
     km: t.km != null ? Number(t.km) : null,
     importe: Number(t.importe),
     ruta: t.origen && t.destino ? `${t.origen} → ${t.destino}` : t.origen || t.destino || "",
+    viaje_id: (t.viaje_id as string | null) ?? null,
   }));
-  // Viajes físicos: solo aportan los km (contados una vez por viaje).
+  const vehiculos = (vehData ?? []) as { id: string; nombre: string }[];
+  // Viajes físicos: aportan los km (una vez) y, con id+vehiculo_id, las stats por camión.
   const viajes: SViaje[] = (viajeData ?? []).map((v) => ({
+    id: v.id as string,
     fecha: v.fecha,
     km: v.km != null ? Number(v.km) : null,
+    vehiculo_id: (v.vehiculo_id as string | null) ?? null,
   }));
   const expenses: SExpense[] = (expData ?? []).map((e) => ({
     fecha: e.fecha,
@@ -101,6 +107,7 @@ export default async function EstadisticasPage() {
         invoices={invoices}
         trips={trips}
         viajes={viajes}
+        vehiculos={vehiculos}
         expenses={expenses}
         years={years}
         defaultYear={years[0] ?? currentYear}

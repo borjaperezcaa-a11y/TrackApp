@@ -26,13 +26,15 @@ export type STrip = {
   km: number | null;
   importe: number;
   ruta: string;
+  viaje_id?: string | null; // porte → viaje (para atribuir lo facturado a un camión)
 };
 // `iva` = IVA soportado (deducible) del gasto. Opcional → 0 si no consta.
 export type SExpense = { fecha: string; categoria: string; total: number; iva?: number };
 
 // Viaje FÍSICO para el cálculo de km: los km se cuentan UNA vez por viaje (no por
 // porte), así no se duplican cuando un viaje lleva carga para varios clientes.
-export type SViaje = { fecha: string; km: number | null };
+// id/vehiculo_id son opcionales: solo hacen falta para las estadísticas por camión.
+export type SViaje = { fecha: string; km: number | null; id?: string; vehiculo_id?: string | null };
 
 export type Kpis = {
   ingresos: number;
@@ -200,6 +202,63 @@ export function clientRanking(
     .map(([name, a]) => ({ name, total: a.total, nFacturas: a.n }))
     .sort((x, y) => y.total - x.total)
     .slice(0, topN);
+}
+
+export type VehicleStat = {
+  id: string;
+  nombre: string;
+  km: number;
+  ingresos: number; // lo facturado (importe de los portes) atribuido al camión
+  eurKm: number | null;
+  nViajes: number;
+};
+
+/**
+ * Estadísticas por camión en el periodo: km del viaje (una vez), lo facturado
+ * (suma de importes de sus portes) y €/km. Incluye un "Sin asignar" si hay
+ * viajes/portes sin camión. Solo tiene sentido mostrarlo si hay 2+ camiones.
+ */
+export function vehicleStats(
+  viajes: SViaje[],
+  portes: STrip[],
+  vehiculos: { id: string; nombre: string }[],
+  year: number,
+  period: Period,
+): VehicleStat[] {
+  // Mapa viaje → camión (de todos los viajes, para resolver el porte por su viaje).
+  const viajeVeh = new Map<string, string>();
+  for (const v of viajes) if (v.id) viajeVeh.set(v.id, v.vehiculo_id ?? "__none__");
+
+  const km = new Map<string, number>();
+  const nViajes = new Map<string, number>();
+  for (const v of viajes) {
+    if (!isInPeriod(v.fecha, year, period)) continue;
+    const key = v.vehiculo_id ?? "__none__";
+    km.set(key, (km.get(key) ?? 0) + (v.km ?? 0));
+    nViajes.set(key, (nViajes.get(key) ?? 0) + 1);
+  }
+
+  const ingresos = new Map<string, number>();
+  for (const p of portes) {
+    if (!isInPeriod(p.fecha, year, period)) continue;
+    const key = (p.viaje_id ? viajeVeh.get(p.viaje_id) : null) ?? "__none__";
+    ingresos.set(key, (ingresos.get(key) ?? 0) + p.importe);
+  }
+
+  const rows: VehicleStat[] = vehiculos.map((ve) => {
+    const k = km.get(ve.id) ?? 0;
+    const i = ingresos.get(ve.id) ?? 0;
+    return { id: ve.id, nombre: ve.nombre, km: k, ingresos: i, eurKm: k > 0 ? i / k : null, nViajes: nViajes.get(ve.id) ?? 0 };
+  });
+
+  const nk = km.get("__none__") ?? 0;
+  const ni = ingresos.get("__none__") ?? 0;
+  const nn = nViajes.get("__none__") ?? 0;
+  if (nk > 0 || ni > 0 || nn > 0) {
+    rows.push({ id: "__none__", nombre: "Sin camión", km: nk, ingresos: ni, eurKm: nk > 0 ? ni / nk : null, nViajes: nn });
+  }
+
+  return rows.filter((r) => r.nViajes > 0 || r.ingresos > 0).sort((a, b) => b.ingresos - a.ingresos);
 }
 
 export type MonthPoint = { month0: number; ingresos: number; gastos: number; beneficio: number };
