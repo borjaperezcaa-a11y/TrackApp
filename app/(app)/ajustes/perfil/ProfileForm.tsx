@@ -50,7 +50,15 @@ export type ProfileValues = {
   serie: string;
   num_inicial: number;
   logo_url: string;
+  factura_plantilla: Plantilla;
 };
+
+type Plantilla = "trackapp" | "elegante" | "moderna";
+const PLANTILLAS: { id: Plantilla; label: string }[] = [
+  { id: "trackapp", label: "TrackApp" },
+  { id: "elegante", label: "Elegante" },
+  { id: "moderna", label: "Moderna" },
+];
 
 const IVA_OPTS = [21, 10, 4, 0];
 const initial: ProfileState = {};
@@ -78,6 +86,22 @@ export function ProfileForm({
   const [irpf, setIrpf] = useState(String(values.irpf_def));
   const [serie, setSerie] = useState(values.serie);
   const [numInicial, setNumInicial] = useState(String(values.num_inicial || ""));
+  const [plantilla, setPlantilla] = useState<Plantilla>(values.factura_plantilla);
+
+  // Previsualiza una plantilla abriendo un PDF de EJEMPLO en una pestaña nueva.
+  async function previewPlantilla(t: Plantilla) {
+    const win = window.open("", "_blank");
+    try {
+      const { buildInvoicePdf, sampleInvoice } = await import("@/lib/pdf/invoice-pdf");
+      const { invoice, lines } = sampleInvoice(logoUrl || null);
+      const bytes = await buildInvoicePdf(invoice, lines, t);
+      const url = URL.createObjectURL(new Blob([bytes as unknown as BlobPart], { type: "application/pdf" }));
+      if (win) win.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      win?.close();
+    }
+  }
 
   const [iva, setIva] = useState<number>(values.iva_def);
   const [logoUrl, setLogoUrl] = useState<string>(values.logo_url);
@@ -171,6 +195,34 @@ export function ProfileForm({
           className="hidden"
         />
         <input type="hidden" name="logo_url" value={logoUrl} />
+
+        <div className="mt-4 border-t border-line pt-3.5">
+          <div className="mb-2 text-sm font-bold">Estilo de factura</div>
+          <div className="grid grid-cols-3 gap-2">
+            {PLANTILLAS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  setPlantilla(p.id);
+                  previewPlantilla(p.id);
+                }}
+                aria-pressed={plantilla === p.id}
+                className={clsx(
+                  "rounded-xl border-[1.5px] px-2 py-3 text-center transition-all active:scale-[0.97]",
+                  plantilla === p.id ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel2 text-text",
+                )}
+              >
+                <span className="block text-[12.5px] font-bold">{p.label}</span>
+                <span className="mt-0.5 block text-[10px] font-medium text-dim">Ver ejemplo</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 px-0.5 text-xs text-dim">
+            Toca un estilo para previsualizarlo. El elegido se usará en tus PDFs.
+          </p>
+        </div>
+        <input type="hidden" name="factura_plantilla" value={plantilla} />
       </Card>
 
       <Field label="Nombre o razón social" htmlFor="nombre">

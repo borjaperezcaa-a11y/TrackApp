@@ -39,6 +39,7 @@ const profileSchema = z.object({
     .trim()
     .max(500)
     .refine((v) => v === "" || /^https:\/\//i.test(v), "URL de logo no válida"),
+  factura_plantilla: z.enum(["trackapp", "elegante", "moderna"]).catch("trackapp"),
 });
 
 export type ProfileState = { error?: string; ok?: boolean; message?: string };
@@ -94,6 +95,7 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
       iva_def: d.iva_def,
       irpf_def: d.irpf_def,
       logo_url: d.logo_url || null,
+      factura_plantilla: d.factura_plantilla,
       ...numbering,
     })
     .eq("user_id", user.id);

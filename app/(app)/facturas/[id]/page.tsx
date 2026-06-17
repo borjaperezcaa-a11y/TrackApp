@@ -60,8 +60,12 @@ export default async function FacturaDetallePage({
 
   // Logo actual del perfil: respaldo para facturas emitidas antes de tener logo
   // (el logo es branding, no dato fiscal; los importes/huella siguen del snapshot).
-  const { data: prof } = await supabase.from("profiles").select("logo_url").maybeSingle();
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("logo_url, factura_plantilla")
+    .maybeSingle();
   const profileLogoUrl = (prof?.logo_url as string | null) ?? null;
+  const facturaPlantilla = (prof?.factura_plantilla as "trackapp" | "elegante" | "moderna") ?? "trackapp";
 
   return (
     <>
@@ -72,6 +76,7 @@ export default async function FacturaDetallePage({
         annulledBy={rect ?? null}
         original={original}
         profileLogoUrl={profileLogoUrl}
+        facturaPlantilla={facturaPlantilla}
       />
     </>
   );

@@ -64,6 +64,8 @@ export default async function PerfilPage() {
     serie,
     num_inicial: numInicial,
     logo_url: profile?.logo_url ?? "",
+    factura_plantilla:
+      (profile?.factura_plantilla as "trackapp" | "elegante" | "moderna") ?? "trackapp",
   };
 
   return (

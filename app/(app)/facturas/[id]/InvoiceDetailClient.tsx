@@ -22,12 +22,14 @@ export function InvoiceDetailClient({
   annulledBy,
   original,
   profileLogoUrl,
+  facturaPlantilla = "trackapp",
 }: {
   invoice: Invoice;
   lines: InvoiceLine[];
   annulledBy: Ref;
   original: Ref;
   profileLogoUrl?: string | null;
+  facturaPlantilla?: "trackapp" | "elegante" | "moderna";
 }) {
   const router = useRouter();
   const em = invoice.emisor_snapshot;
@@ -160,7 +162,7 @@ export function InvoiceDetailClient({
       ...invoice.emisor_snapshot,
       logo_url: invoice.emisor_snapshot?.logo_url || profileLogoUrl || null,
     };
-    const bytes = await buildInvoicePdf({ ...invoice, pagada, emisor_snapshot: emisor }, lines);
+    const bytes = await buildInvoicePdf({ ...invoice, pagada, emisor_snapshot: emisor }, lines, facturaPlantilla);
     return new File([bytes as unknown as BlobPart], pdfFilename, { type: "application/pdf" });
   }
 
