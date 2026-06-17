@@ -140,7 +140,7 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
 
   const logo = await embedLogo(pdf, em.logo_url);
   if (logo) {
-    const s = Math.min(120 / logo.width, 64 / logo.height);
+    const s = Math.min(1, 120 / logo.width, 64 / logo.height);
     page.drawImage(logo, { x: W - M - logo.width * s, y: H - 40 - logo.height * s, width: logo.width * s, height: logo.height * s });
   }
 
@@ -292,7 +292,7 @@ async function buildElegante(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
   // Logo (izq) + wordmark FACTURA y meta (der)
   const logo = await embedLogo(pdf, em.logo_url);
   if (logo) {
-    const s = Math.min(130 / logo.width, 56 / logo.height);
+    const s = Math.min(1, 130 / logo.width, 56 / logo.height);
     page.drawImage(logo, { x: m, y: H - 44 - logo.height * s, width: logo.width * s, height: logo.height * s });
   }
   text((invoice.tipo && invoice.tipo !== "F1" ? "RECTIFICATIVA" : "FACTURA").toUpperCase(), W - m - 200, 56, {
@@ -333,32 +333,34 @@ async function buildElegante(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
   drawParty("Emisor", em.nombre ?? "", [em.nif ? `NIF ${em.nif}` : null, em.direccion, em.cp_localidad], m);
   drawParty("Cliente", cl.nombre ?? "", [cl.nif ? `NIF ${cl.nif}` : null, cl.direccion, cl.cp_localidad], m + colW + 24);
 
-  // Tabla de conceptos
-  const c = {
-    fecha: m,
-    origen: m + 70,
-    destino: m + 200,
-    cant: W - m - 200,
-    precio: W - m - 130,
-    importe: W - m,
-  };
+  // Tabla de conceptos — columnas sin solapes (numéricas alineadas a la derecha)
+  const fechaX = m;
+  const origenX = m + 58;
+  const destinoX = m + 168;
+  const destinoW = 96;
+  const cantW = 46;
+  const precioW = 66;
+  const importeW = 72;
+  const importeX = W - m - importeW; // 473
+  const precioX = importeX - 8 - precioW; // 399
+  const cantX = precioX - 8 - cantW; // 345
   let ty = py + 96;
-  text("FECHA", c.fecha, ty, { size: 9, font: sansB, color: SLATE });
-  text("ORIGEN", c.origen, ty, { size: 9, font: sansB, color: SLATE });
-  text("DESTINO", c.destino, ty, { size: 9, font: sansB, color: SLATE });
-  text("CANT.", c.cant - 50, ty, { size: 9, font: sansB, color: SLATE, align: "right", w: 50 });
-  text("PRECIO", c.precio - 60, ty, { size: 9, font: sansB, color: SLATE, align: "right", w: 60 });
-  text("IMPORTE", c.importe - 70, ty, { size: 9, font: sansB, color: SLATE, align: "right", w: 70 });
+  text("FECHA", fechaX, ty, { size: 9, font: sansB, color: SLATE });
+  text("ORIGEN", origenX, ty, { size: 9, font: sansB, color: SLATE });
+  text("DESTINO", destinoX, ty, { size: 9, font: sansB, color: SLATE });
+  text("CANT.", cantX, ty, { size: 9, font: sansB, color: SLATE, align: "right", w: cantW });
+  text("PRECIO", precioX, ty, { size: 9, font: sansB, color: SLATE, align: "right", w: precioW });
+  text("IMPORTE", importeX, ty, { size: 9, font: sansB, color: SLATE, align: "right", w: importeW });
   ty += 6;
   hline(ty, m, W - m, INK, 1.4);
   for (const ln of lines) {
     ty += 19;
-    text(ln.fecha ? dateES(ln.fecha) : "", c.fecha, ty, { size: 10.5 });
-    text(clip(ln.origen ?? "", 120, sans, 10.5), c.origen, ty, { size: 10.5 });
-    text(clip(ln.destino ?? "", 130, sans, 10.5), c.destino, ty, { size: 10.5 });
-    text(amount(ln.cantidad), c.cant - 50, ty, { size: 10.5, align: "right", w: 50 });
-    text(amount(ln.precio) + " €", c.precio - 60, ty, { size: 10.5, align: "right", w: 60 });
-    text(amount(ln.importe) + " €", c.importe - 70, ty, { size: 10.5, font: sansB, align: "right", w: 70 });
+    text(ln.fecha ? dateES(ln.fecha) : "", fechaX, ty, { size: 10.5 });
+    text(clip(ln.origen ?? "", destinoX - origenX - 10, sans, 10.5), origenX, ty, { size: 10.5 });
+    text(clip(ln.destino ?? "", destinoW, sans, 10.5), destinoX, ty, { size: 10.5 });
+    text(amount(ln.cantidad), cantX, ty, { size: 10.5, align: "right", w: cantW });
+    text(amount(ln.precio) + " €", precioX, ty, { size: 10.5, align: "right", w: precioW });
+    text(amount(ln.importe) + " €", importeX, ty, { size: 10.5, font: sansB, align: "right", w: importeW });
     ty += 8;
     hline(ty, m, W - m, HAIR);
   }
@@ -397,15 +399,15 @@ async function buildElegante(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
   text("TOTAL FACTURA", tboxX + 12, tr + 2, { size: 10, font: sansB, color: rgb(1, 1, 1) });
   text(eur(invoice.total), tboxX, tr + 4, { size: 15, font: serif, color: rgb(1, 1, 1), align: "right", w: tboxW - 12 });
 
-  // Pie: QR + huella
+  // Pie: QR + huella (separador a la altura del pie, no arriba)
   const qrImg = await embedQr(pdf, invoice.qr);
-  hline(120, m, W - m, HAIR);
+  hline(H - 120, m, W - m, HAIR);
   if (qrImg) page.drawImage(qrImg, { x: m, y: 36, width: 70, height: 70 });
   const fx = qrImg ? m + 86 : m;
   text("HUELLA VERIFACTU (SHA-256)", fx, H - 104, { size: 8.5, font: sansB, color: ACCENT });
   page.drawText((invoice.huella ?? "").slice(0, 48), { x: fx, y: 90, size: 7.5, font: sans, color: SLATE });
   page.drawText((invoice.huella ?? "").slice(48), { x: fx, y: 80, size: 7.5, font: sans, color: SLATE });
-  let fny = H - 56;
+  let fny = 64; // coords nativas (origen abajo): pie de página
   for (const line of wrap(NOTICE, sans, 8, W - fx - m)) {
     page.drawText(line, { x: fx, y: fny, size: 8, font: sans, color: MUTED });
     fny -= 10;
@@ -454,7 +456,7 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
   // Logo en chip blanco (izq)
   const logo = await embedLogo(pdf, em.logo_url);
   if (logo) {
-    const s = Math.min(120 / logo.width, 40 / logo.height);
+    const s = Math.min(1, 120 / logo.width, 40 / logo.height);
     const cw = logo.width * s + 20;
     const ch = logo.height * s + 16;
     page.drawRectangle({ x: m, y: H - 34 - ch, width: cw, height: ch, color: WHITE });
@@ -507,26 +509,35 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
   drawCard("Emisor", em.nombre ?? "", [em.nif ? `NIF ${em.nif}` : null, em.direccion, em.cp_localidad], m, false);
   drawCard("Cliente", cl.nombre ?? "", [cl.nif ? `NIF ${cl.nif}` : null, cl.direccion, cl.cp_localidad], m + cardW + 16, true);
 
-  // Tabla de conceptos (cabecera tintada)
+  // Tabla de conceptos (cabecera tintada) — columnas sin solapes
   let ty = cardY + cardH + 28;
-  const c = { fecha: m, origen: m + 66, destino: m + 196, cant: W - m - 210, precio: W - m - 140, importe: W - m };
+  const fechaX = m + 10;
+  const origenX = m + 66;
+  const destinoX = m + 176;
+  const destinoW = 92;
+  const cantW = 46;
+  const precioW = 66;
+  const importeW = 72;
+  const importeX = W - m - 10 - importeW;
+  const precioX = importeX - 8 - precioW;
+  const cantX = precioX - 8 - cantW;
   page.drawRectangle({ x: m, y: H - ty - 6, width: W - 2 * m, height: 22, color: SOFT });
   const hY = ty + 9;
-  text("FECHA", c.fecha + 10, hY, { size: 8.5, font: sansB, color: ACCENT });
-  text("ORIGEN", c.origen, hY, { size: 8.5, font: sansB, color: ACCENT });
-  text("DESTINO", c.destino, hY, { size: 8.5, font: sansB, color: ACCENT });
-  text("CANT.", c.cant - 50, hY, { size: 8.5, font: sansB, color: ACCENT, align: "right", w: 50 });
-  text("PRECIO", c.precio - 60, hY, { size: 8.5, font: sansB, color: ACCENT, align: "right", w: 60 });
-  text("IMPORTE", c.importe - 10 - 70, hY, { size: 8.5, font: sansB, color: ACCENT, align: "right", w: 70 });
+  text("FECHA", fechaX, hY, { size: 8.5, font: sansB, color: ACCENT });
+  text("ORIGEN", origenX, hY, { size: 8.5, font: sansB, color: ACCENT });
+  text("DESTINO", destinoX, hY, { size: 8.5, font: sansB, color: ACCENT });
+  text("CANT.", cantX, hY, { size: 8.5, font: sansB, color: ACCENT, align: "right", w: cantW });
+  text("PRECIO", precioX, hY, { size: 8.5, font: sansB, color: ACCENT, align: "right", w: precioW });
+  text("IMPORTE", importeX, hY, { size: 8.5, font: sansB, color: ACCENT, align: "right", w: importeW });
   ty += 16;
   for (const ln of lines) {
     ty += 19;
-    text(ln.fecha ? dateES(ln.fecha) : "", c.fecha + 10, ty, { size: 10.5 });
-    text(clip(ln.origen ?? "", 120, sans, 10.5), c.origen, ty, { size: 10.5 });
-    text(clip(ln.destino ?? "", 130, sans, 10.5), c.destino, ty, { size: 10.5 });
-    text(amount(ln.cantidad), c.cant - 50, ty, { size: 10.5, align: "right", w: 50 });
-    text(amount(ln.precio) + " €", c.precio - 60, ty, { size: 10.5, align: "right", w: 60 });
-    text(amount(ln.importe) + " €", c.importe - 10 - 70, ty, { size: 10.5, font: sansB, align: "right", w: 70 });
+    text(ln.fecha ? dateES(ln.fecha) : "", fechaX, ty, { size: 10.5 });
+    text(clip(ln.origen ?? "", destinoX - origenX - 10, sans, 10.5), origenX, ty, { size: 10.5 });
+    text(clip(ln.destino ?? "", destinoW, sans, 10.5), destinoX, ty, { size: 10.5 });
+    text(amount(ln.cantidad), cantX, ty, { size: 10.5, align: "right", w: cantW });
+    text(amount(ln.precio) + " €", precioX, ty, { size: 10.5, align: "right", w: precioW });
+    text(amount(ln.importe) + " €", importeX, ty, { size: 10.5, font: sansB, align: "right", w: importeW });
     ty += 8;
     page.drawLine({ start: { x: m, y: H - ty }, end: { x: W - m, y: H - ty }, thickness: 0.8, color: LINEC });
   }
@@ -565,7 +576,7 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
   text("HUELLA VERIFACTU (SHA-256)", fx, H - 100, { size: 8.5, font: sansB, color: ACCENT });
   page.drawText((invoice.huella ?? "").slice(0, 48), { x: fx, y: 88, size: 7.5, font: sans, color: SLATE });
   page.drawText((invoice.huella ?? "").slice(48), { x: fx, y: 78, size: 7.5, font: sans, color: SLATE });
-  let fny = H - 54;
+  let fny = 62; // coords nativas (origen abajo): pie de página
   for (const line of wrap(NOTICE, sans, 8, W - fx - m)) {
     page.drawText(line, { x: fx, y: fny, size: 8, font: sans, color: MUTED });
     fny -= 10;
