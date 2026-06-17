@@ -151,17 +151,18 @@ export function ViajeForm({
     setStep((s) => Math.max(1, s - 1));
   }
 
-  // CP → localidad (GeoNames). Devuelve el nombre de la localidad o null.
-  async function lookupLocalidad(cp: string): Promise<string | null> {
+  // CP → localidad + coordenadas (GeoNames). Las coords sirven para calcular km.
+  async function lookupCp(cp: string): Promise<{ localidad: string | null; lat: number | null; lon: number | null }> {
     const c = cp.trim();
-    if (c.length < 4) return null;
+    const vacio = { localidad: null, lat: null, lon: null };
+    if (c.length < 4) return vacio;
     try {
       const res = await fetch(`/api/cp?cp=${encodeURIComponent(c)}`);
-      if (!res.ok) return null;
-      const data = (await res.json()) as { localidad?: string | null };
-      return data.localidad ?? null;
+      if (!res.ok) return vacio;
+      const data = (await res.json()) as { localidad?: string | null; lat?: number | null; lon?: number | null };
+      return { localidad: data.localidad ?? null, lat: data.lat ?? null, lon: data.lon ?? null };
     } catch {
-      return null;
+      return vacio;
     }
   }
 
@@ -177,8 +178,8 @@ export function ViajeForm({
               onChange={(e) => setStop(i, field, j, "cp", e.target.value)}
               onBlur={async () => {
                 if (s.cp.trim() && !s.lugar.trim()) {
-                  const n = await lookupLocalidad(s.cp);
-                  if (n) setStop(i, field, j, "lugar", n);
+                  const r = await lookupCp(s.cp);
+                  if (r.localidad) setStop(i, field, j, "lugar", r.localidad);
                 }
               }}
               placeholder="CP"
@@ -325,10 +326,10 @@ export function ViajeForm({
             value={origenCp}
             onChange={(e) => setOrigenCp(e.target.value)}
             onBlur={async () => {
-              if (origenCp.trim() && !origen.trim()) {
-                const n = await lookupLocalidad(origenCp);
-                if (n) setOrigen(n);
-              }
+              if (!origenCp.trim()) return;
+              const r = await lookupCp(origenCp);
+              if (r.localidad && !origen.trim()) setOrigen(r.localidad);
+              if (r.lat != null && r.lon != null) setOrigenCoord({ lat: r.lat, lon: r.lon });
             }}
             placeholder="CP"
             inputMode="numeric"
@@ -349,10 +350,10 @@ export function ViajeForm({
             value={destinoCp}
             onChange={(e) => setDestinoCp(e.target.value)}
             onBlur={async () => {
-              if (destinoCp.trim() && !destino.trim()) {
-                const n = await lookupLocalidad(destinoCp);
-                if (n) setDestino(n);
-              }
+              if (!destinoCp.trim()) return;
+              const r = await lookupCp(destinoCp);
+              if (r.localidad && !destino.trim()) setDestino(r.localidad);
+              if (r.lat != null && r.lon != null) setDestinoCoord({ lat: r.lat, lon: r.lon });
             }}
             placeholder="CP"
             inputMode="numeric"

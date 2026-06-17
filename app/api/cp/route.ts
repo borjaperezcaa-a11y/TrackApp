@@ -6,7 +6,20 @@ import { createClient } from "@/lib/supabase/server";
  * países); si el CP no está en España, busca en el resto (rutas europeas).
  * Degrada con elegancia si GeoNames no está configurado o falla.
  */
-type PC = { placeName?: string; adminName3?: string; adminName2?: string; adminName1?: string; countryCode?: string };
+type PC = {
+  placeName?: string;
+  adminName3?: string;
+  adminName2?: string;
+  adminName1?: string;
+  countryCode?: string;
+  lat?: number | string;
+  lng?: number | string;
+};
+
+const toNum = (v: unknown): number | null => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -55,7 +68,11 @@ export async function GET(request: Request) {
       .filter((p) => p.placeName || p.adminName3)
       .map((p) => ({ nombre: p.adminName3 || p.placeName || "", provincia: p.adminName2 || p.adminName1 || "", pais: p.countryCode || "" }));
 
-    return Response.json({ localidad, places });
+    // Coordenadas del CP (para calcular los km del viaje sin tener que elegir en el buscador).
+    const lat = first ? toNum(first.lat) : null;
+    const lon = first ? toNum(first.lng) : null;
+
+    return Response.json({ localidad, lat, lon, places });
   } catch {
     return Response.json({ localidad: null, places: [] });
   }
