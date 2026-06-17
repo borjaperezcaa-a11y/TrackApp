@@ -56,7 +56,7 @@ export type ProfileValues = {
 type Plantilla = "trackapp" | "elegante" | "moderna";
 const PLANTILLAS: { id: Plantilla; label: string }[] = [
   { id: "trackapp", label: "TrackApp" },
-  { id: "elegante", label: "Elegante" },
+  { id: "elegante", label: "Clásica" },
   { id: "moderna", label: "Moderna" },
 ];
 
