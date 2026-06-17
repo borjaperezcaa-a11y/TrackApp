@@ -9,6 +9,36 @@ import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
 import { saveProfile, type ProfileState } from "./actions";
 
+/**
+ * Convierte cualquier imagen (PNG/JPG/WebP) a PNG vía canvas. pdf-lib solo sabe
+ * incrustar PNG/JPG, así que normalizamos a PNG para que el logo SIEMPRE salga
+ * en el PDF de la factura.
+ */
+function imageToPng(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        return reject(new Error("no ctx"));
+      }
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("no blob"))), "image/png");
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("no se pudo leer la imagen"));
+    };
+    img.src = url;
+  });
+}
+
 export type ProfileValues = {
   nombre: string;
   nif: string;
@@ -72,11 +102,12 @@ export function ProfileForm({
       // Carga diferida del cliente de Supabase: solo al subir un logo.
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${userId}/logo-${Date.now()}.${ext}`;
+      // Normalizamos a PNG (pdf-lib no incrusta WebP) para que el logo salga en el PDF.
+      const png = await imageToPng(file);
+      const path = `${userId}/logo-${Date.now()}.png`;
       const { error } = await supabase.storage
         .from("logos")
-        .upload(path, file, { upsert: true, cacheControl: "3600" });
+        .upload(path, png, { upsert: true, cacheControl: "3600", contentType: "image/png" });
       if (error) throw error;
       const { data } = supabase.storage.from("logos").getPublicUrl(path);
       setLogoUrl(data.publicUrl);
@@ -110,7 +141,7 @@ export function ProfileForm({
           </div>
           <div className="min-w-0">
             <div className="text-sm font-bold">Logo de la factura</div>
-            <div className="mt-0.5 text-xs text-dim">PNG, JPG o SVG · máx. 2 MB</div>
+            <div className="mt-0.5 text-xs text-dim">PNG, JPG o WebP · máx. 2 MB</div>
             <div className="mt-2.5 flex gap-2">
               <button
                 type="button"
