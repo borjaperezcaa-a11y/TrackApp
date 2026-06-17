@@ -16,10 +16,11 @@ const viajeSchema = z.object({
   origen: z.string().trim().max(160),
   destino: z.string().trim().max(160),
   km: z.string().trim(),
+  vehiculo_id: z.string().trim().optional(),
 });
 
 function parseViaje(formData: FormData):
-  | { ok: true; row: { fecha: string; origen: string | null; destino: string | null; km: number | null } }
+  | { ok: true; row: { fecha: string; origen: string | null; destino: string | null; km: number | null; vehiculo_id: string | null } }
   | { ok: false; error: string } {
   const parsed = viajeSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
@@ -30,7 +31,9 @@ function parseViaje(formData: FormData):
     if (!Number.isFinite(k) || k < 0) return { ok: false, error: "Km no válidos" };
     km = k;
   }
-  return { ok: true, row: { fecha: d.fecha, origen: d.origen || null, destino: d.destino || null, km } };
+  // Camión (opcional): solo se guarda si es un uuid válido.
+  const vehiculo_id = d.vehiculo_id && z.string().uuid().safeParse(d.vehiculo_id).success ? d.vehiculo_id : null;
+  return { ok: true, row: { fecha: d.fecha, origen: d.origen || null, destino: d.destino || null, km, vehiculo_id } };
 }
 
 // ─── PORTE (carga de un cliente: lo que se factura) ───────────────────────────

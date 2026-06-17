@@ -40,10 +40,12 @@ const emptyPorte = (origen = "", destino = ""): PorteDraft => ({
  */
 export function ViajeForm({
   clients: initialClients,
+  vehiculos = [],
   defaultFecha,
   routingEnabled = false,
 }: {
   clients: ClientOption[];
+  vehiculos?: { id: string; nombre: string }[];
   defaultFecha: string;
   routingEnabled?: boolean;
 }) {
@@ -167,6 +169,19 @@ export function ViajeForm({
       <Field label="Km del viaje" htmlFor="km" hint={kmHint}>
         <input id="km" name="km" type="number" step="1" min="0" inputMode="numeric" value={km} onChange={(e) => setKm(e.target.value)} placeholder="940" />
       </Field>
+
+      {vehiculos.length > 0 && (
+        <Field label="Camión" htmlFor="vehiculo_id" hint="Qué camión hace este viaje">
+          <select id="vehiculo_id" name="vehiculo_id" defaultValue={vehiculos.length === 1 ? vehiculos[0].id : ""}>
+            <option value="">Sin asignar</option>
+            {vehiculos.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.nombre}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
 
       <div className="mb-1.5 mt-5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">
         Portes ({portes.length})

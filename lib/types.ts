@@ -14,6 +14,16 @@ export type Client = {
 
 export type TripEstado = "pendiente" | "facturado";
 
+// Camión de la flota (varios por autónomo) — ver migración 0029.
+export type Vehiculo = {
+  id: string;
+  user_id: string;
+  nombre: string;
+  matricula: string | null;
+  activo: boolean;
+  created_at: string;
+};
+
 // Viaje FÍSICO: el desplazamiento real del camión (km contados una sola vez).
 // Agrupa varios portes (filas de `trips`) — ver migración 0027.
 export type Viaje = {
@@ -23,6 +33,7 @@ export type Viaje = {
   origen: string | null;
   destino: string | null;
   km: number | null;
+  vehiculo_id: string | null;
   created_at: string;
 };
 

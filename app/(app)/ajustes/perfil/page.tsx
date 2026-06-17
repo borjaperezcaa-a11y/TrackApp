@@ -78,8 +78,22 @@ export default async function PerfilPage() {
       <ProfileForm userId={user.id} values={values} nextNumero={nextNumero} locked={locked} />
 
       <Link
-        href="/ajustes/eventos"
+        href="/camiones"
         className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3.5 transition-transform active:scale-[0.99]"
+      >
+        <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-panel2 text-amber">
+          <Icon name="truck" size={18} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">Camiones</span>
+          <span className="block text-[12px] text-dim">Tu flota: asigna cada viaje a su camión</span>
+        </span>
+        <span className="text-amber">›</span>
+      </Link>
+
+      <Link
+        href="/ajustes/eventos"
+        className="mt-2.5 flex items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3.5 transition-transform active:scale-[0.99]"
       >
         <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-panel2 text-amber">
           <Icon name="doc" size={18} />

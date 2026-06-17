@@ -10,9 +10,11 @@ import type { TripState } from "./actions";
 export function TrayectoForm({
   action,
   defaults,
+  vehiculos = [],
 }: {
   action: (prev: TripState, formData: FormData) => Promise<TripState>;
-  defaults: { fecha: string; origen: string; destino: string; km: string };
+  defaults: { fecha: string; origen: string; destino: string; km: string; vehiculo_id: string };
+  vehiculos?: { id: string; nombre: string }[];
 }) {
   const [state, formAction] = useActionState(action, {});
 
@@ -39,6 +41,19 @@ export function TrayectoForm({
           placeholder="940"
         />
       </Field>
+
+      {vehiculos.length > 0 && (
+        <Field label="Camión" htmlFor="t-vehiculo">
+          <select id="t-vehiculo" name="vehiculo_id" defaultValue={defaults.vehiculo_id}>
+            <option value="">Sin asignar</option>
+            {vehiculos.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.nombre}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
 
       {state.error && (
         <p className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{state.error}</p>

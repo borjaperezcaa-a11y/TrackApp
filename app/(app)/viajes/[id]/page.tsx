@@ -41,7 +41,7 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
   if (!viajeData) notFound();
   const v = viajeData as Viaje;
 
-  const [{ data: portesData }, { data: clientsData }] = await Promise.all([
+  const [{ data: portesData }, { data: clientsData }, { data: vehiculosData }] = await Promise.all([
     supabase
       .from("trips")
       .select("id, client_id, origen, destino, descripcion, importe, estado, invoice_id")
@@ -49,10 +49,13 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
       .eq("user_id", user.id)
       .order("created_at"),
     supabase.from("clients").select("id, nombre").order("nombre"),
+    supabase.from("vehiculos").select("id, nombre").eq("activo", true).order("nombre"),
   ]);
   const portes = (portesData ?? []) as PorteRow[];
   const clients = (clientsData ?? []) as { id: string; nombre: string }[];
+  const vehiculos = (vehiculosData ?? []) as { id: string; nombre: string }[];
   const nombreCliente = new Map(clients.map((c) => [c.id, c.nombre]));
+  const nombreCamion = vehiculos.find((x) => x.id === v.vehiculo_id)?.nombre ?? null;
 
   const total = portes.reduce((s, p) => s + Number(p.importe), 0);
   const hayFacturados = portes.some((p) => p.estado === "facturado");
@@ -69,6 +72,7 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
         <div className="mt-1 text-[13px] text-dim">
           {v.km != null ? `${amount(v.km).replace(",00", "")} km` : "Sin km"} · {portes.length}{" "}
           {portes.length === 1 ? "porte" : "portes"}
+          {nombreCamion ? ` · 🚛 ${nombreCamion}` : ""}
         </div>
         <div className="mt-3 font-display text-2xl font-bold text-amber tnum">{eur(total)}</div>
       </Card>
@@ -129,11 +133,13 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
       <div className="mb-2 mt-8 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Editar trayecto</div>
       <TrayectoForm
         action={updateViajeAction.bind(null, id)}
+        vehiculos={vehiculos}
         defaults={{
           fecha: v.fecha,
           origen: v.origen ?? "",
           destino: v.destino ?? "",
           km: v.km != null ? String(v.km) : "",
+          vehiculo_id: v.vehiculo_id ?? "",
         }}
       />
 
