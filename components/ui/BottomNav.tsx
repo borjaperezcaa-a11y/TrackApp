@@ -13,7 +13,7 @@ const TABS: Tab[] = [
   { href: "/facturas", label: "Facturación", icon: "doc" },
   { href: "/ingresos", label: "Ingresos", icon: "income" },
   { href: "/gastos", label: "Gastos", icon: "euro" },
-  { href: "/estadisticas", label: "Stats", icon: "chart" },
+  { href: "/ajustes/perfil", label: "Mi Perfil", icon: "user" },
 ];
 
 function isActive(pathname: string, href: string): boolean {

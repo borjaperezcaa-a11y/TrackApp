@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { clsx } from "@/lib/clsx";
 import { eur } from "@/lib/format";
-import { type Period, periodLabel } from "@/lib/fiscal";
+import { type Period, periodLabel, quarterOfMonth } from "@/lib/fiscal";
 import {
   periodKpis,
   buckets,
@@ -19,7 +19,8 @@ import { BarChart } from "@/components/charts/BarChart";
 import { Donut } from "@/components/charts/Donut";
 import { Ranking } from "@/components/charts/Ranking";
 
-const PERIODS: Period[] = ["Y", "1", "2", "3", "4"];
+// Trimestres primero y "Año" al final; por defecto se abre en el trimestre actual.
+const PERIODS: Period[] = ["1", "2", "3", "4", "Y"];
 
 const CATEGORY_COLORS: Record<string, string> = {
   Gasoil: "var(--amber)",
@@ -45,7 +46,8 @@ export function PeriodStats({
   defaultYear: number;
 }) {
   const [year, setYear] = useState(defaultYear);
-  const [period, setPeriod] = useState<Period>("Y");
+  // Por defecto, el trimestre en el que estamos (T1–T4 según el mes actual).
+  const [period, setPeriod] = useState<Period>(() => String(quarterOfMonth(new Date().getMonth())) as Period);
 
   const k = periodKpis(invoices, trips, expenses, year, period);
   const bkts = buckets(invoices, expenses, year, period);

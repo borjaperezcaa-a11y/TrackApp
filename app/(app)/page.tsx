@@ -131,7 +131,7 @@ export default async function HomePage({
     { key: "ingresos", icon: "income", label: "Ingresos", note: "Apunta a mano", color: "var(--green)", href: "/ingresos" },
     { key: "gastos", icon: "euro", label: "Gastos", note: monthPoint.gastos > 0 ? `${eur(monthPoint.gastos)} mes` : "Escanea un ticket", color: "var(--red)", href: "/gastos" },
     { key: "clientes", icon: "user", label: "Clientes", note: `${clientCount ?? 0} en cartera`, color: "var(--purple)", href: "/clientes" },
-    { key: "ajustes", icon: "gear", label: "Mis datos", note: "Perfil emisor", color: "var(--dim)", href: "/ajustes/perfil" },
+    { key: "ajustes", icon: "user", label: "Mi Perfil", note: "Datos de emisor", color: "var(--dim)", href: "/ajustes/perfil" },
   ];
 
   return (
