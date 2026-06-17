@@ -16,6 +16,11 @@ const clientSchema = z.object({
   direccion: z.string().trim().max(200),
   cp_localidad: z.string().trim().max(120),
   condiciones_pago: z.string().trim().max(120),
+  email: z
+    .string()
+    .trim()
+    .max(160)
+    .refine((v) => v === "" || z.string().email().safeParse(v).success, "Correo electrónico no válido"),
 });
 
 export type ClientState = { error?: string };
@@ -31,6 +36,7 @@ function toRow(d: z.infer<typeof clientSchema>) {
     direccion: d.direccion || null,
     cp_localidad: d.cp_localidad || null,
     condiciones_pago: d.condiciones_pago || null,
+    email: d.email ? d.email.toLowerCase() : null,
   };
 }
 
@@ -86,6 +92,7 @@ export async function quickCreateClient(input: {
     direccion: "",
     cp_localidad: "",
     condiciones_pago: "",
+    email: "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
 

@@ -40,6 +40,7 @@ export default async function EditarClientePage({
           direccion: c.direccion ?? "",
           cp_localidad: c.cp_localidad ?? "",
           condiciones_pago: c.condiciones_pago ?? "",
+          email: c.email ?? "",
         }}
         submitLabel="GUARDAR CAMBIOS"
       />

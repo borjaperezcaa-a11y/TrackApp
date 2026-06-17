@@ -11,6 +11,7 @@ export type ClientValues = {
   direccion: string;
   cp_localidad: string;
   condiciones_pago: string;
+  email: string;
 };
 
 const initial: ClientState = {};
@@ -45,6 +46,20 @@ export function ClientForm({
 
       <Field label="CP y localidad" htmlFor="cp_localidad">
         <input id="cp_localidad" name="cp_localidad" defaultValue={values.cp_localidad} placeholder="30100 Murcia" />
+      </Field>
+
+      <Field label="Correo electrónico" htmlFor="email" hint="Para enviarle la factura (envío aún no activado)">
+        <input
+          id="email"
+          name="email"
+          type="email"
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          defaultValue={values.email}
+          placeholder="cliente@empresa.com"
+        />
       </Field>
 
       <Field label="Condiciones de pago" htmlFor="condiciones_pago" hint="Ej. Pago a 60 días">

@@ -67,6 +67,18 @@ export default async function FacturaDetallePage({
   const profileLogoUrl = (prof?.logo_url as string | null) ?? null;
   const facturaPlantilla = (prof?.factura_plantilla as "trackapp" | "elegante" | "moderna") ?? "trackapp";
 
+  // Email actual del cliente (para el botón "Enviar por email", aún desactivado).
+  let clienteEmail: string | null = null;
+  if (invoice.client_id) {
+    const { data: clientRow } = await supabase
+      .from("clients")
+      .select("email")
+      .eq("id", invoice.client_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    clienteEmail = (clientRow?.email as string | null) ?? null;
+  }
+
   return (
     <>
       <PageHeader title={invoice.numero} kicker="Factura" fallbackHref="/facturas" />
@@ -77,6 +89,7 @@ export default async function FacturaDetallePage({
         original={original}
         profileLogoUrl={profileLogoUrl}
         facturaPlantilla={facturaPlantilla}
+        clienteEmail={clienteEmail}
       />
     </>
   );

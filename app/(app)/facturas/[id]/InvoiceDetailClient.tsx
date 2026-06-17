@@ -16,6 +16,12 @@ import { togglePaidAction, emitRectificativaAction, emitRectificativaDifAction }
 
 type Ref = { id: string; numero: string } | null;
 
+// ── Envío de factura por email ───────────────────────────────────────────────
+// EN PRUEBAS: el envío por correo está DESACTIVADO a propósito (no se manda nada).
+// Para ACTIVARLO cuando se quiera: pon esto a `true` y añade el `onClick` del botón
+// que llame a un server action de envío con el PDF y `clienteEmail`.
+const ENVIO_EMAIL_ACTIVO = false;
+
 export function InvoiceDetailClient({
   invoice,
   lines,
@@ -23,6 +29,7 @@ export function InvoiceDetailClient({
   original,
   profileLogoUrl,
   facturaPlantilla = "trackapp",
+  clienteEmail = null,
 }: {
   invoice: Invoice;
   lines: InvoiceLine[];
@@ -30,6 +37,7 @@ export function InvoiceDetailClient({
   original: Ref;
   profileLogoUrl?: string | null;
   facturaPlantilla?: "trackapp" | "elegante" | "moderna";
+  clienteEmail?: string | null;
 }) {
   const router = useRouter();
   const em = invoice.emisor_snapshot;
@@ -358,6 +366,38 @@ export function InvoiceDetailClient({
           {pdfError}
         </p>
       )}
+
+      {/* Enviar por email — PREPARADO pero DESACTIVADO (estamos en pruebas).
+          Para activarlo: cambia ENVIO_EMAIL_ACTIVO a true (arriba) y conecta el
+          envío real (p. ej. un server action que mande el PDF a `clienteEmail`). */}
+      <button
+        type="button"
+        disabled={!ENVIO_EMAIL_ACTIVO || !clienteEmail}
+        aria-disabled={!ENVIO_EMAIL_ACTIVO || !clienteEmail}
+        title={
+          clienteEmail
+            ? `Se enviará a ${clienteEmail}${ENVIO_EMAIL_ACTIVO ? "" : " (envío aún no activado)"}`
+            : "Añade el correo del cliente en su ficha"
+        }
+        className="mt-2.5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[18px] border border-line bg-panel py-4 text-[15px] font-bold text-dim transition-transform active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <Icon name="send" size={18} /> Enviar por email
+      </button>
+      <p className="mt-1 px-1 text-center text-[11.5px] text-dim">
+        {clienteEmail ? (
+          <>
+            Listo para enviar a <b className="text-text">{clienteEmail}</b>. Envío aún desactivado (en pruebas).
+          </>
+        ) : (
+          <>
+            Para enviarla por correo, añade el email del cliente en su{" "}
+            <Link href={`/clientes/${invoice.client_id}`} className="underline">
+              ficha
+            </Link>
+            .
+          </>
+        )}
+      </p>
 
       <button
         type="button"

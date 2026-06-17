@@ -8,6 +8,7 @@ export type Client = {
   direccion: string | null;
   cp_localidad: string | null;
   condiciones_pago: string | null;
+  email: string | null;
   created_at: string;
 };
 

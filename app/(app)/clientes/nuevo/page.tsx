@@ -19,7 +19,7 @@ export default async function NuevoClientePage({
       <PageHeader title="Nuevo cliente" kicker="Clientes" fallbackHref={next ?? "/clientes"} />
       <ClientForm
         action={createClientAction}
-        values={{ nombre, nif: "", direccion: "", cp_localidad: "", condiciones_pago: "" }}
+        values={{ nombre, nif: "", direccion: "", cp_localidad: "", condiciones_pago: "", email: "" }}
         submitLabel="CREAR CLIENTE"
         next={next}
       />
