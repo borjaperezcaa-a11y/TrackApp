@@ -42,3 +42,6 @@ yarn-error.log*
 
 # claude code (ajustes locales por máquina)
 .claude/settings.local.json
+
+# notas/plantillas locales (no forman parte de la app)
+prompt_auditoria_qa.md
