@@ -12,10 +12,11 @@ export default async function NuevaFacturaPage() {
     { data: profile, error: profileErr },
     { data: clientsData, error: clientsErr },
     { data: tripsData, error: tripsErr },
+    { count: emittedCount },
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("nombre, nif, direccion, cp_localidad, iban, logo_url, iva_def, irpf_def")
+      .select("nombre, nif, direccion, cp_localidad, iban, logo_url, iva_def, irpf_def, serie")
       .maybeSingle(),
     supabase.from("clients").select("id, nombre, nif, direccion, cp_localidad, condiciones_pago").order("nombre"),
     supabase
@@ -23,7 +24,13 @@ export default async function NuevaFacturaPage() {
       .select("id, fecha, origen, destino, importe, client_id")
       .eq("estado", "pendiente")
       .order("fecha"),
+    supabase.from("invoices").select("id", { count: "exact", head: true }),
   ]);
+
+  // Si aún no hay ninguna factura, esta sería la PRIMERA: avisaremos de que la
+  // serie quedará fijada al emitirla.
+  const esPrimeraFactura = (emittedCount ?? 0) === 0;
+  const serie = (profile?.serie ?? "FACT").toUpperCase();
 
   // Un fallo de carga no debe disfrazarse de "no hay viajes": mostramos error con
   // reintento en lugar de un wizard vacío que llevaría a conclusiones equivocadas.
@@ -66,6 +73,8 @@ export default async function NuevaFacturaPage() {
           importe: Number(t.importe),
           client_id: t.client_id as string,
         }))}
+        esPrimeraFactura={esPrimeraFactura}
+        serie={serie}
       />
     </>
   );

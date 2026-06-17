@@ -74,15 +74,21 @@ export function NuevaFacturaWizard({
   profile,
   clients,
   pendingTrips,
+  esPrimeraFactura = false,
+  serie = "FACT",
 }: {
   profile: ProfileData;
   clients: ClientData[];
   pendingTrips: PendingTrip[];
+  esPrimeraFactura?: boolean;
+  serie?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const inFlight = useRef(false); // guard anti doble-emisión (toque rápido en móvil)
   const [error, setError] = useState<string | null>(null);
+  // Primera factura: hay que confirmar que la serie quedará fija antes de emitir.
+  const [serieAck, setSerieAck] = useState(false);
 
   // Clientes que tienen al menos un viaje pendiente.
   const billableClients = useMemo(() => {
@@ -391,6 +397,32 @@ export function NuevaFacturaWizard({
         (no se envía a la AEAT ni se firma con certificado).
       </p>
 
+      {/* Primera factura: la serie queda fija. Último aviso antes de emitir. */}
+      {esPrimeraFactura && (
+        <div className="mt-3 rounded-2xl border border-red/40 bg-red-soft px-4 py-3.5">
+          <div className="text-[13px] font-extrabold text-red">Esta es tu primera factura</div>
+          <p className="mt-1 text-[12.5px] font-semibold text-text">
+            Se emitirá con la serie <b>{serie}</b> y, a partir de ahí, la serie y la numeración{" "}
+            <b>quedarán fijadas</b> (no se podrán cambiar). Si quieres otra serie, cámbiala primero en{" "}
+            <Link href="/ajustes/perfil" className="underline">
+              Mi Perfil
+            </Link>
+            .
+          </p>
+          <label className="mt-2.5 flex items-start gap-2.5 text-[12.5px] font-semibold">
+            <input
+              type="checkbox"
+              checked={serieAck}
+              onChange={(e) => setSerieAck(e.target.checked)}
+              className="mt-0.5 h-4 w-4 flex-none accent-amber"
+            />
+            <span>
+              Entiendo que la serie <b>{serie}</b> quedará fija para todas mis facturas.
+            </span>
+          </label>
+        </div>
+      )}
+
       {error && (
         <p className="mt-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{error}</p>
       )}
@@ -398,7 +430,7 @@ export function NuevaFacturaWizard({
       <button
         type="button"
         onClick={emit}
-        disabled={pending || included.length === 0}
+        disabled={pending || included.length === 0 || (esPrimeraFactura && !serieAck)}
         className="mt-3 flex min-h-[64px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-amber px-5 py-5 text-[17px] font-extrabold text-[#1a1205] shadow-[0_12px_26px_rgba(255,178,62,0.30)] transition-transform active:scale-[0.97] disabled:opacity-60"
       >
         {pending ? (
