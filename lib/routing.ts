@@ -36,8 +36,12 @@ export async function geocodeAutocomplete(text: string): Promise<Place[]> {
   // región), NO direcciones ni puntos de interés concretos. Así el usuario elige
   // pueblo/provincia y la ruta de camión se calcula de centro a centro, evitando
   // los puntos en zona peatonal que no son transitables para camión.
-  // lang=es → nombres en español (provincia y país): "La Coruña", "España".
-  const url = `${ORS}/geocode/autocomplete?text=${encodeURIComponent(text)}&size=6&layers=coarse&lang=es`;
+  // lang=es → nombres en español; layers=coarse → localidades/provincias.
+  // boundary.rect → restringe a un recuadro de EUROPA (excluye América, etc.).
+  // focus.point (España) → sesga para que las ciudades de aquí salgan primero.
+  const EUROPA = "boundary.rect.min_lon=-11&boundary.rect.min_lat=34&boundary.rect.max_lon=40&boundary.rect.max_lat=71";
+  const FOCO_ES = "focus.point.lon=-3.70&focus.point.lat=40.42";
+  const url = `${ORS}/geocode/autocomplete?text=${encodeURIComponent(text)}&size=6&layers=coarse&lang=es&${EUROPA}&${FOCO_ES}`;
   // Timeout: si ORS tarda/cuelga, no bloqueamos la petición indefinidamente.
   const res = await fetch(url, { headers: { Authorization: key }, signal: AbortSignal.timeout(4000) });
   if (!res.ok) throw new Error(`ORS geocode ${res.status}`);
