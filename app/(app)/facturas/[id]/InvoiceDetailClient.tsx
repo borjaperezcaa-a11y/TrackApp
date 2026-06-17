@@ -161,7 +161,7 @@ export function InvoiceDetailClient({
     });
   }
 
-  const pdfFilename = `${invoice.numero.replace(/\//g, "-")}.pdf`;
+  const pdfFilename = `Factura ${invoice.numero.replace(/\//g, "-")}.pdf`;
 
   async function buildPdfFile(): Promise<File> {
     const { buildInvoicePdf } = await import("@/lib/pdf/invoice-pdf");
@@ -183,10 +183,9 @@ export function InvoiceDetailClient({
     a.remove();
   }
 
-  // "Generar PDF": abre el documento ya previsualizado en el visor del navegador.
-  // La pestaña se abre ANTES del await para que el navegador no la bloquee.
+  // "Descargar PDF": descarga el archivo con el nombre "Factura FACT-26-08.pdf"
+  // (la descarga directa respeta el nombre; abrir un blob en pestaña no lo haría).
   function openPdf() {
-    const win = window.open("", "_blank");
     setPdfBusy(true);
     setPdfError(null);
     buildPdfFile()
@@ -194,11 +193,9 @@ export function InvoiceDetailClient({
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current); // libera el anterior
         const url = URL.createObjectURL(file);
         pdfUrlRef.current = url;
-        if (win) win.location.href = url;
-        else triggerDownload(url, file.name); // pestaña bloqueada: descarga
+        triggerDownload(url, file.name);
       })
       .catch((e) => {
-        win?.close();
         const msg = e instanceof Error ? e.message : String(e);
         console.error("[PDF] error:", e);
         setPdfError(`No se pudo generar el PDF: ${msg}`);
@@ -353,7 +350,7 @@ export function InvoiceDetailClient({
         disabled={pdfBusy}
         className="flex min-h-[60px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-amber px-5 py-4 text-[16px] font-extrabold text-[#1a1205] transition-transform active:scale-[0.97] disabled:opacity-60"
       >
-        <Icon name="doc" size={20} /> {pdfBusy ? "Generando PDF…" : "Generar PDF"}
+        <Icon name="doc" size={20} /> {pdfBusy ? "Generando PDF…" : "Descargar PDF"}
       </button>
       <button
         type="button"
