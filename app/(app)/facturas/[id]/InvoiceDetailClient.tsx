@@ -10,6 +10,7 @@ import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
 import { eur, amount, dateES } from "@/lib/format";
 import { computeInvoiceTotals } from "@/lib/invoice";
+import { triggerDownload } from "@/lib/download";
 import { verifyInvoice, type HuellaInput } from "@/lib/verifactu";
 import type { Invoice, InvoiceLine } from "@/lib/types";
 import { togglePaidAction, emitRectificativaAction, emitRectificativaDifAction } from "../actions";
@@ -172,15 +173,6 @@ export function InvoiceDetailClient({
     };
     const bytes = await buildInvoicePdf({ ...invoice, pagada, emisor_snapshot: emisor }, lines, facturaPlantilla);
     return new File([bytes as unknown as BlobPart], pdfFilename, { type: "application/pdf" });
-  }
-
-  function triggerDownload(url: string, name: string) {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
   }
 
   // "Descargar PDF": descarga el archivo con el nombre "Factura FACT-26-08.pdf"

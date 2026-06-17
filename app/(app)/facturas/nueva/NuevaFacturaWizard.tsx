@@ -12,6 +12,7 @@ import { eur, amount, dateES } from "@/lib/format";
 import { emitInvoiceAction } from "../actions";
 import type { EmitPayload } from "../types";
 import type { Invoice, InvoiceLine } from "@/lib/types";
+import { triggerDownload } from "@/lib/download";
 
 type ProfileData = {
   nombre: string;
@@ -196,15 +197,6 @@ export function NuevaFacturaWizard({
         inFlight.current = false;
       }
     });
-  }
-
-  function triggerDownload(url: string, name: string) {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
   }
 
   // Borrador: genera el PDF con los datos actuales, SIN Veri*factu y sin tocar la

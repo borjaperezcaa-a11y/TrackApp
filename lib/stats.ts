@@ -175,8 +175,9 @@ export function routeRanking(
   }
   return [...agg.entries()]
     .map(([ruta, a]) => ({ ruta, total: a.total, eurKm: a.km > 0 ? a.total / a.km : null }))
-    // Mejores rutas por rentabilidad: €/km descendente (las sin km, al final).
-    .sort((x, y) => (y.eurKm ?? -Infinity) - (x.eurKm ?? -Infinity))
+    // Mejores rutas por lo facturado (los km viven en el viaje; el €/km por ruta
+    // solo aparece si el porte trae km, pero el orden es siempre por total).
+    .sort((x, y) => y.total - x.total)
     .slice(0, topN);
 }
 

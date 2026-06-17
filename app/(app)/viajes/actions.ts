@@ -246,31 +246,6 @@ export async function addPorteAction(viajeId: string, _prev: TripState, formData
   redirect(`/viajes/${viajeId}`);
 }
 
-// ─── Editar un porte (si no está facturado) ───────────────────────────────────
-export async function updatePorteAction(porteId: string, _prev: TripState, formData: FormData): Promise<TripState> {
-  const { supabase, user } = await getUser();
-  if (!user) return { error: "Sesión expirada." };
-
-  const { data: existing } = await supabase
-    .from("trips")
-    .select("estado, viaje_id")
-    .eq("id", porteId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!existing) return { error: "Porte no encontrado." };
-  if (existing.estado === "facturado") return { error: "Este porte ya está facturado y no se puede editar." };
-
-  const p = parsePorte(formData);
-  if (!p.ok) return { error: p.error };
-
-  const { error } = await supabase.from("trips").update(p.row).eq("id", porteId).eq("user_id", user.id);
-  if (error) return { error: "No se pudieron guardar los cambios del porte." };
-
-  revalidatePath("/viajes");
-  if (existing.viaje_id) revalidatePath(`/viajes/${existing.viaje_id}`);
-  redirect(existing.viaje_id ? `/viajes/${existing.viaje_id}` : "/viajes");
-}
-
 // ─── Borrar un porte (si no está facturado) ───────────────────────────────────
 export async function deletePorteAction(porteId: string, _prev: TripState, _formData: FormData): Promise<TripState> {
   const { supabase, user } = await getUser();

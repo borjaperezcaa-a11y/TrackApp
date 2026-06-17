@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Tree-shaking más fino de paquetes grandes con muchos sub-módulos.
+  experimental: {
+    optimizePackageImports: ["@supabase/supabase-js"],
+  },
   images: {
     remotePatterns: [
       {

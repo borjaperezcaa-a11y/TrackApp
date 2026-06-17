@@ -17,7 +17,10 @@ auth.users (cuentas: email + contraseña cifrada)
    ├─ profiles            (1 por usuario: tus datos de emisor + numeración)
    ├─ clients ───────────┐
    │                     │ client_id
-   ├─ trips ─────────────┤  (viaje → cliente; al facturar, trip.invoice_id → invoices)
+   ├─ vehiculos          │  (tu flota de camiones)
+   ├─ viajes ────────────┤  (desplazamiento físico: ruta + km una vez; viaje.vehiculo_id → vehiculos)
+   │     │ viaje_id       │
+   ├─ trips (= PORTES) ──┤  (cada carga de un cliente dentro de un viaje; al facturar, invoice_id → invoices)
    │     │ invoice_id     │
    ├─ invoices ──────────┘  (cabecera de factura; cliente_snapshot congelado)
    │     │ invoice_id
@@ -28,6 +31,10 @@ auth.users (cuentas: email + contraseña cifrada)
    ├─ system_events        (LOG inmutable de acciones — la "caja negra")
    └─ ai_scan_events       (control de uso del escaneo IA)
 ```
+
+> **Modelo viaje ↔ portes:** un `viajes` (desplazamiento físico, con sus km) contiene
+> uno o varios `trips` (PORTES), cada uno de un cliente con su ruta e importe. Los km
+> viven en el viaje (se cuentan una vez); la facturación opera sobre los portes.
 
 ---
 
@@ -43,6 +50,7 @@ auth.users (cuentas: email + contraseña cifrada)
 | `serie` | text | Serie de numeración (def. `FACT`) |
 | `contador` | int | Nº global de facturas emitidas (cadena de huellas) |
 | `logo_url` | text | Ruta del logo en el bucket `logos` |
+| `factura_plantilla` | text | Plantilla del PDF: `trackapp` · `elegante` (Clásica) · `moderna` (mig. 0024) |
 | `num_inicial`, `num_inicial_anio`, `num_inicial_serie` | int/smallint/text | "Suelo" de numeración si ya facturabas fuera de la app |
 
 ### `clients` — clientes
@@ -51,18 +59,37 @@ auth.users (cuentas: email + contraseña cifrada)
 | `id` | uuid (PK) | |
 | `nombre` | text (obligatorio) | |
 | `nif`, `direccion`, `cp_localidad`, `condiciones_pago` | text | |
+| `email` | text | Contacto para enviar la factura (envío aún no activado · mig. 0026) |
 
-### `trips` — viajes
+### `vehiculos` — camiones de la flota (mig. 0029)
 | Columna | Tipo | Notas |
 |---|---|---|
 | `id` | uuid (PK) | |
-| `client_id` | uuid → clients | Cliente del viaje |
+| `nombre` | text (obligatorio) | Alias: "Volvo FH", "Camión 1" |
+| `matricula` | text | Opcional |
+| `activo` | boolean | Para retirar un camión sin borrarlo |
+
+### `viajes` — viajes FÍSICOS (desplazamiento real, mig. 0027)
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid (PK) | |
 | `fecha` | date | |
-| `origen`, `destino` | text | Texto libre, p. ej. "Santiago (15890)" |
-| `km` | numeric | Calculado por ruta o a mano |
-| `importe` | numeric (obligatorio) | |
+| `origen`, `destino` | text | Ruta física, p. ej. "15890 Santiago de Compostela" |
+| `km` | numeric | Km del viaje, se cuentan UNA vez |
+| `vehiculo_id` | uuid → vehiculos | Qué camión lo hizo (opcional) |
+
+### `trips` — PORTES (cada carga de un cliente; pertenecen a un viaje)
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid (PK) | |
+| `viaje_id` | uuid → viajes | Viaje al que pertenece el porte (mig. 0027) |
+| `client_id` | uuid → clients | Cliente del porte |
+| `fecha` | date | |
+| `origen`, `destino` | text | "CP Localidad"; varias paradas (grupaje) van separadas por salto de línea |
+| `km` | numeric | Heredado del modelo antiguo; los km del periodo salen de `viajes` |
+| `importe` | numeric (obligatorio) | Lo que se factura del porte |
 | `descripcion` | text | Tipo de carga / observaciones |
-| `peso`, `peso_unidad` | numeric / `t`\|`kg` | Se guarda para futuras estadísticas por carga |
+| `peso`, `peso_unidad` | numeric / `t`\|`kg` | Peso de la carga (def. kg) |
 | `estado` | text | `pendiente` o `facturado` |
 | `invoice_id` | uuid → invoices | La factura donde se incluyó (si está facturado) |
 
