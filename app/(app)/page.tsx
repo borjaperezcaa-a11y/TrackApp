@@ -125,12 +125,12 @@ export default async function HomePage({
   }).format(new Date());
 
   const tiles: { key: string; icon: IconName; label: string; note: string; color: string; href: string }[] = [
-    { key: "stats", icon: "chart", label: "Estadísticas", note: `${eur(monthPoint.beneficio)} mes`, color: "var(--amber)", href: "/estadisticas" },
+    { key: "clientes", icon: "user", label: "Clientes", note: `${clientCount ?? 0} en cartera`, color: "var(--purple)", href: "/clientes" },
     { key: "viajes", icon: "truck", label: "Viajes", note: `${tripsThisMonth} este mes`, color: "var(--blue)", href: "/viajes" },
     { key: "facturas", icon: "doc", label: "Facturación", note: `${pendingInvoices} pendientes`, color: "var(--amber)", href: "/facturas" },
     { key: "ingresos", icon: "income", label: "Ingresos", note: "Apunta a mano", color: "var(--green)", href: "/ingresos" },
     { key: "gastos", icon: "euro", label: "Gastos", note: monthPoint.gastos > 0 ? `${eur(monthPoint.gastos)} mes` : "Escanea un ticket", color: "var(--red)", href: "/gastos" },
-    { key: "clientes", icon: "user", label: "Clientes", note: `${clientCount ?? 0} en cartera`, color: "var(--purple)", href: "/clientes" },
+    { key: "stats", icon: "chart", label: "Estadísticas", note: `${eur(monthPoint.beneficio)} mes`, color: "var(--amber)", href: "/estadisticas" },
     { key: "ajustes", icon: "user", label: "Mi Perfil", note: "Datos de emisor", color: "var(--dim)", href: "/ajustes/perfil" },
   ];
 
