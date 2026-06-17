@@ -14,11 +14,26 @@ export type Client = {
 
 export type TripEstado = "pendiente" | "facturado";
 
+// Viaje FÍSICO: el desplazamiento real del camión (km contados una sola vez).
+// Agrupa varios portes (filas de `trips`) — ver migración 0027.
+export type Viaje = {
+  id: string;
+  user_id: string;
+  fecha: string;
+  origen: string | null;
+  destino: string | null;
+  km: number | null;
+  created_at: string;
+};
+
+// Trip = PORTE (unidad de facturación): cliente + ruta + importe. Puede pertenecer
+// a un viaje físico (viaje_id) o ir suelto (viaje_id = null).
 export type Trip = {
   id: string;
   user_id: string;
   fecha: string;
   client_id: string | null;
+  viaje_id: string | null;
   origen: string | null;
   destino: string | null;
   descripcion: string | null;
