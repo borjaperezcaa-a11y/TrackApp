@@ -197,9 +197,11 @@ export function InvoiceDetailClient({
         if (win) win.location.href = url;
         else triggerDownload(url, file.name); // pestaña bloqueada: descarga
       })
-      .catch(() => {
+      .catch((e) => {
         win?.close();
-        setPdfError("No se pudo generar el PDF. Inténtalo de nuevo.");
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[PDF] error:", e);
+        setPdfError(`No se pudo generar el PDF: ${msg}`);
       })
       .finally(() => setPdfBusy(false));
   }
