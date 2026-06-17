@@ -101,13 +101,18 @@ const TERMS =
 const NOTICE =
   "Documento de prueba · Veri*factu no oficial. No se ha remitido a la AEAT ni se ha firmado con certificado digital.";
 
+// Varias paradas (grupaje) llegan separadas por "\n": se apilan con <br>.
+function multilinea(s: string | null): string {
+  return esc(s ?? "").split("\n").join("<br>");
+}
+
 function rowsHtml(lines: InvoiceLine[]): string {
   return lines
     .map(
       (ln) => `<tr>
         <td class="c-date">${esc(ln.fecha ? dateES(ln.fecha) : "")}</td>
-        <td class="c-from">${esc(ln.origen ?? "")}</td>
-        <td class="c-to"><span class="arrow">→</span>${esc(ln.destino ?? "")}</td>
+        <td class="c-from">${multilinea(ln.origen)}</td>
+        <td class="c-to"><span class="arrow">→</span>${multilinea(ln.destino)}</td>
         <td class="c-qty num">${esc(amount(ln.cantidad))}</td>
         <td class="c-price num">${esc(amount(ln.precio))} €</td>
         <td class="c-amount num">${esc(amount(ln.importe))} €</td>

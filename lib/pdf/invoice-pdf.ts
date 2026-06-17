@@ -215,12 +215,17 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
 
   for (const ln of lines) {
     ty += 15;
+    // Origen/destino pueden traer VARIAS paradas (grupaje), una por línea.
+    const oLines = (ln.origen ?? "").split("\n");
+    const dLines = (ln.destino ?? "").split("\n");
+    const nSub = Math.max(1, oLines.length, dLines.length);
     text(ln.fecha ? dateES(ln.fecha) : "", COLS.fecha.x + 2, ty, { size: 8.5 });
-    text(clip(ln.origen ?? "", COLS.origen.w - 6, font, 8.5), COLS.origen.x + 2, ty, { size: 8.5 });
-    text(clip(ln.destino ?? "", COLS.destino.w - 6, font, 8.5), COLS.destino.x + 2, ty, { size: 8.5 });
+    oLines.forEach((s, k) => text(clip(s, COLS.origen.w - 6, font, 8.5), COLS.origen.x + 2, ty + k * 10, { size: 8.5 }));
+    dLines.forEach((s, k) => text(clip(s, COLS.destino.w - 6, font, 8.5), COLS.destino.x + 2, ty + k * 10, { size: 8.5 }));
     text(amount(ln.cantidad), COLS.cantidad.x, ty, { size: 8.5, align: "right", w: COLS.cantidad.w });
     text(amount(ln.precio), COLS.precio.x, ty, { size: 8.5, align: "right", w: COLS.precio.w });
     text(amount(ln.importe), COLS.importe.x, ty, { size: 8.5, align: "right", w: COLS.importe.w - 2 });
+    ty += (nSub - 1) * 10; // altura extra por las paradas adicionales
     hline(ty + 5, M, W - M, rgb(0.9, 0.9, 0.92));
   }
 

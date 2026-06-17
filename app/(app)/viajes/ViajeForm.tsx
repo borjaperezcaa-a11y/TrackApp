@@ -12,10 +12,11 @@ import { createViajeAction, type TripState } from "./actions";
 import { quickCreateClient } from "../clientes/actions";
 
 type ClientOption = { id: string; nombre: string };
+type Stop = { lugar: string; cp: string }; // parada = localidad + código postal
 type PorteDraft = {
   client_id: string;
-  origenes: string[]; // cargas (puede haber varias = grupaje)
-  destinos: string[]; // descargas
+  origenes: Stop[]; // cargas (puede haber varias = grupaje)
+  destinos: Stop[]; // descargas
   descripcion: string;
   peso: string;
   peso_unidad: "t" | "kg";
@@ -23,10 +24,11 @@ type PorteDraft = {
 };
 
 const initial: TripState = {};
+const emptyStop = (): Stop => ({ lugar: "", cp: "" });
 const emptyPorte = (): PorteDraft => ({
   client_id: "",
-  origenes: [""],
-  destinos: [""],
+  origenes: [emptyStop()],
+  destinos: [emptyStop()],
   descripcion: "",
   peso: "",
   peso_unidad: "kg", // por defecto kg
@@ -55,6 +57,8 @@ export function ViajeForm({
   // Trayecto físico
   const [origen, setOrigen] = useState("");
   const [destino, setDestino] = useState("");
+  const [origenCp, setOrigenCp] = useState("");
+  const [destinoCp, setDestinoCp] = useState("");
   const [km, setKm] = useState("");
   const [origenCoord, setOrigenCoord] = useState<ResolvedPlace>(null);
   const [destinoCoord, setDestinoCoord] = useState<ResolvedPlace>(null);
@@ -114,11 +118,13 @@ export function ViajeForm({
 
   // Paradas de carga/descarga de un porte (grupaje: varias por porte).
   type StopField = "origenes" | "destinos";
-  function setStop(i: number, field: StopField, j: number, val: string) {
-    setPortes((ps) => ps.map((p, idx) => (idx === i ? { ...p, [field]: p[field].map((s, k) => (k === j ? val : s)) } : p)));
+  function setStop(i: number, field: StopField, j: number, key: keyof Stop, val: string) {
+    setPortes((ps) =>
+      ps.map((p, idx) => (idx === i ? { ...p, [field]: p[field].map((s, k) => (k === j ? { ...s, [key]: val } : s)) } : p)),
+    );
   }
   function addStop(i: number, field: StopField) {
-    setPortes((ps) => ps.map((p, idx) => (idx === i ? { ...p, [field]: [...p[field], ""] } : p)));
+    setPortes((ps) => ps.map((p, idx) => (idx === i ? { ...p, [field]: [...p[field], emptyStop()] } : p)));
   }
   function removeStop(i: number, field: StopField, j: number) {
     setPortes((ps) =>
@@ -153,10 +159,19 @@ export function ViajeForm({
         {stops.map((s, j) => (
           <div key={j} className="mb-1.5 flex gap-2">
             <input
-              value={s}
-              onChange={(e) => setStop(i, field, j, e.target.value)}
+              value={s.lugar}
+              onChange={(e) => setStop(i, field, j, "lugar", e.target.value)}
               placeholder={placeholder}
+              aria-label="Localidad"
               className="flex-1"
+            />
+            <input
+              value={s.cp}
+              onChange={(e) => setStop(i, field, j, "cp", e.target.value)}
+              placeholder="CP"
+              inputMode="numeric"
+              aria-label="Código postal"
+              className="w-20 flex-none"
             />
             {stops.length > 1 && (
               <button
@@ -281,11 +296,21 @@ export function ViajeForm({
       <Field label="Fecha" htmlFor="fecha">
         <DateField id="fecha" name="fecha" defaultISO={defaultFecha} />
       </Field>
-      <Field label="Origen" htmlFor="origen" hint={routingEnabled ? "Busca y elige un lugar" : "Con CP: Santiago (15890)"}>
-        <PlaceAutocomplete id="origen" name="origen" value={origen} onChange={setOrigen} onResolve={setOrigenCoord} enabled={routingEnabled} placeholder="Santiago (15890)" required />
+      <Field label="Origen" htmlFor="origen" hint={routingEnabled ? "Localidad + CP" : "Localidad + CP"}>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <PlaceAutocomplete id="origen" name="origen" value={origen} onChange={setOrigen} onResolve={setOrigenCoord} enabled={routingEnabled} placeholder="Santiago" required />
+          </div>
+          <input name="cp_origen" value={origenCp} onChange={(e) => setOrigenCp(e.target.value)} placeholder="CP" inputMode="numeric" aria-label="CP de origen" className="w-20 flex-none" />
+        </div>
       </Field>
-      <Field label="Destino" htmlFor="destino" hint={routingEnabled ? "Busca y elige un lugar" : "Parma - IT (43122)"}>
-        <PlaceAutocomplete id="destino" name="destino" value={destino} onChange={setDestino} onResolve={setDestinoCoord} enabled={routingEnabled} placeholder="Irún (20305)" required />
+      <Field label="Destino" htmlFor="destino" hint={routingEnabled ? "Localidad + CP" : "Localidad + CP"}>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <PlaceAutocomplete id="destino" name="destino" value={destino} onChange={setDestino} onResolve={setDestinoCoord} enabled={routingEnabled} placeholder="Irún" required />
+          </div>
+          <input name="cp_destino" value={destinoCp} onChange={(e) => setDestinoCp(e.target.value)} placeholder="CP" inputMode="numeric" aria-label="CP de destino" className="w-20 flex-none" />
+        </div>
       </Field>
       <Field label="Km del viaje" htmlFor="km" hint={kmHint}>
         <input id="km" name="km" type="number" step="1" min="0" inputMode="numeric" value={km} onChange={(e) => setKm(e.target.value)} placeholder="940" />

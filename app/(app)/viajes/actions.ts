@@ -15,9 +15,19 @@ const viajeSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha no válida"),
   origen: z.string().trim().max(160),
   destino: z.string().trim().max(160),
+  cp_origen: z.string().trim().max(12).optional(),
+  cp_destino: z.string().trim().max(12).optional(),
   km: z.string().trim(),
   vehiculo_id: z.string().trim().optional(),
 });
+
+/** Combina localidad + código postal: "Santiago (15890)". */
+function conCp(lugar?: string, cp?: string): string | null {
+  const l = (lugar ?? "").trim();
+  const c = (cp ?? "").trim();
+  if (!l) return null;
+  return c ? `${l} (${c})` : l;
+}
 
 function parseViaje(formData: FormData):
   | { ok: true; row: { fecha: string; origen: string | null; destino: string | null; km: number | null; vehiculo_id: string | null } }
@@ -33,7 +43,10 @@ function parseViaje(formData: FormData):
   }
   // Camión (opcional): solo se guarda si es un uuid válido.
   const vehiculo_id = d.vehiculo_id && z.string().uuid().safeParse(d.vehiculo_id).success ? d.vehiculo_id : null;
-  return { ok: true, row: { fecha: d.fecha, origen: d.origen || null, destino: d.destino || null, km, vehiculo_id } };
+  return {
+    ok: true,
+    row: { fecha: d.fecha, origen: conCp(d.origen, d.cp_origen), destino: conCp(d.destino, d.cp_destino), km, vehiculo_id },
+  };
 }
 
 // ─── PORTE (carga de un cliente: lo que se factura) ───────────────────────────
@@ -110,13 +123,19 @@ export async function createViajeAction(_prev: TripState, formData: FormData): P
     if (!uuid.safeParse(client_id).success) return { error: "Cada porte necesita un cliente." };
     const importe = num(String(d?.importe ?? ""));
     if (!Number.isFinite(importe) || importe <= 0) return { error: "Cada porte necesita un importe mayor que 0." };
-    // Cargas/descargas: pueden ser varias por porte (grupaje). Se unen con " · ".
+    // Cargas/descargas: varias por porte (grupaje), cada una localidad + CP. Se
+    // apilan con salto de línea para que en la factura salgan una bajo otra.
     // Si el porte no trae ruta propia, hereda la del trayecto.
-    const asList = (x: unknown) => (Array.isArray(x) ? x.map((s) => String(s).trim()).filter(Boolean) : []);
+    const asList = (x: unknown) =>
+      Array.isArray(x)
+        ? x
+            .map((s) => conCp((s as { lugar?: string })?.lugar, (s as { cp?: string })?.cp))
+            .filter((t): t is string => Boolean(t))
+        : [];
     const origenes = asList(d?.origenes);
     const destinos = asList(d?.destinos);
-    const origen = origenes.length ? origenes.join(" · ") : v.row.origen;
-    const destino = destinos.length ? destinos.join(" · ") : v.row.destino;
+    const origen = origenes.length ? origenes.join("\n") : v.row.origen;
+    const destino = destinos.length ? destinos.join("\n") : v.row.destino;
     const descripcion = String(d?.descripcion ?? "").trim() || null;
     // Carga (peso) del porte, opcional. Unidad por defecto kg.
     const pesoStr = String(d?.peso ?? "").trim();
