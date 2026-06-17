@@ -21,12 +21,14 @@ const viajeSchema = z.object({
   vehiculo_id: z.string().trim().optional(),
 });
 
-/** Combina localidad + código postal: "Santiago (15890)". */
+/** Combina código postal + localidad, el CP delante: "15890 Santiago de Compostela". */
 function conCp(lugar?: string, cp?: string): string | null {
   const l = (lugar ?? "").trim();
   const c = (cp ?? "").trim();
-  if (!l) return null;
-  return c ? `${l} (${c})` : l;
+  if (!l && !c) return null;
+  if (!c) return l;
+  if (!l) return c;
+  return `${c} ${l}`;
 }
 
 function parseViaje(formData: FormData):

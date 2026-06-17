@@ -158,8 +158,8 @@ export function ViajeForm({
     try {
       const res = await fetch(`/api/cp?cp=${encodeURIComponent(c)}`);
       if (!res.ok) return null;
-      const data = (await res.json()) as { places?: { nombre: string }[] };
-      return data.places?.[0]?.nombre ?? null;
+      const data = (await res.json()) as { localidad?: string | null };
+      return data.localidad ?? null;
     } catch {
       return null;
     }
@@ -173,13 +173,6 @@ export function ViajeForm({
         {stops.map((s, j) => (
           <div key={j} className="mb-1.5 flex gap-2">
             <input
-              value={s.lugar}
-              onChange={(e) => setStop(i, field, j, "lugar", e.target.value)}
-              placeholder={placeholder}
-              aria-label="Localidad"
-              className="flex-1"
-            />
-            <input
               value={s.cp}
               onChange={(e) => setStop(i, field, j, "cp", e.target.value)}
               onBlur={async () => {
@@ -190,8 +183,16 @@ export function ViajeForm({
               }}
               placeholder="CP"
               inputMode="numeric"
+              maxLength={5}
               aria-label="Código postal"
-              className="w-20 flex-none"
+              className="w-20 flex-none text-center"
+            />
+            <input
+              value={s.lugar}
+              onChange={(e) => setStop(i, field, j, "lugar", e.target.value)}
+              placeholder={placeholder}
+              aria-label="Localidad"
+              className="flex-1"
             />
             {stops.length > 1 && (
               <button
@@ -316,12 +317,10 @@ export function ViajeForm({
       <Field label="Fecha" htmlFor="fecha">
         <DateField id="fecha" name="fecha" defaultISO={defaultFecha} />
       </Field>
-      <Field label="Origen" htmlFor="origen" hint={routingEnabled ? "Localidad + CP" : "Localidad + CP"}>
+      <Field label="Origen" htmlFor="cp_origen" hint="CP y localidad (el CP rellena la localidad)">
         <div className="flex gap-2">
-          <div className="flex-1">
-            <PlaceAutocomplete id="origen" name="origen" value={origen} onChange={setOrigen} onResolve={setOrigenCoord} enabled={routingEnabled} placeholder="Santiago" required />
-          </div>
           <input
+            id="cp_origen"
             name="cp_origen"
             value={origenCp}
             onChange={(e) => setOrigenCp(e.target.value)}
@@ -333,17 +332,19 @@ export function ViajeForm({
             }}
             placeholder="CP"
             inputMode="numeric"
+            maxLength={5}
             aria-label="CP de origen"
-            className="w-20 flex-none"
+            className="w-20 flex-none text-center"
           />
+          <div className="flex-1">
+            <PlaceAutocomplete id="origen" name="origen" value={origen} onChange={setOrigen} onResolve={setOrigenCoord} enabled={routingEnabled} placeholder="Localidad" required />
+          </div>
         </div>
       </Field>
-      <Field label="Destino" htmlFor="destino" hint={routingEnabled ? "Localidad + CP" : "Localidad + CP"}>
+      <Field label="Destino" htmlFor="cp_destino" hint="CP y localidad (el CP rellena la localidad)">
         <div className="flex gap-2">
-          <div className="flex-1">
-            <PlaceAutocomplete id="destino" name="destino" value={destino} onChange={setDestino} onResolve={setDestinoCoord} enabled={routingEnabled} placeholder="Irún" required />
-          </div>
           <input
+            id="cp_destino"
             name="cp_destino"
             value={destinoCp}
             onChange={(e) => setDestinoCp(e.target.value)}
@@ -355,9 +356,13 @@ export function ViajeForm({
             }}
             placeholder="CP"
             inputMode="numeric"
+            maxLength={5}
             aria-label="CP de destino"
-            className="w-20 flex-none"
+            className="w-20 flex-none text-center"
           />
+          <div className="flex-1">
+            <PlaceAutocomplete id="destino" name="destino" value={destino} onChange={setDestino} onResolve={setDestinoCoord} enabled={routingEnabled} placeholder="Localidad" required />
+          </div>
         </div>
       </Field>
       <Field label="Km del viaje" htmlFor="km" hint={kmHint}>
@@ -424,8 +429,8 @@ export function ViajeForm({
               con grupaje (o en multiporte) se detallan las paradas (varias por porte). */}
           {multi || grupaje ? (
             <div className="mt-1 space-y-2.5">
-              {renderStops(i, "origenes", "Cargas (orígenes)", "Santiago (15890)")}
-              {renderStops(i, "destinos", "Descargas (destinos)", "Irún (20305)")}
+              {renderStops(i, "origenes", "Cargas (orígenes)", "Localidad")}
+              {renderStops(i, "destinos", "Descargas (destinos)", "Localidad")}
             </div>
           ) : (
             <button
