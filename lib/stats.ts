@@ -14,6 +14,10 @@ export type SInvoice = {
   base: number;
   total: number;
   clientName: string;
+  // IVA repercutido e IRPF retenido (para el resumen fiscal). Opcionales: si no
+  // se aportan se asumen 0 (compatibilidad con tests y datos antiguos).
+  iva?: number;
+  irpf?: number;
   // false = ingreso manual (cuenta como ingreso/€-km pero NO en el nº de facturas).
   esFactura?: boolean;
 };
@@ -23,7 +27,8 @@ export type STrip = {
   importe: number;
   ruta: string;
 };
-export type SExpense = { fecha: string; categoria: string; total: number };
+// `iva` = IVA soportado (deducible) del gasto. Opcional → 0 si no consta.
+export type SExpense = { fecha: string; categoria: string; total: number; iva?: number };
 
 export type Kpis = {
   ingresos: number;
@@ -39,6 +44,11 @@ export type Kpis = {
   eurKmCombustible: number | null; // gasto combustible / km
   beneficioKm: number | null; // beneficio / km
   gastoKm: number | null; // TODOS los gastos / km
+  // ── Resumen fiscal del periodo (orientativo, modelos 303 / 130) ──
+  ivaRepercutido: number; // IVA cobrado en facturas/ingresos
+  ivaSoportado: number; // IVA deducible de los gastos
+  ivaLiquidar: number; // repercutido − soportado (a ingresar si > 0)
+  irpfRetenido: number; // IRPF retenido por tus clientes
 };
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
@@ -59,6 +69,17 @@ export function periodKpis(
   const km = sum(tr.map((t) => t.km ?? 0));
   const beneficio = ingresos - gastos;
   const gastoCombustible = sum(ex.filter((e) => e.categoria === "Gasoil").map((e) => e.total));
+  const ivaRepercutido = sum(inv.map((i) => i.iva ?? 0));
+  // Salvaguarda de datos: el IVA de un gasto no puede ser negativo ni superar su
+  // total (un escaneo erróneo puede meter un importe absurdo en la casilla IVA).
+  // Esas filas no se suman, para no inflar el "IVA soportado".
+  const ivaSoportado = sum(
+    ex.map((e) => {
+      const iva = e.iva ?? 0;
+      return iva > 0 && iva <= e.total ? iva : 0;
+    }),
+  );
+  const irpfRetenido = sum(inv.map((i) => i.irpf ?? 0));
 
   return {
     ingresos,
@@ -73,6 +94,10 @@ export function periodKpis(
     eurKmCombustible: km > 0 ? gastoCombustible / km : null,
     beneficioKm: km > 0 ? beneficio / km : null,
     gastoKm: km > 0 ? gastos / km : null,
+    ivaRepercutido,
+    ivaSoportado,
+    ivaLiquidar: ivaRepercutido - ivaSoportado,
+    irpfRetenido,
   };
 }
 

@@ -16,8 +16,12 @@ function initials(nombre: string): string {
 
 export default async function ClientesPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("clients").select("*").order("nombre");
-  const clients = (data ?? []) as Client[];
+  // Solo las columnas que pinta la lista (no traer toda la fila).
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, nombre, nif, condiciones_pago")
+    .order("nombre");
+  const clients = (data ?? []) as Pick<Client, "id" | "nombre" | "nif" | "condiciones_pago">[];
 
   return (
     <>

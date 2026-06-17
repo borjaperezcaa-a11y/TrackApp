@@ -230,7 +230,7 @@ export function InvoiceDetailClient({
             <div className="font-display text-2xl font-bold">{invoice.numero}</div>
             <div className="mt-0.5 text-[12.5px] text-dim">{dateES(invoice.fecha)}</div>
           </div>
-          <Badge tone={pagada ? "good" : "mid"}>{pagada ? "Cobrada" : "Pendiente"}</Badge>
+          <Badge tone={pagada ? "good" : "mid"}>{pagada ? "Cobrada" : "Pendiente de cobro"}</Badge>
         </div>
         <div className="mt-3 font-display text-3xl font-bold text-amber tnum">
           {eur(Number(invoice.total))}

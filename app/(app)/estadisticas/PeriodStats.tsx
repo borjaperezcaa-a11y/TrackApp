@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { clsx } from "@/lib/clsx";
 import { eur } from "@/lib/format";
@@ -49,16 +49,22 @@ export function PeriodStats({
   // Por defecto, el trimestre en el que estamos (T1–T4 según el mes actual).
   const [period, setPeriod] = useState<Period>(() => String(quarterOfMonth(new Date().getMonth())) as Period);
 
-  const k = periodKpis(invoices, trips, expenses, year, period);
-  const bkts = buckets(invoices, expenses, year, period);
-  const cats = categoryBreakdown(expenses, year, period).map((c) => ({
-    label: c.categoria,
-    value: c.total,
-    pct: c.pct,
-    color: CATEGORY_COLORS[c.categoria] ?? "var(--dim)",
-  }));
-  const routes = routeRanking(trips, year, period);
-  const clients = clientRanking(invoices, year, period);
+  // Memoizados: solo se recalculan al cambiar año/periodo (o los datos), no en
+  // cada render. Mantiene la pantalla fluida en móviles con muchos registros.
+  const k = useMemo(() => periodKpis(invoices, trips, expenses, year, period), [invoices, trips, expenses, year, period]);
+  const bkts = useMemo(() => buckets(invoices, expenses, year, period), [invoices, expenses, year, period]);
+  const cats = useMemo(
+    () =>
+      categoryBreakdown(expenses, year, period).map((c) => ({
+        label: c.categoria,
+        value: c.total,
+        pct: c.pct,
+        color: CATEGORY_COLORS[c.categoria] ?? "var(--dim)",
+      })),
+    [expenses, year, period],
+  );
+  const routes = useMemo(() => routeRanking(trips, year, period), [trips, year, period]);
+  const clients = useMemo(() => clientRanking(invoices, year, period), [invoices, year, period]);
   const hasGastos = k.gastos > 0;
 
   return (
@@ -109,6 +115,25 @@ export function PeriodStats({
           color={k.beneficioKm != null && k.beneficioKm < 0 ? "var(--red)" : "var(--green)"}
         />
       </div>
+
+      {/* Resumen fiscal del periodo */}
+      <SectionLabel>Resumen fiscal {periodLabel(period).toLowerCase()}</SectionLabel>
+      <div className="grid grid-cols-3 gap-3">
+        <Kpi label="IVA repercutido" value={eur(k.ivaRepercutido)} />
+        <Kpi label="IVA soportado" value={eur(k.ivaSoportado)} />
+        <Kpi
+          label={k.ivaLiquidar >= 0 ? "IVA a ingresar" : "IVA a tu favor"}
+          value={eur(Math.abs(k.ivaLiquidar))}
+          color={k.ivaLiquidar > 0 ? "var(--red)" : "var(--green)"}
+        />
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-3">
+        <Kpi label="IRPF retenido por tus clientes" value={eur(k.irpfRetenido)} />
+      </div>
+      <p className="mx-1 mt-2 text-[11.5px] leading-snug text-dim">
+        Estimación orientativa para tus modelos 303 (IVA) y 130 (IRPF). El IVA a ingresar es el repercutido en tus
+        facturas menos el soportado en tus gastos. No sustituye a tu asesoría.
+      </p>
 
       {/* Ingresos vs gastos */}
       <SectionLabel>Ingresos vs gastos</SectionLabel>

@@ -17,11 +17,11 @@ export default async function EstadisticasPage() {
     { data: tripData, error: tripErr },
     { data: expData, error: expErr },
   ] = await Promise.all([
-    supabase.from("invoices").select("fecha, base, total, cliente_snapshot"),
-    supabase.from("external_invoices").select("fecha, base, total, cliente"),
-    supabase.from("incomes").select("fecha, base, total, concepto, cliente"),
+    supabase.from("invoices").select("fecha, base, iva, irpf, total, cliente_snapshot"),
+    supabase.from("external_invoices").select("fecha, base, iva, irpf, total, cliente"),
+    supabase.from("incomes").select("fecha, base, iva, total, concepto, cliente"),
     supabase.from("trips").select("fecha, km, importe, origen, destino"),
-    supabase.from("expenses").select("fecha, categoria, total"),
+    supabase.from("expenses").select("fecha, categoria, iva, total"),
   ]);
 
   // No disfrazar un fallo de carga de "sin actividad": mostrar error con reintento.
@@ -40,18 +40,24 @@ export default async function EstadisticasPage() {
     ...(invData ?? []).map((i) => ({
       fecha: i.fecha,
       base: Number(i.base),
+      iva: Number(i.iva ?? 0),
+      irpf: Number(i.irpf ?? 0),
       total: Number(i.total),
       clientName: (i.cliente_snapshot as { nombre?: string })?.nombre ?? "Cliente",
     })),
     ...(extData ?? []).map((e) => ({
       fecha: e.fecha,
       base: Number(e.base),
+      iva: Number(e.iva ?? 0),
+      irpf: Number(e.irpf ?? 0),
       total: Number(e.total),
       clientName: e.cliente ?? "Factura externa",
     })),
     ...(incData ?? []).map((i) => ({
       fecha: i.fecha,
       base: i.base != null ? Number(i.base) : Number(i.total),
+      iva: Number(i.iva ?? 0),
+      irpf: 0,
       total: Number(i.total),
       // Si el ingreso tiene cliente, suma a ese cliente en el ranking; si no,
       // se identifica por su concepto.
@@ -68,6 +74,7 @@ export default async function EstadisticasPage() {
   const expenses: SExpense[] = (expData ?? []).map((e) => ({
     fecha: e.fecha,
     categoria: e.categoria ?? "Otro",
+    iva: Number(e.iva ?? 0),
     total: Number(e.total),
   }));
 

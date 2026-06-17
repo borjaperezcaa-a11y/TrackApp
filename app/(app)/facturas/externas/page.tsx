@@ -86,7 +86,7 @@ function ExternalRow({ r }: { r: ExtRow }) {
       right={
         <div className="flex flex-col items-end gap-1">
           <div className="font-display text-xl font-bold tnum">{eur(Number(r.total))}</div>
-          <Badge tone={r.cobrada ? "good" : "mid"}>{r.cobrada ? "Cobrada" : "Pendiente"}</Badge>
+          <Badge tone={r.cobrada ? "good" : "mid"}>{r.cobrada ? "Cobrada" : "Pendiente de cobro"}</Badge>
         </div>
       }
     />

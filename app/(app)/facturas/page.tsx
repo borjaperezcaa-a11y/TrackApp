@@ -51,7 +51,7 @@ export default async function FacturasPage() {
         <div className="stagger">
           {pendientes.length > 0 && (
             <>
-              <SectionLabel>Pendientes</SectionLabel>
+              <SectionLabel>Pendientes de cobro</SectionLabel>
               {pendientes.map((inv) => (
                 <InvoiceRowItem key={inv.id} inv={inv} />
               ))}
@@ -81,7 +81,7 @@ function InvoiceRowItem({ inv }: { inv: InvoiceRow }) {
       right={
         <div className="flex flex-col items-end gap-1">
           <div className="font-display text-xl font-bold tnum">{eur(Number(inv.total))}</div>
-          <Badge tone={inv.pagada ? "good" : "mid"}>{inv.pagada ? "Cobrada" : "Pendiente"}</Badge>
+          <Badge tone={inv.pagada ? "good" : "mid"}>{inv.pagada ? "Cobrada" : "Pendiente de cobro"}</Badge>
         </div>
       }
     />

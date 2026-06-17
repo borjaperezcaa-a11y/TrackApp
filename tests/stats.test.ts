@@ -85,6 +85,42 @@ describe("stats · KPIs", () => {
     expect(k.eurKm).toBeCloseTo(3000 / 1500, 4); // sí entra en €/km
   });
 
+  it("resumen fiscal: IVA a liquidar (repercutido − soportado) e IRPF retenido", () => {
+    const inv: SInvoice[] = [
+      { fecha: "2025-05-10", base: 1000, iva: 210, irpf: 10, total: 1200, clientName: "A" },
+      { fecha: "2025-06-10", base: 2000, iva: 200, irpf: 20, total: 2180, clientName: "B" },
+    ];
+    const ex: SExpense[] = [
+      { fecha: "2025-05-12", categoria: "Gasoil", iva: 100, total: 575 },
+      { fecha: "2025-06-01", categoria: "Peaje", iva: 21, total: 121 },
+    ];
+    const k = periodKpis(inv, trips, ex, 2025, "2");
+    expect(k.ivaRepercutido).toBe(410);
+    expect(k.ivaSoportado).toBe(121);
+    expect(k.ivaLiquidar).toBe(289); // 410 − 121
+    expect(k.irpfRetenido).toBe(30);
+  });
+
+  it("resumen fiscal: ignora IVA de gasto imposible (iva > total, dato corrupto)", () => {
+    const inv: SInvoice[] = [{ fecha: "2025-05-10", base: 1000, iva: 210, irpf: 10, total: 1200, clientName: "A" }];
+    const ex: SExpense[] = [
+      { fecha: "2025-05-12", categoria: "Gasoil", iva: 100, total: 575 }, // ok → cuenta
+      { fecha: "2025-05-13", categoria: "Otro", iva: 9999, total: 50 }, // imposible → se ignora
+      { fecha: "2025-05-14", categoria: "Otro", iva: -5, total: 30 }, // negativo → se ignora
+    ];
+    const k = periodKpis(inv, trips, ex, 2025, "2");
+    expect(k.ivaSoportado).toBe(100); // solo el gasto válido
+    expect(k.ivaLiquidar).toBe(110); // 210 − 100, sigue saliendo a ingresar
+  });
+
+  it("resumen fiscal: sin iva/irpf en los datos → 0 (compatibilidad)", () => {
+    const k = periodKpis(invoices, trips, expenses, 2025, "Y");
+    expect(k.ivaRepercutido).toBe(0);
+    expect(k.ivaSoportado).toBe(0);
+    expect(k.ivaLiquidar).toBe(0);
+    expect(k.irpfRetenido).toBe(0);
+  });
+
   it("gasto /km: todos los gastos del periodo / km del periodo", () => {
     const ex: SExpense[] = [
       { fecha: "2025-05-10", categoria: "Gasoil", total: 600 },

@@ -92,11 +92,14 @@ describe("buildInvoicePdf", () => {
     expect(bytes.length).toBeGreaterThan(1000);
   });
 
-  it("genera las 3 plantillas sin reventar por codificación (WinAnsi)", async () => {
-    for (const t of ["trackapp", "elegante", "moderna"] as const) {
-      const bytes = await buildInvoicePdf(invoice, lines, t);
-      expect(bytes.length, t).toBeGreaterThan(1000);
-      expect(String.fromCharCode(...bytes.slice(0, 5)), t).toBe("%PDF-");
-    }
+  it("la plantilla trackapp genera un PDF válido (WinAnsi, vectorial en Node)", async () => {
+    const bytes = await buildInvoicePdf(invoice, lines, "trackapp");
+    expect(bytes.length).toBeGreaterThan(1000);
+    expect(String.fromCharCode(...bytes.slice(0, 5))).toBe("%PDF-");
   });
+
+  // Clásica/Moderna se renderizan desde HTML (html2canvas+jspdf) y requieren un
+  // navegador con DOM; no se pueden ejercitar en el entorno Node de vitest. Su
+  // salida se valida manualmente desde "Mi Perfil" (previsualización) y al
+  // generar facturas reales en la app.
 });
