@@ -176,30 +176,28 @@ export function TripForm({
         </button>
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Origen" htmlFor="origen" hint={routingEnabled ? "Busca y elige un lugar" : "Con CP: Santiago (15890)"}>
-          <PlaceAutocomplete
-            id="origen"
-            name="origen"
-            value={origen}
-            onChange={setOrigen}
-            onResolve={setOrigenCoord}
-            enabled={routingEnabled}
-            placeholder="Santiago (15890)"
-          />
-        </Field>
-        <Field label="Destino" htmlFor="destino" hint={routingEnabled ? "Busca y elige un lugar" : "Parma - IT (43122)"}>
-          <PlaceAutocomplete
-            id="destino"
-            name="destino"
-            value={destino}
-            onChange={setDestino}
-            onResolve={setDestinoCoord}
-            enabled={routingEnabled}
-            placeholder="Irún (20305)"
-          />
-        </Field>
-      </div>
+      <Field label="Origen" htmlFor="origen" hint={routingEnabled ? "Busca y elige un lugar" : "Con CP: Santiago (15890)"}>
+        <PlaceAutocomplete
+          id="origen"
+          name="origen"
+          value={origen}
+          onChange={setOrigen}
+          onResolve={setOrigenCoord}
+          enabled={routingEnabled}
+          placeholder="Santiago (15890)"
+        />
+      </Field>
+      <Field label="Destino" htmlFor="destino" hint={routingEnabled ? "Busca y elige un lugar" : "Parma - IT (43122)"}>
+        <PlaceAutocomplete
+          id="destino"
+          name="destino"
+          value={destino}
+          onChange={setDestino}
+          onResolve={setDestinoCoord}
+          enabled={routingEnabled}
+          placeholder="Irún (20305)"
+        />
+      </Field>
 
       <Field label="Descripción de la carga" htmlFor="descripcion" hint="Opcional · tipo de carga, observaciones…">
         <input id="descripcion" name="descripcion" defaultValue={values.descripcion} placeholder="Fruta · carga completa" />
