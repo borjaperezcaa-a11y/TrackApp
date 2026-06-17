@@ -151,6 +151,20 @@ export function ViajeForm({
     setStep((s) => Math.max(1, s - 1));
   }
 
+  // CP → localidad (GeoNames). Devuelve el nombre de la localidad o null.
+  async function lookupLocalidad(cp: string): Promise<string | null> {
+    const c = cp.trim();
+    if (c.length < 4) return null;
+    try {
+      const res = await fetch(`/api/cp?cp=${encodeURIComponent(c)}`);
+      if (!res.ok) return null;
+      const data = (await res.json()) as { places?: { nombre: string }[] };
+      return data.places?.[0]?.nombre ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   function renderStops(i: number, field: StopField, label: string, placeholder: string) {
     const stops = portes[i][field];
     return (
@@ -168,6 +182,12 @@ export function ViajeForm({
             <input
               value={s.cp}
               onChange={(e) => setStop(i, field, j, "cp", e.target.value)}
+              onBlur={async () => {
+                if (s.cp.trim() && !s.lugar.trim()) {
+                  const n = await lookupLocalidad(s.cp);
+                  if (n) setStop(i, field, j, "lugar", n);
+                }
+              }}
               placeholder="CP"
               inputMode="numeric"
               aria-label="Código postal"
@@ -301,7 +321,21 @@ export function ViajeForm({
           <div className="flex-1">
             <PlaceAutocomplete id="origen" name="origen" value={origen} onChange={setOrigen} onResolve={setOrigenCoord} enabled={routingEnabled} placeholder="Santiago" required />
           </div>
-          <input name="cp_origen" value={origenCp} onChange={(e) => setOrigenCp(e.target.value)} placeholder="CP" inputMode="numeric" aria-label="CP de origen" className="w-20 flex-none" />
+          <input
+            name="cp_origen"
+            value={origenCp}
+            onChange={(e) => setOrigenCp(e.target.value)}
+            onBlur={async () => {
+              if (origenCp.trim() && !origen.trim()) {
+                const n = await lookupLocalidad(origenCp);
+                if (n) setOrigen(n);
+              }
+            }}
+            placeholder="CP"
+            inputMode="numeric"
+            aria-label="CP de origen"
+            className="w-20 flex-none"
+          />
         </div>
       </Field>
       <Field label="Destino" htmlFor="destino" hint={routingEnabled ? "Localidad + CP" : "Localidad + CP"}>
@@ -309,7 +343,21 @@ export function ViajeForm({
           <div className="flex-1">
             <PlaceAutocomplete id="destino" name="destino" value={destino} onChange={setDestino} onResolve={setDestinoCoord} enabled={routingEnabled} placeholder="Irún" required />
           </div>
-          <input name="cp_destino" value={destinoCp} onChange={(e) => setDestinoCp(e.target.value)} placeholder="CP" inputMode="numeric" aria-label="CP de destino" className="w-20 flex-none" />
+          <input
+            name="cp_destino"
+            value={destinoCp}
+            onChange={(e) => setDestinoCp(e.target.value)}
+            onBlur={async () => {
+              if (destinoCp.trim() && !destino.trim()) {
+                const n = await lookupLocalidad(destinoCp);
+                if (n) setDestino(n);
+              }
+            }}
+            placeholder="CP"
+            inputMode="numeric"
+            aria-label="CP de destino"
+            className="w-20 flex-none"
+          />
         </div>
       </Field>
       <Field label="Km del viaje" htmlFor="km" hint={kmHint}>
