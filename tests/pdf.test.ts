@@ -91,4 +91,12 @@ describe("buildInvoicePdf", () => {
     );
     expect(bytes.length).toBeGreaterThan(1000);
   });
+
+  it("genera las 3 plantillas sin reventar por codificación (WinAnsi)", async () => {
+    for (const t of ["trackapp", "elegante", "moderna"] as const) {
+      const bytes = await buildInvoicePdf(invoice, lines, t);
+      expect(bytes.length, t).toBeGreaterThan(1000);
+      expect(String.fromCharCode(...bytes.slice(0, 5)), t).toBe("%PDF-");
+    }
+  });
 });

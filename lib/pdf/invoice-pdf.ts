@@ -355,7 +355,7 @@ async function buildElegante(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
     ty += 19;
     text(ln.fecha ? dateES(ln.fecha) : "", c.fecha, ty, { size: 10.5 });
     text(clip(ln.origen ?? "", 120, sans, 10.5), c.origen, ty, { size: 10.5 });
-    text("→ " + clip(ln.destino ?? "", 120, sans, 10.5), c.destino, ty, { size: 10.5 });
+    text(clip(ln.destino ?? "", 130, sans, 10.5), c.destino, ty, { size: 10.5 });
     text(amount(ln.cantidad), c.cant - 50, ty, { size: 10.5, align: "right", w: 50 });
     text(amount(ln.precio) + " €", c.precio - 60, ty, { size: 10.5, align: "right", w: 60 });
     text(amount(ln.importe) + " €", c.importe - 70, ty, { size: 10.5, font: sansB, align: "right", w: 70 });
@@ -390,7 +390,7 @@ async function buildElegante(invoice: Invoice, lines: InvoiceLine[]): Promise<Ui
   };
   trow("Base imponible", amount(invoice.base) + " €");
   trow(`IVA (${amount(invoice.iva_rate)}%)`, amount(invoice.iva) + " €");
-  if (invoice.irpf > 0) trow(`Retención IRPF (${format1(invoice.irpf_rate)}%)`, "−" + amount(invoice.irpf) + " €");
+  if (invoice.irpf > 0) trow(`Retención IRPF (${format1(invoice.irpf_rate)}%)`, "-" + amount(invoice.irpf) + " €");
   // Caja de total
   tr += 4;
   page.drawRectangle({ x: tboxX, y: H - tr - 16, width: tboxW, height: 28, color: ACCENT });
@@ -523,7 +523,7 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
     ty += 19;
     text(ln.fecha ? dateES(ln.fecha) : "", c.fecha + 10, ty, { size: 10.5 });
     text(clip(ln.origen ?? "", 120, sans, 10.5), c.origen, ty, { size: 10.5 });
-    text("→ " + clip(ln.destino ?? "", 120, sans, 10.5), c.destino, ty, { size: 10.5 });
+    text(clip(ln.destino ?? "", 130, sans, 10.5), c.destino, ty, { size: 10.5 });
     text(amount(ln.cantidad), c.cant - 50, ty, { size: 10.5, align: "right", w: 50 });
     text(amount(ln.precio) + " €", c.precio - 60, ty, { size: 10.5, align: "right", w: 60 });
     text(amount(ln.importe) + " €", c.importe - 10 - 70, ty, { size: 10.5, font: sansB, align: "right", w: 70 });
@@ -542,7 +542,7 @@ async function buildModerna(invoice: Invoice, lines: InvoiceLine[]): Promise<Uin
   };
   trow("Base imponible", amount(invoice.base) + " €");
   trow(`IVA (${amount(invoice.iva_rate)}%)`, amount(invoice.iva) + " €");
-  if (invoice.irpf > 0) trow(`Retención IRPF (${format1(invoice.irpf_rate)}%)`, "−" + amount(invoice.irpf) + " €");
+  if (invoice.irpf > 0) trow(`Retención IRPF (${format1(invoice.irpf_rate)}%)`, "-" + amount(invoice.irpf) + " €");
   tr += 2;
   page.drawRectangle({ x: tboxX, y: H - tr - 18, width: tboxW, height: 30, color: ACCENT });
   text("TOTAL FACTURA", tboxX + 12, tr + 3, { size: 9.5, font: sansB, color: WHITE });
