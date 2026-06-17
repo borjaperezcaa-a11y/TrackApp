@@ -80,8 +80,9 @@ export function ProfileForm({
       if (error) throw error;
       const { data } = supabase.storage.from("logos").getPublicUrl(path);
       setLogoUrl(data.publicUrl);
-    } catch {
-      setUploadError("No se pudo subir el logo. Revisa que el bucket existe.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      setUploadError(`No se pudo subir el logo: ${msg}`);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
