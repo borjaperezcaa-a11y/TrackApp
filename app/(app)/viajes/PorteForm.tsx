@@ -62,9 +62,9 @@ export function PorteForm({
             placeholder="24"
             className="flex-1"
           />
-          <select name="peso_unidad" defaultValue={defaults?.peso_unidad ?? "t"} className="w-24 flex-none">
-            <option value="t">t</option>
+          <select name="peso_unidad" defaultValue={defaults?.peso_unidad ?? "kg"} className="w-24 flex-none">
             <option value="kg">kg</option>
+            <option value="t">t</option>
           </select>
         </div>
       </Field>

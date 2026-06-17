@@ -40,7 +40,7 @@ const porteSchema = z.object({
   destino: z.string().trim().max(160),
   descripcion: z.string().trim().max(300),
   peso: z.string().trim(),
-  peso_unidad: z.enum(["t", "kg"]).default("t"),
+  peso_unidad: z.enum(["t", "kg"]).default("kg"),
   importe: z.string().trim(),
 });
 
@@ -111,7 +111,16 @@ export async function createViajeAction(_prev: TripState, formData: FormData): P
     const origen = String(d?.origen ?? "").trim() || v.row.origen;
     const destino = String(d?.destino ?? "").trim() || v.row.destino;
     const descripcion = String(d?.descripcion ?? "").trim() || null;
-    rows.push({ client_id, origen, destino, descripcion, peso: null, peso_unidad: "t", importe });
+    // Carga (peso) del porte, opcional. Unidad por defecto kg.
+    const pesoStr = String(d?.peso ?? "").trim();
+    let peso: number | null = null;
+    if (pesoStr !== "") {
+      const pn = num(pesoStr);
+      if (!Number.isFinite(pn) || pn < 0) return { error: "Peso de un porte no válido." };
+      peso = pn;
+    }
+    const peso_unidad = d?.peso_unidad === "t" ? "t" : "kg";
+    rows.push({ client_id, origen, destino, descripcion, peso, peso_unidad, importe });
   }
 
   // 1) Viaje físico

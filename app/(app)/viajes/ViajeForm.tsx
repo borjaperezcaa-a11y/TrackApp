@@ -12,10 +12,26 @@ import { createViajeAction, type TripState } from "./actions";
 import { quickCreateClient } from "../clientes/actions";
 
 type ClientOption = { id: string; nombre: string };
-type PorteDraft = { client_id: string; origen: string; destino: string; descripcion: string; importe: string };
+type PorteDraft = {
+  client_id: string;
+  origen: string;
+  destino: string;
+  descripcion: string;
+  peso: string;
+  peso_unidad: "t" | "kg";
+  importe: string;
+};
 
 const initial: TripState = {};
-const emptyPorte = (origen = "", destino = ""): PorteDraft => ({ client_id: "", origen, destino, descripcion: "", importe: "" });
+const emptyPorte = (origen = "", destino = ""): PorteDraft => ({
+  client_id: "",
+  origen,
+  destino,
+  descripcion: "",
+  peso: "",
+  peso_unidad: "kg", // por defecto kg
+  importe: "",
+});
 
 /**
  * Crea un VIAJE FÍSICO (trayecto + km) con UNO O VARIOS portes. Cada porte es
@@ -203,6 +219,30 @@ export function ViajeForm({
 
           <Field label="Descripción" htmlFor={`pdesc-${i}`} hint="Opcional">
             <input id={`pdesc-${i}`} value={p.descripcion} onChange={(e) => setPorte(i, { descripcion: e.target.value })} placeholder="Fruta · carga completa" />
+          </Field>
+
+          <Field label="Carga (peso)" htmlFor={`pp-${i}`} hint="Opcional">
+            <div className="flex gap-2">
+              <input
+                id={`pp-${i}`}
+                type="number"
+                step="0.001"
+                min="0"
+                inputMode="decimal"
+                value={p.peso}
+                onChange={(e) => setPorte(i, { peso: e.target.value })}
+                placeholder="24"
+                className="flex-1"
+              />
+              <select
+                value={p.peso_unidad}
+                onChange={(e) => setPorte(i, { peso_unidad: e.target.value as "t" | "kg" })}
+                className="w-24 flex-none"
+              >
+                <option value="kg">kg</option>
+                <option value="t">t</option>
+              </select>
+            </div>
           </Field>
 
           <Field label="Importe (€)" htmlFor={`pi-${i}`}>
