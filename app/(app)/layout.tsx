@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/ui/BottomNav";
+import { WelcomeSlides } from "@/components/ui/WelcomeSlides";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -15,6 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <>
       <main className="shell">{children}</main>
       <BottomNav />
+      <WelcomeSlides />
     </>
   );
 }
