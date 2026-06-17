@@ -8,6 +8,7 @@ import { Cta } from "@/components/ui/Cta";
 import { Icon } from "@/components/ui/Icon";
 import { PlaceAutocomplete, type ResolvedPlace } from "@/components/ui/PlaceAutocomplete";
 import { DateField } from "@/components/ui/DateField";
+import { clsx } from "@/lib/clsx";
 import { createViajeAction, type TripState } from "./actions";
 import { quickCreateClient } from "../clientes/actions";
 
@@ -60,8 +61,15 @@ export function ViajeForm({
   const [destinoCoord, setDestinoCoord] = useState<ResolvedPlace>(null);
   const [kmStatus, setKmStatus] = useState<"idle" | "calc" | "done" | "error">("idle");
 
-  // Portes (al menos uno)
+  // Portes (al menos uno) + modo multiporte (varios clientes en un viaje).
   const [portes, setPortes] = useState<PorteDraft[]>([emptyPorte()]);
+  const [multi, setMulti] = useState(false);
+
+  function setModo(m: boolean) {
+    setMulti(m);
+    // Al volver a "un porte" nos quedamos solo con el primero.
+    if (!m) setPortes((ps) => [ps[0] ?? emptyPorte()]);
+  }
 
   // Modal "nuevo cliente" (asociado al porte que lo abrió)
   const [modalIdx, setModalIdx] = useState<number | null>(null);
@@ -155,6 +163,40 @@ export function ViajeForm({
       {/* Los portes viajan serializados aquí */}
       <input type="hidden" name="portes" value={JSON.stringify(portes)} />
 
+      {/* ¿Multiporte? Define si el viaje lleva carga para uno o varios clientes. */}
+      <div className="mb-4 rounded-2xl border border-line bg-panel p-3.5">
+        <div className="mb-2 text-[13.5px] font-bold">¿Es un viaje multiporte?</div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setModo(false)}
+            aria-pressed={!multi}
+            className={clsx(
+              "flex-1 rounded-[13px] border-[1.5px] px-3 py-2.5 text-sm font-bold transition-all",
+              !multi ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
+            )}
+          >
+            No · un cliente
+          </button>
+          <button
+            type="button"
+            onClick={() => setModo(true)}
+            aria-pressed={multi}
+            className={clsx(
+              "flex-1 rounded-[13px] border-[1.5px] px-3 py-2.5 text-sm font-bold transition-all",
+              multi ? "border-amber bg-amber-soft text-amber" : "border-line bg-panel text-text",
+            )}
+          >
+            Sí · varios clientes
+          </button>
+        </div>
+        <p className="mt-2 text-[11.5px] text-dim">
+          {multi
+            ? "Añadirás varios portes, cada uno con su cliente, ruta e importe."
+            : "Un solo cliente: pones el origen y el destino una sola vez."}
+        </p>
+      </div>
+
       <div className="mb-1.5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">El viaje (trayecto)</div>
 
       <Field label="Fecha" htmlFor="fecha">
@@ -184,19 +226,19 @@ export function ViajeForm({
       )}
 
       <div className="mb-1.5 mt-5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">
-        Portes ({portes.length})
+        {multi ? `Portes (${portes.length})` : "La carga"}
       </div>
 
       {portes.map((p, i) => (
         <div key={i} className="mb-3 rounded-2xl border border-line bg-panel p-3.5">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-dim">Porte {i + 1}</span>
-            {portes.length > 1 && (
+          {multi && (
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-dim">Porte {i + 1}</span>
               <button type="button" onClick={() => removePorte(i)} className="text-[12.5px] font-bold text-red">
                 Quitar
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           <Field label="Cliente" htmlFor={`pc-${i}`}>
             <select id={`pc-${i}`} value={p.client_id} onChange={(e) => setPorte(i, { client_id: e.target.value })} required>
@@ -223,14 +265,17 @@ export function ViajeForm({
             </button>
           </Field>
 
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Origen" htmlFor={`po-${i}`}>
-              <input id={`po-${i}`} value={p.origen} onChange={(e) => setPorte(i, { origen: e.target.value })} placeholder="Santiago (15890)" />
-            </Field>
-            <Field label="Destino" htmlFor={`pd-${i}`}>
-              <input id={`pd-${i}`} value={p.destino} onChange={(e) => setPorte(i, { destino: e.target.value })} placeholder="Irún (20305)" />
-            </Field>
-          </div>
+          {/* La ruta del porte solo se pide en multiporte; con un solo porte usa la del viaje. */}
+          {multi && (
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Origen" htmlFor={`po-${i}`}>
+                <input id={`po-${i}`} value={p.origen} onChange={(e) => setPorte(i, { origen: e.target.value })} placeholder="Santiago (15890)" />
+              </Field>
+              <Field label="Destino" htmlFor={`pd-${i}`}>
+                <input id={`pd-${i}`} value={p.destino} onChange={(e) => setPorte(i, { destino: e.target.value })} placeholder="Irún (20305)" />
+              </Field>
+            </div>
+          )}
 
           <Field label="Descripción" htmlFor={`pdesc-${i}`} hint="Opcional">
             <input id={`pdesc-${i}`} value={p.descripcion} onChange={(e) => setPorte(i, { descripcion: e.target.value })} placeholder="Fruta · carga completa" />
@@ -277,17 +322,21 @@ export function ViajeForm({
         </div>
       ))}
 
-      <button
-        type="button"
-        onClick={addPorte}
-        className="mb-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line bg-panel py-3 text-[13.5px] font-bold text-text transition-transform active:scale-[0.98]"
-      >
-        <Icon name="plus" size={16} /> Añadir otro porte
-      </button>
+      {multi && (
+        <button
+          type="button"
+          onClick={addPorte}
+          className="mb-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line bg-panel py-3 text-[13.5px] font-bold text-text transition-transform active:scale-[0.98]"
+        >
+          <Icon name="plus" size={16} /> Añadir otro porte
+        </button>
+      )}
 
-      <p className="mb-3 px-1 text-[11.5px] text-dim">
-        Si dejas el origen/destino de un porte en blanco, usa la ruta del viaje. Los km solo se ponen en el viaje (una vez).
-      </p>
+      {multi && (
+        <p className="mb-3 px-1 text-[11.5px] text-dim">
+          Cada porte tiene su cliente, ruta e importe. Los km solo se ponen en el viaje (una vez).
+        </p>
+      )}
 
       {state.error && <p className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{state.error}</p>}
 

@@ -104,6 +104,7 @@ function ViajeRowItem({ v, agg }: { v: ViajeRow; agg?: PorteAgg }) {
         <div className="flex flex-col items-end gap-1">
           <div className="font-display text-xl font-bold tnum">{eur(total)}</div>
           <Badge tone={facturado ? "good" : "mid"}>{facturado ? "Facturado" : "Pendiente"}</Badge>
+          {n > 1 && <Badge tone="mid">Multiporte</Badge>}
         </div>
       }
     />
