@@ -90,8 +90,12 @@ export function tsUtcSeconds(date: Date): string {
   );
 }
 
-/** FechaHoraHusoGenRegistro: string tal cual, o Date → UTC con segundos. */
-function fechaHora(genTs: Date | string): string {
+/**
+ * FechaHoraHusoGenRegistro: string tal cual, o Date → UTC con segundos.
+ * Se exporta porque el XML del registro debe llevar EXACTAMENTE este mismo valor
+ * en su campo FechaHoraHusoGenRegistro (la AEAT rehace la huella sobre él).
+ */
+export function genTsString(genTs: Date | string): string {
   return typeof genTs === "string" ? genTs : tsUtcSeconds(genTs);
 }
 
@@ -105,7 +109,7 @@ export function buildCanonical(input: HuellaInput): string {
     `&CuotaTotal=${formatAmount(input.cuotaTotal)}` +
     `&ImporteTotal=${formatAmount(input.importeTotal)}` +
     `&Huella=${input.huellaAnterior ?? ""}` +
-    `&FechaHoraHusoGenRegistro=${fechaHora(input.genTs)}`
+    `&FechaHoraHusoGenRegistro=${genTsString(input.genTs)}`
   );
 }
 
@@ -116,7 +120,7 @@ export function buildCanonicalAnulacion(input: AnulacionInput): string {
     `&NumSerieFacturaAnulada=${input.numero}` +
     `&FechaExpedicionFacturaAnulada=${dateDMY(input.fechaExpedicion)}` +
     `&Huella=${input.huellaAnterior ?? ""}` +
-    `&FechaHoraHusoGenRegistro=${fechaHora(input.genTs)}`
+    `&FechaHoraHusoGenRegistro=${genTsString(input.genTs)}`
   );
 }
 

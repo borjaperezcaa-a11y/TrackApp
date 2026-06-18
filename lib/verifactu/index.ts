@@ -26,3 +26,15 @@ export {
   type ChainLink,
   type ChainResult,
 } from "./huella";
+
+export {
+  buildRegistroAltaXml,
+  buildRegistroAnulacionXml,
+  wrapEnvelope,
+  ID_VERSION,
+  TIPO_HUELLA_SHA256,
+  type SistemaInformatico,
+  type DetalleDesglose,
+  type RegistroAltaInput,
+  type RegistroAnulacionInput,
+} from "./xml/registro";
