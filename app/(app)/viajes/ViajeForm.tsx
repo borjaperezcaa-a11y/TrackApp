@@ -52,7 +52,7 @@ export function ViajeForm({
   defaultFecha: string;
   routingEnabled?: boolean;
 }) {
-  const [state, formAction] = useActionState(createViajeAction, initial);
+  const [state, formAction, pending] = useActionState(createViajeAction, initial);
   const [clients, setClients] = useState(initialClients);
 
   // Trayecto físico
@@ -488,7 +488,8 @@ export function ViajeForm({
           <button
             type="button"
             onClick={goBack}
-            className="flex-none rounded-[18px] border border-line bg-panel px-5 py-4 text-sm font-bold text-text transition-transform active:scale-[0.97]"
+            disabled={pending}
+            className="flex-none rounded-[18px] border border-line bg-panel px-5 py-4 text-sm font-bold text-text transition-transform active:scale-[0.97] disabled:opacity-50"
           >
             Atrás
           </button>
@@ -504,9 +505,17 @@ export function ViajeForm({
         ) : (
           <button
             type="submit"
-            className="flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-[18px] bg-amber py-4 text-[16px] font-extrabold text-[#1a1205] transition-transform active:scale-[0.97]"
+            disabled={pending}
+            aria-busy={pending}
+            className="flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-[18px] bg-amber py-4 text-[16px] font-extrabold text-[#1a1205] transition-transform active:scale-[0.97] disabled:opacity-70"
           >
-            <Icon name="save" size={20} /> GUARDAR VIAJE
+            {pending ? (
+              "Guardando…"
+            ) : (
+              <>
+                <Icon name="save" size={20} /> GUARDAR VIAJE
+              </>
+            )}
           </button>
         )}
       </div>
