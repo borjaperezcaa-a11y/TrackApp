@@ -137,7 +137,7 @@ function eleganteHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, q
       .map((x) => `<p class="party-line">${esc(x)}</p>`)
       .join("")}</div>`;
   return `<style>
-:root{--ink:#1A1F2B;--slate:#5B6472;--muted:#9AA2AE;--hairline:#E4E7EC;--hairline-strong:#CBD0D9;--paper:#FFFFFF;--accent:#1B3A5B;--accent-contrast:#FFFFFF;--font-body:'Inter',system-ui,Arial,sans-serif;--font-display:'Spectral',Georgia,serif;}
+.invoice{--ink:#1A1F2B;--slate:#5B6472;--muted:#9AA2AE;--hairline:#E4E7EC;--hairline-strong:#CBD0D9;--paper:#FFFFFF;--accent:#1B3A5B;--accent-contrast:#FFFFFF;--font-body:'Inter',system-ui,Arial,sans-serif;--font-display:'Spectral',Georgia,serif;}
 .invoice *{box-sizing:border-box;}
 .invoice{width:210mm;min-height:297mm;background:var(--paper);padding:22mm 20mm 16mm;position:relative;display:flex;flex-direction:column;color:var(--ink);font-family:var(--font-body);}
 .invoice::before{content:"";position:absolute;top:0;left:0;right:0;height:3.2mm;background:var(--accent);}
@@ -259,7 +259,7 @@ function modernaHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr
       .map((x) => `<p class="party-line">${esc(x)}</p>`)
       .join("")}</div>`;
   return `<style>
-:root{--ink:#1A1A2E;--slate:#6B7280;--muted:#9CA3AF;--line:#ECECF3;--panel:#F7F7FB;--paper:#FFFFFF;--accent:#4F46E5;--accent-contrast:#FFFFFF;--accent-soft:#EEF0FF;--font-body:'DM Sans',system-ui,Arial,sans-serif;--font-display:'Space Grotesk','DM Sans',sans-serif;}
+.invoice{--ink:#1A1A2E;--slate:#6B7280;--muted:#9CA3AF;--line:#ECECF3;--panel:#F7F7FB;--paper:#FFFFFF;--accent:#4F46E5;--accent-contrast:#FFFFFF;--accent-soft:#EEF0FF;--font-body:'DM Sans',system-ui,Arial,sans-serif;--font-display:'Space Grotesk','DM Sans',sans-serif;}
 .invoice *{box-sizing:border-box;}
 .invoice{width:210mm;min-height:297mm;background:var(--paper);display:flex;flex-direction:column;overflow:hidden;color:var(--ink);font-family:var(--font-body);}
 .invoice .eyebrow{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 9px;}
