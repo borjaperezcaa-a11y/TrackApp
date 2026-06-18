@@ -216,6 +216,55 @@ export async function addPorteAction(viajeId: string, _prev: TripState, formData
   redirect(`/viajes/${viajeId}`);
 }
 
+// ─── Editar un porte (solo mientras NO esté facturado) ────────────────────────
+export async function updatePorteAction(porteId: string, _prev: TripState, formData: FormData): Promise<TripState> {
+  const { supabase, user } = await getUser();
+  if (!user) return { error: "Sesión expirada." };
+
+  const { data: existing } = await supabase
+    .from("trips")
+    .select("estado, viaje_id")
+    .eq("id", porteId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!existing) return { error: "Porte no encontrado." };
+  if (existing.estado === "facturado") return { error: "No puedes editar un porte ya facturado." };
+
+  // Ruta de respaldo: la del viaje al que pertenece (si el porte no trae ruta).
+  let fb: { origen: string | null; destino: string | null } = { origen: null, destino: null };
+  if (existing.viaje_id) {
+    const { data: viaje } = await supabase
+      .from("viajes")
+      .select("origen, destino")
+      .eq("id", existing.viaje_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (viaje) fb = { origen: viaje.origen, destino: viaje.destino };
+  }
+
+  let draft: unknown;
+  try {
+    draft = JSON.parse(String(formData.get("porte") ?? "{}"));
+  } catch {
+    return { error: "Porte no válido." };
+  }
+  const p = porteRowFromDraft(draft as Record<string, unknown>, fb);
+  if (!p.ok) return { error: p.error };
+
+  // El .eq("estado","pendiente") evita pisar un porte que se facturara entremedias.
+  const { error } = await supabase
+    .from("trips")
+    .update(p.row)
+    .eq("id", porteId)
+    .eq("user_id", user.id)
+    .eq("estado", "pendiente");
+  if (error) return { error: "No se pudieron guardar los cambios del porte." };
+
+  revalidatePath("/viajes");
+  if (existing.viaje_id) revalidatePath(`/viajes/${existing.viaje_id}`);
+  redirect(existing.viaje_id ? `/viajes/${existing.viaje_id}` : "/viajes");
+}
+
 // ─── Borrar un porte (si no está facturado) ───────────────────────────────────
 export async function deletePorteAction(porteId: string, _prev: TripState, _formData: FormData): Promise<TripState> {
   const { supabase, user } = await getUser();

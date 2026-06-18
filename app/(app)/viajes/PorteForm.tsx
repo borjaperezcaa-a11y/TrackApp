@@ -9,33 +9,47 @@ import { NewClientModal } from "./NewClientModal";
 import type { TripState } from "./actions";
 
 type ClientOption = { id: string; nombre: string };
-type Stop = { lugar: string; cp: string };
+export type Stop = { lugar: string; cp: string };
+
+/** Valores iniciales para editar un porte ya existente (modo edición). */
+export type PorteInitial = {
+  client_id: string;
+  origenes: Stop[];
+  destinos: Stop[];
+  descripcion: string;
+  peso: string;
+  peso_unidad: "t" | "kg";
+  importe: string;
+};
 
 const emptyStop = (): Stop => ({ lugar: "", cp: "" });
 
 /**
- * Añadir un porte a un viaje existente: cliente, cargas/descargas (con CP y
- * grupaje), descripción, peso e importe. El porte viaja serializado (JSON).
+ * Formulario de porte: cliente, cargas/descargas (con CP y grupaje), descripción,
+ * peso e importe. El porte viaja serializado (JSON). Sirve para AÑADIR (sin
+ * `initial`) y para EDITAR un porte pendiente (con `initial`).
  */
 export function PorteForm({
   action,
   clients: initialClients,
+  initial,
   submitLabel = "AÑADIR PORTE",
 }: {
   action: (prev: TripState, formData: FormData) => Promise<TripState>;
   clients: ClientOption[];
+  initial?: PorteInitial;
   submitLabel?: string;
 }) {
   const [state, formAction] = useActionState(action, {});
   const [clients, setClients] = useState(initialClients);
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState(initial?.client_id ?? "");
   const [modalOpen, setModalOpen] = useState(false);
-  const [origenes, setOrigenes] = useState<Stop[]>([emptyStop()]);
-  const [destinos, setDestinos] = useState<Stop[]>([emptyStop()]);
-  const [descripcion, setDescripcion] = useState("");
-  const [peso, setPeso] = useState("");
-  const [pesoUnidad, setPesoUnidad] = useState<"t" | "kg">("kg");
-  const [importe, setImporte] = useState("");
+  const [origenes, setOrigenes] = useState<Stop[]>(initial?.origenes?.length ? initial.origenes : [emptyStop()]);
+  const [destinos, setDestinos] = useState<Stop[]>(initial?.destinos?.length ? initial.destinos : [emptyStop()]);
+  const [descripcion, setDescripcion] = useState(initial?.descripcion ?? "");
+  const [peso, setPeso] = useState(initial?.peso ?? "");
+  const [pesoUnidad, setPesoUnidad] = useState<"t" | "kg">(initial?.peso_unidad ?? "kg");
+  const [importe, setImporte] = useState(initial?.importe ?? "");
 
   const porteJson = JSON.stringify({
     client_id: clientId,

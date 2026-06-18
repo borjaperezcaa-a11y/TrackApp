@@ -1,15 +1,14 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { ConfirmDelete } from "@/components/ui/ConfirmDelete";
 import { createClient } from "@/lib/supabase/server";
 import { eur, dateES, intES } from "@/lib/format";
 import type { Viaje } from "@/lib/types";
-import { PorteForm } from "../PorteForm";
+import { PorteForm, type Stop } from "../PorteForm";
+import { PorteItem } from "../PorteItem";
 import { TrayectoForm } from "../TrayectoForm";
-import { addPorteAction, updateViajeAction, deletePorteAction, deleteViajeAction } from "../actions";
+import { addPorteAction, updateViajeAction, updatePorteAction, deletePorteAction, deleteViajeAction } from "../actions";
 
 export const metadata = { title: "Viaje · TrackApp" };
 
@@ -19,10 +18,23 @@ type PorteRow = {
   origen: string | null;
   destino: string | null;
   descripcion: string | null;
+  peso: number | null;
+  peso_unidad: string | null;
   importe: number;
   estado: "pendiente" | "facturado";
   invoice_id: string | null;
 };
+
+// Reconstruye las paradas {cp, lugar} a partir del texto guardado ("CP Localidad",
+// una por línea en grupaje). Permite reeditar cargas/descargas con su CP.
+function parseStops(s: string | null): Stop[] {
+  const lines = (s ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
+  if (lines.length === 0) return [{ lugar: "", cp: "" }];
+  return lines.map((line) => {
+    const m = /^(\d{4,5})\s+(.+)$/.exec(line);
+    return m ? { cp: m[1], lugar: m[2] } : { cp: "", lugar: line };
+  });
+}
 
 export default async function ViajeDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -44,7 +56,7 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
   const [{ data: portesData }, { data: clientsData }, { data: vehiculosData }] = await Promise.all([
     supabase
       .from("trips")
-      .select("id, client_id, origen, destino, descripcion, importe, estado, invoice_id")
+      .select("id, client_id, origen, destino, descripcion, peso, peso_unidad, importe, estado, invoice_id")
       .eq("viaje_id", id)
       .eq("user_id", user.id)
       .order("created_at"),
@@ -87,36 +99,31 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
         </Card>
       ) : (
         portes.map((p) => {
-          const rutaP = p.origen && p.destino ? `${p.origen} → ${p.destino}` : p.origen || p.destino || "—";
+          const o = (p.origen ?? "").replace(/\n/g, " · ");
+          const d = (p.destino ?? "").replace(/\n/g, " · ");
+          const rutaP = o && d ? `${o} → ${d}` : o || d || "—";
           return (
-            <Card key={p.id} soft className="mb-2.5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-semibold">{p.client_id ? nombreCliente.get(p.client_id) ?? "Cliente" : "Cliente"}</div>
-                  <div className="mt-0.5 truncate text-[12.5px] text-dim">{rutaP}</div>
-                  {p.descripcion && <div className="mt-0.5 text-[12.5px]">{p.descripcion}</div>}
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="font-display text-lg font-bold tnum">{eur(Number(p.importe))}</div>
-                  <Badge tone={p.estado === "facturado" ? "good" : "mid"}>
-                    {p.estado === "facturado" ? "Facturado" : "Pendiente"}
-                  </Badge>
-                </div>
-              </div>
-              {p.estado === "facturado" ? (
-                p.invoice_id && (
-                  <Link href={`/facturas/${p.invoice_id}`} className="mt-2 inline-flex text-[13px] font-bold text-amber">
-                    Ver factura ›
-                  </Link>
-                )
-              ) : (
-                <ConfirmDelete
-                  action={deletePorteAction.bind(null, p.id)}
-                  label="Quitar porte"
-                  question="¿Quitar este porte del viaje?"
-                />
-              )}
-            </Card>
+            <PorteItem
+              key={p.id}
+              clientName={p.client_id ? nombreCliente.get(p.client_id) ?? "Cliente" : "Cliente"}
+              ruta={rutaP}
+              descripcion={p.descripcion}
+              importe={Number(p.importe)}
+              facturado={p.estado === "facturado"}
+              invoiceId={p.invoice_id}
+              clients={clients}
+              initial={{
+                client_id: p.client_id ?? "",
+                origenes: parseStops(p.origen),
+                destinos: parseStops(p.destino),
+                descripcion: p.descripcion ?? "",
+                peso: p.peso != null ? String(p.peso) : "",
+                peso_unidad: p.peso_unidad === "t" ? "t" : "kg",
+                importe: String(p.importe),
+              }}
+              updateAction={updatePorteAction.bind(null, p.id)}
+              deleteAction={deletePorteAction.bind(null, p.id)}
+            />
           );
         })
       )}
