@@ -40,14 +40,26 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
   // Marca las facturas ORIGINALES que tienen una rectificativa apuntándolas:
   // "anulada" si la rectificativa las deja a cero (importe negativo equivalente),
   // "rectificada" si solo las corrige por diferencias (la original sigue válida).
-  const byId = new Map(invoices.map((i) => [i.id, i]));
+  // ★ Se calcula con TODAS las rectificativas (no solo las de la página actual):
+  // una original y su rectificativa pueden caer en páginas distintas y el badge
+  // saldría mal. Son pocas filas (solo las que tienen rectifica_id).
+  const { data: rectData } = await supabase
+    .from("invoices")
+    .select("total, rectifica_id")
+    .not("rectifica_id", "is", null);
+  const rects = (rectData ?? []) as { total: number; rectifica_id: string }[];
+  const origIds = [...new Set(rects.map((r) => r.rectifica_id))];
+  const totalOrig = new Map<string, number>();
+  if (origIds.length > 0) {
+    const { data: origData } = await supabase.from("invoices").select("id, total").in("id", origIds);
+    for (const o of (origData ?? []) as { id: string; total: number }[]) totalOrig.set(o.id, Number(o.total));
+  }
   const markById = new Map<string, Mark>();
-  for (const inv of invoices) {
-    if (inv.rectifica_id && byId.has(inv.rectifica_id)) {
-      const orig = byId.get(inv.rectifica_id)!;
-      const esAnulacion = Number(inv.total) < 0 && Math.abs(Number(inv.total) + Number(orig.total)) < 0.01;
-      markById.set(orig.id, esAnulacion ? "anulada" : "rectificada");
-    }
+  for (const r of rects) {
+    const orig = totalOrig.get(r.rectifica_id);
+    if (orig == null) continue;
+    const esAnulacion = Number(r.total) < 0 && Math.abs(Number(r.total) + orig) < 0.01;
+    markById.set(r.rectifica_id, esAnulacion ? "anulada" : "rectificada");
   }
 
   const pendientes = invoices.filter((i) => !i.pagada);

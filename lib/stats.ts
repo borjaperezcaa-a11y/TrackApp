@@ -196,7 +196,9 @@ export function clientRanking(
     const a = agg.get(name) ?? { total: 0, n: 0 };
     // Base imponible (no el total con IVA): coherente con el KPI "Ingresos".
     a.total += i.base;
-    a.n += 1;
+    // Solo cuentan como "factura" las que lo son: una rectificativa netea el
+    // total pero NO suma al nº de facturas (igual criterio que periodKpis).
+    if (i.esFactura !== false) a.n += 1;
     agg.set(name, a);
   }
   return [...agg.entries()]

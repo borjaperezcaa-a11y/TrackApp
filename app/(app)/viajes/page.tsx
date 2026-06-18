@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { LoadError } from "@/components/ui/LoadError";
 import { createClient } from "@/lib/supabase/server";
 import { eurPerKm, profitability } from "@/lib/trip";
-import { eur, dateES, amount } from "@/lib/format";
+import { eur, dateES, intES } from "@/lib/format";
 
 export const metadata = { title: "Viajes · TrackApp" };
 
@@ -107,7 +107,7 @@ function ViajeRowItem({ v, agg }: { v: ViajeRow; agg?: PorteAgg }) {
   const ruta = v.origen && v.destino ? `${v.origen} → ${v.destino}` : v.origen || v.destino || "Viaje";
   const sub = [
     dateES(v.fecha),
-    v.km != null ? `${amount(v.km).replace(",00", "")} km` : null,
+    v.km != null ? `${intES(Math.round(v.km))} km` : null,
     `${n} ${n === 1 ? "porte" : "portes"}`,
     ek != null ? `${ek.toFixed(2).replace(".", ",")} €/km` : null,
     prof?.label,

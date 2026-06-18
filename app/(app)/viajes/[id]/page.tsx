@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmDelete } from "@/components/ui/ConfirmDelete";
 import { createClient } from "@/lib/supabase/server";
-import { eur, dateES, amount } from "@/lib/format";
+import { eur, dateES, intES } from "@/lib/format";
 import type { Viaje } from "@/lib/types";
 import { PorteForm } from "../PorteForm";
 import { TrayectoForm } from "../TrayectoForm";
@@ -70,7 +70,7 @@ export default async function ViajeDetallePage({ params }: { params: Promise<{ i
         <div className="text-[12.5px] text-dim">{dateES(v.fecha)}</div>
         <div className="mt-0.5 font-display text-xl font-bold">{ruta}</div>
         <div className="mt-1 text-[13px] text-dim">
-          {v.km != null ? `${amount(v.km).replace(",00", "")} km` : "Sin km"} · {portes.length}{" "}
+          {v.km != null ? `${intES(Math.round(v.km))} km` : "Sin km"} · {portes.length}{" "}
           {portes.length === 1 ? "porte" : "portes"}
           {nombreCamion ? ` · 🚛 ${nombreCamion}` : ""}
         </div>
