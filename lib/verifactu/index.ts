@@ -9,15 +9,18 @@
 
 export {
   buildCanonical,
+  buildCanonicalAnulacion,
   buildQr,
   formatAmount,
   dateDMY,
   tsUtcSeconds,
   type HuellaInput,
+  type AnulacionInput,
 } from "./canonical";
 
 export {
   computeHuella,
+  computeHuellaAnulacion,
   verifyChain,
   verifyInvoice,
   type ChainLink,

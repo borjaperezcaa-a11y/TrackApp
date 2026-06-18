@@ -5,16 +5,30 @@
  * Sin dependencias externas.
  */
 
-import { buildCanonical, type HuellaInput } from "./canonical";
+import {
+  buildCanonical,
+  buildCanonicalAnulacion,
+  type HuellaInput,
+  type AnulacionInput,
+} from "./canonical";
 
-/** SHA-256 de la cadena canónica, en hex MAYÚSCULAS (como `upper(encode(...,'hex'))`). */
-export async function computeHuella(input: HuellaInput): Promise<string> {
-  const bytes = new TextEncoder().encode(buildCanonical(input)); // UTF-8
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+/** SHA-256 de una cadena UTF-8, en hex MAYÚSCULAS (como `upper(encode(...,'hex'))`). */
+async function sha256HexUpper(s: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return [...new Uint8Array(digest)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("")
     .toUpperCase();
+}
+
+/** Huella de un registro de ALTA. */
+export async function computeHuella(input: HuellaInput): Promise<string> {
+  return sha256HexUpper(buildCanonical(input));
+}
+
+/** Huella de un registro de ANULACIÓN. */
+export async function computeHuellaAnulacion(input: AnulacionInput): Promise<string> {
+  return sha256HexUpper(buildCanonicalAnulacion(input));
 }
 
 /** Un eslabón de la cadena: los datos de la factura + la huella almacenada. */

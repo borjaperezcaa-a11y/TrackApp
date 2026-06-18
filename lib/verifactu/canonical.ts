@@ -26,10 +26,30 @@ export type HuellaInput = {
   importeTotal: number;
   /** Huella de la factura anterior de la cadena (null en la primera). */
   huellaAnterior: string | null;
-  /** Instante de generación del registro (se formatea en UTC, segundos). */
-  genTs: Date;
+  /**
+   * Instante de generación del registro. Si es `Date`, se formatea en UTC con
+   * segundos (…Z). Si es `string`, se usa TAL CUAL: imprescindible para que el
+   * valor hasheado sea byte-idéntico al del campo `FechaHoraHusoGenRegistro` del
+   * XML (la AEAT recalcula la huella sobre ese valor; cualquier diferencia de
+   * representación de huso —p. ej. `+01:00` vs `Z`— daría "Aceptado con errores").
+   */
+  genTs: Date | string;
   /** Tipo de factura: "F1" normal (por defecto), "R1".."R5" rectificativa. */
   tipoFactura?: string;
+};
+
+/** Datos mínimos de un registro de ANULACIÓN (5 campos, spec v0.1.2 §3.b). */
+export type AnulacionInput = {
+  /** NIF/CIF del emisor de la factura anulada. */
+  emisorNif: string;
+  /** Número completo de la factura anulada. */
+  numero: string;
+  /** Fecha de expedición de la factura anulada, "YYYY-MM-DD". */
+  fechaExpedicion: string;
+  /** Huella del registro anterior de la cadena (null si es el primero). */
+  huellaAnterior: string | null;
+  /** Instante de generación (ver nota en HuellaInput.genTs). */
+  genTs: Date | string;
 };
 
 /**
@@ -70,7 +90,12 @@ export function tsUtcSeconds(date: Date): string {
   );
 }
 
-/** Construye la cadena canónica que se va a hashear. */
+/** FechaHoraHusoGenRegistro: string tal cual, o Date → UTC con segundos. */
+function fechaHora(genTs: Date | string): string {
+  return typeof genTs === "string" ? genTs : tsUtcSeconds(genTs);
+}
+
+/** Construye la cadena canónica de un registro de ALTA que se va a hashear. */
 export function buildCanonical(input: HuellaInput): string {
   return (
     `IDEmisorFactura=${input.emisorNif ?? ""}` +
@@ -80,7 +105,18 @@ export function buildCanonical(input: HuellaInput): string {
     `&CuotaTotal=${formatAmount(input.cuotaTotal)}` +
     `&ImporteTotal=${formatAmount(input.importeTotal)}` +
     `&Huella=${input.huellaAnterior ?? ""}` +
-    `&FechaHoraHusoGenRegistro=${tsUtcSeconds(input.genTs)}`
+    `&FechaHoraHusoGenRegistro=${fechaHora(input.genTs)}`
+  );
+}
+
+/** Construye la cadena canónica de un registro de ANULACIÓN (spec v0.1.2 §3.b). */
+export function buildCanonicalAnulacion(input: AnulacionInput): string {
+  return (
+    `IDEmisorFacturaAnulada=${input.emisorNif ?? ""}` +
+    `&NumSerieFacturaAnulada=${input.numero}` +
+    `&FechaExpedicionFacturaAnulada=${dateDMY(input.fechaExpedicion)}` +
+    `&Huella=${input.huellaAnterior ?? ""}` +
+    `&FechaHoraHusoGenRegistro=${fechaHora(input.genTs)}`
   );
 }
 
