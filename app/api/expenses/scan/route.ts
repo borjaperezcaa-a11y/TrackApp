@@ -3,6 +3,10 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { EXPENSE_CATEGORIES } from "@/lib/expense";
 
+// La llamada de visión a la IA puede tardar varios segundos: ampliamos el límite
+// de la función (si no, Vercel la corta y el cliente ve un error genérico).
+export const maxDuration = 30;
+
 // Validación de la respuesta de la IA (Zod v3). El SDK recibe un JSON Schema crudo.
 const ExtractSchema = z.object({
   total: z.number().nullable(),
@@ -87,10 +91,21 @@ export async function POST(request: Request) {
 
   try {
     const client = new Anthropic();
+    // Salida estructurada mediante TOOL USE (la forma soportada por la API de
+    // Anthropic): se define una herramienta cuyo input_schema es nuestro esquema
+    // y se fuerza su uso; la respuesta llega en el bloque tool_use.input.
     const message = await client.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 1024,
       system: SYSTEM,
+      tools: [
+        {
+          name: "registrar_gasto",
+          description: "Registra los datos extraídos del ticket de gasto.",
+          input_schema: JSON_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+        },
+      ],
+      tool_choice: { type: "tool", name: "registrar_gasto" },
       messages: [
         {
           role: "user",
@@ -103,25 +118,31 @@ export async function POST(request: Request) {
           ],
         },
       ],
-      // Salida estructurada con JSON Schema crudo (no requiere Zod v4).
-      output_config: { format: { type: "json_schema", name: "gasto", schema: JSON_SCHEMA } },
-    } as Anthropic.MessageCreateParamsNonStreaming);
+    });
 
-    const textBlock = message.content.find((b) => b.type === "text");
-    const raw = textBlock && "text" in textBlock ? textBlock.text : "";
-    // Robustez: aislar el objeto JSON aunque venga con texto o fences alrededor.
-    const start = raw.indexOf("{");
-    const end = raw.lastIndexOf("}");
-    if (start < 0 || end < 0) {
-      return Response.json({ error: "Respuesta de IA no válida" }, { status: 502 });
-    }
-    const parsed = ExtractSchema.safeParse(JSON.parse(raw.slice(start, end + 1)));
+    const toolUse = message.content.find((b) => b.type === "tool_use");
+    const input = toolUse && toolUse.type === "tool_use" ? toolUse.input : undefined;
+    const parsed = ExtractSchema.safeParse(input);
     if (!parsed.success) {
-      return Response.json({ error: "Respuesta de IA no válida" }, { status: 502 });
+      return Response.json({ error: "La IA no devolvió datos legibles del ticket." }, { status: 502 });
     }
     return Response.json({ data: parsed.data });
   } catch (e) {
-    console.error("[expenses/scan] error:", e);
+    // Mensaje accionable según el tipo de error de la API de Anthropic (sin
+    // filtrar detalles internos): el detalle completo queda en los logs.
+    if (e instanceof Anthropic.APIError) {
+      console.error("[expenses/scan] Anthropic", e.status, e.message);
+      if (e.status === 401)
+        return Response.json({ error: "La clave de Anthropic no es válida. Revísala en Vercel." }, { status: 502 });
+      if (e.status === 404)
+        return Response.json({ error: "El modelo de IA no está disponible para tu clave." }, { status: 502 });
+      if (e.status === 429)
+        return Response.json({ error: "La API de IA está saturada. Espera unos segundos e inténtalo." }, { status: 502 });
+      if (e.status === 400)
+        return Response.json({ error: "Anthropic rechazó la petición (revisa que la cuenta tenga saldo)." }, { status: 502 });
+    } else {
+      console.error("[expenses/scan] error:", e);
+    }
     return Response.json({ error: "No se pudo leer el ticket. Inténtalo de nuevo." }, { status: 502 });
   }
 }

@@ -2,6 +2,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
+// La llamada de visión a la IA puede tardar varios segundos: ampliamos el límite.
+export const maxDuration = 30;
+
 // Escaneo de facturas que la cooperativa emite en nombre del autónomo. Extrae
 // número, fecha, cliente final e importes para registrarlas en la app. NO
 // genera Verifactu: solo lee datos de una factura ya emitida por la coop.
@@ -102,10 +105,19 @@ export async function POST(request: Request) {
 
   try {
     const client = new Anthropic();
+    // Salida estructurada mediante TOOL USE (forma soportada por la API).
     const message = await client.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 1024,
       system: SYSTEM,
+      tools: [
+        {
+          name: "registrar_factura",
+          description: "Registra los datos extraídos de la factura.",
+          input_schema: JSON_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+        },
+      ],
+      tool_choice: { type: "tool", name: "registrar_factura" },
       messages: [
         {
           role: "user",
@@ -118,23 +130,29 @@ export async function POST(request: Request) {
           ],
         },
       ],
-      output_config: { format: { type: "json_schema", name: "factura", schema: JSON_SCHEMA } },
-    } as Anthropic.MessageCreateParamsNonStreaming);
+    });
 
-    const textBlock = message.content.find((b) => b.type === "text");
-    const raw = textBlock && "text" in textBlock ? textBlock.text : "";
-    const start = raw.indexOf("{");
-    const end = raw.lastIndexOf("}");
-    if (start < 0 || end < 0) {
-      return Response.json({ error: "Respuesta de IA no válida" }, { status: 502 });
-    }
-    const parsed = ExtractSchema.safeParse(JSON.parse(raw.slice(start, end + 1)));
+    const toolUse = message.content.find((b) => b.type === "tool_use");
+    const input = toolUse && toolUse.type === "tool_use" ? toolUse.input : undefined;
+    const parsed = ExtractSchema.safeParse(input);
     if (!parsed.success) {
-      return Response.json({ error: "Respuesta de IA no válida" }, { status: 502 });
+      return Response.json({ error: "La IA no devolvió datos legibles de la factura." }, { status: 502 });
     }
     return Response.json({ data: parsed.data });
   } catch (e) {
-    console.error("[invoices/scan] error:", e);
+    if (e instanceof Anthropic.APIError) {
+      console.error("[invoices/scan] Anthropic", e.status, e.message);
+      if (e.status === 401)
+        return Response.json({ error: "La clave de Anthropic no es válida. Revísala en Vercel." }, { status: 502 });
+      if (e.status === 404)
+        return Response.json({ error: "El modelo de IA no está disponible para tu clave." }, { status: 502 });
+      if (e.status === 429)
+        return Response.json({ error: "La API de IA está saturada. Espera unos segundos e inténtalo." }, { status: 502 });
+      if (e.status === 400)
+        return Response.json({ error: "Anthropic rechazó la petición (revisa que la cuenta tenga saldo)." }, { status: 502 });
+    } else {
+      console.error("[invoices/scan] error:", e);
+    }
     return Response.json({ error: "No se pudo leer la factura. Inténtalo de nuevo." }, { status: 502 });
   }
 }
