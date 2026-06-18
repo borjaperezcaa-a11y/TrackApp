@@ -96,6 +96,8 @@ export function NuevaFacturaWizard({
   const [error, setError] = useState<string | null>(null);
   // Primera factura: hay que confirmar que la serie quedará fija antes de emitir.
   const [serieAck, setSerieAck] = useState(false);
+  // Doble seguro: emitir es irreversible → primero se confirma.
+  const [confirming, setConfirming] = useState(false);
   // Previsualización en borrador (sin Veri*factu, sin escribir en BD).
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -543,20 +545,52 @@ export function NuevaFacturaWizard({
         <p className="mt-2 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">{previewError}</p>
       )}
 
-      <button
-        type="button"
-        onClick={emit}
-        disabled={pending || included.length === 0 || (esPrimeraFactura && !serieAck)}
-        className="mt-3 flex min-h-[64px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-amber px-5 py-5 text-[17px] font-extrabold text-[#1a1205] shadow-[0_12px_26px_rgba(255,178,62,0.30)] transition-transform active:scale-[0.97] disabled:opacity-60"
-      >
-        {pending ? (
-          "Emitiendo…"
-        ) : (
-          <>
-            <Icon name="send" size={22} /> EMITIR FACTURA · {eur(totals.total)}
-          </>
-        )}
-      </button>
+      {confirming ? (
+        // Doble seguro antes de emitir (acción irreversible).
+        <div className="mt-3 rounded-2xl border border-amber-line bg-amber-soft p-4">
+          <div className="text-[14px] font-extrabold text-amber">Vas a emitir esta factura</div>
+          <p className="mt-1 text-[12.5px] font-semibold text-text">
+            Total <b>{eur(totals.total)}</b> · {included.length} {included.length === 1 ? "porte" : "portes"}.
+            Una vez emitida queda registrada con su huella y <b>no se puede modificar ni borrar</b>; si hay un
+            error, se corrige con una factura rectificativa.
+          </p>
+          <div className="mt-3 flex gap-2.5">
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={pending}
+              className="flex-1 rounded-[16px] border border-line bg-panel py-3.5 text-sm font-bold text-text transition-transform active:scale-[0.97] disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={emit}
+              disabled={pending}
+              aria-busy={pending}
+              className="flex-1 rounded-[16px] bg-amber py-3.5 text-sm font-extrabold text-[#1a1205] transition-transform active:scale-[0.97] disabled:opacity-60"
+            >
+              {pending ? "Emitiendo…" : "Sí, emitir"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            if (included.length === 0) {
+              setError("Selecciona al menos un viaje.");
+              return;
+            }
+            setConfirming(true);
+          }}
+          disabled={pending || included.length === 0 || (esPrimeraFactura && !serieAck)}
+          className="mt-3 flex min-h-[64px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-amber px-5 py-5 text-[17px] font-extrabold text-[#1a1205] shadow-[0_12px_26px_rgba(255,178,62,0.30)] transition-transform active:scale-[0.97] disabled:opacity-60"
+        >
+          <Icon name="send" size={22} /> EMITIR FACTURA · {eur(totals.total)}
+        </button>
+      )}
     </div>
   );
 }
