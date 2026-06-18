@@ -16,9 +16,9 @@ const nextConfig: NextConfig = {
     ],
   },
   // Security headers — TLS is enforced by Vercel; here we harden the responses.
+  // La CSP NO va aquí: la pone el middleware por petición con nonce (ver
+  // lib/supabase/middleware.ts), para no usar 'unsafe-inline' en script-src.
   async headers() {
-    const isDev = process.env.NODE_ENV !== "production";
-
     const headers = [
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "X-Frame-Options", value: "DENY" },
@@ -32,27 +32,6 @@ const nextConfig: NextConfig = {
         value: "max-age=63072000; includeSubDomains; preload",
       },
     ];
-
-    // La CSP solo se aplica en PRODUCCIÓN: en desarrollo interfiere con el HMR,
-    // el eval y la inyección de estilos de Next. 'unsafe-inline' por el script
-    // de tema y los scripts de arranque de Next (migrar a nonce más adelante).
-    if (!isDev) {
-      const csp = [
-        "default-src 'self'",
-        "base-uri 'self'",
-        "object-src 'none'",
-        "frame-ancestors 'none'",
-        "form-action 'self'",
-        "img-src 'self' data: blob: https://*.supabase.co",
-        "script-src 'self' 'unsafe-inline'",
-        "style-src 'self' 'unsafe-inline'",
-        "font-src 'self' data:",
-        "connect-src 'self' https://*.supabase.co",
-        "worker-src 'self'",
-        "manifest-src 'self'",
-      ].join("; ");
-      headers.unshift({ key: "Content-Security-Policy", value: csp });
-    }
 
     return [{ source: "/:path*", headers }];
   },
