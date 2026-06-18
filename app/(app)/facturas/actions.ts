@@ -13,6 +13,8 @@ const lineSchema = z.object({
   destino: z.string().max(200),
   cantidad: z.number().positive("La cantidad debe ser mayor que 0").max(1_000_000),
   precio: z.number().min(0).max(10_000_000),
+  // Concepto opcional del porte (solo si el usuario lo activa en el asistente).
+  descripcion: z.string().max(300).optional(),
 });
 
 const str = z.string().max(200);

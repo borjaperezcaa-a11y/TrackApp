@@ -7,6 +7,9 @@ export type EmitLine = {
   destino: string;
   cantidad: number;
   precio: number;
+  // Concepto opcional del porte. Solo se envía si el usuario activa "mostrar
+  // descripción en la factura"; si no, va vacío y no aparece en el PDF.
+  descripcion?: string;
 };
 
 export type EmitEmisor = {

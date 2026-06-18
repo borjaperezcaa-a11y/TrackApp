@@ -108,16 +108,17 @@ function multilinea(s: string | null): string {
 
 function rowsHtml(lines: InvoiceLine[]): string {
   return lines
-    .map(
-      (ln) => `<tr>
+    .map((ln) => {
+      const desc = (ln.descripcion ?? "").trim();
+      return `<tr>
         <td class="c-date">${esc(ln.fecha ? dateES(ln.fecha) : "")}</td>
-        <td class="c-from">${multilinea(ln.origen)}</td>
+        <td class="c-from">${multilinea(ln.origen)}${desc ? `<div class="line-desc">${esc(desc)}</div>` : ""}</td>
         <td class="c-to"><span class="arrow">→</span>${multilinea(ln.destino)}</td>
         <td class="c-qty num">${esc(amount(ln.cantidad))}</td>
         <td class="c-price num">${esc(amount(ln.precio))} €</td>
         <td class="c-amount num">${esc(amount(ln.importe))} €</td>
-      </tr>`,
-    )
+      </tr>`;
+    })
     .join("");
 }
 
@@ -164,6 +165,7 @@ function eleganteHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, q
 .invoice td.c-amount{font-weight:600;}
 .invoice .c-date,.invoice .c-qty,.invoice .c-price,.invoice .c-amount{width:1%;white-space:nowrap;}
 .invoice .arrow{color:var(--accent);font-weight:600;margin-right:5px;}
+.invoice .line-desc{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4;}
 .invoice .summary{display:flex;gap:34px;margin-top:30px;align-items:flex-start;}
 .invoice .summary-left{flex:1;}
 .invoice .summary-right{width:80mm;flex:0 0 auto;}
@@ -285,6 +287,7 @@ function modernaHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr
 .invoice .c-date,.invoice .c-qty,.invoice .c-price,.invoice .c-amount{width:1%;white-space:nowrap;}
 .invoice td.c-amount{font-weight:700;}
 .invoice .arrow{color:var(--accent);font-weight:700;margin-right:5px;}
+.invoice .line-desc{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4;}
 .invoice .summary{display:flex;gap:28px;margin-top:26px;align-items:flex-start;}
 .invoice .summary-left{flex:1;}
 .invoice .summary-right{width:82mm;flex:0 0 auto;}

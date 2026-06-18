@@ -226,6 +226,13 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
     text(amount(ln.precio), COLS.precio.x, ty, { size: 8.5, align: "right", w: COLS.precio.w });
     text(amount(ln.importe), COLS.importe.x, ty, { size: 8.5, align: "right", w: COLS.importe.w - 2 });
     ty += (nSub - 1) * 10; // altura extra por las paradas adicionales
+    // Descripción del porte como concepto, debajo de la ruta (solo si viene).
+    const desc = (ln.descripcion ?? "").trim();
+    if (desc) {
+      const descLines = wrap(desc, font, 7.5, COLS.origen.w + COLS.destino.w - 6);
+      descLines.forEach((s, k) => text(s, COLS.origen.x + 2, ty + 11 + k * 9, { size: 7.5, color: GRAY }));
+      ty += 11 + (descLines.length - 1) * 9;
+    }
     hline(ty + 5, M, W - M, rgb(0.9, 0.9, 0.92));
   }
 

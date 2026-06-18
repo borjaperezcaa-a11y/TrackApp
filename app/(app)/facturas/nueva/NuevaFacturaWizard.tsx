@@ -37,6 +37,7 @@ type PendingTrip = {
   fecha: string;
   origen: string;
   destino: string;
+  descripcion: string;
   importe: number;
   client_id: string;
 };
@@ -47,6 +48,7 @@ type LineState = {
   fecha: string;
   origen: string;
   destino: string;
+  descripcion: string;
   cantidad: string;
   precio: string;
 };
@@ -67,6 +69,7 @@ function buildLines(pendingTrips: PendingTrip[], clientId: string): LineState[] 
       fecha: t.fecha,
       origen: t.origen ?? "",
       destino: t.destino ?? "",
+      descripcion: t.descripcion ?? "",
       cantidad: "1",
       precio: String(t.importe),
     }));
@@ -127,6 +130,9 @@ export function NuevaFacturaWizard({
   const [irpfRate, setIrpfRate] = useState<string>(String(profile.irpf_def ?? 1));
   const [fecha, setFecha] = useState<string>(todayISO());
   const [formaPago, setFormaPago] = useState<string>("Transferencia");
+  // Mostrar la descripción de cada porte como concepto en la factura (debajo de
+  // la ruta). Por defecto NO: solo aparece si el usuario lo activa.
+  const [incluirDesc, setIncluirDesc] = useState(false);
 
   // Líneas (= viajes pendientes del cliente), todas marcadas por defecto.
   const [lines, setLines] = useState<LineState[]>(() => buildLines(pendingTrips, initialClientId));
@@ -150,6 +156,9 @@ export function NuevaFacturaWizard({
   }
 
   const included = lines.filter((l) => l.include);
+  // ¿Algún porte incluido trae descripción? Solo entonces tiene sentido ofrecer
+  // el interruptor de "mostrarla en la factura".
+  const hayDesc = included.some((l) => l.descripcion.trim());
   const totals = useMemo(
     () =>
       computeInvoiceTotals(
@@ -182,6 +191,7 @@ export function NuevaFacturaWizard({
         destino: l.destino,
         cantidad: Number(l.cantidad) || 0,
         precio: Number(l.precio) || 0,
+        descripcion: incluirDesc ? l.descripcion : "",
       })),
       emisor: { ...emisor, logo_url: profile.logo_url },
       cliente,
@@ -245,6 +255,7 @@ export function NuevaFacturaWizard({
             fecha: l.fecha,
             origen: l.origen,
             destino: l.destino,
+            descripcion: incluirDesc ? l.descripcion : "",
             cantidad: Number(l.cantidad) || 0,
             precio: Number(l.precio) || 0,
             importe: (Number(l.cantidad) || 0) * (Number(l.precio) || 0),
@@ -378,9 +389,31 @@ export function NuevaFacturaWizard({
                 className={inputSm}
               />
             </div>
+            {incluirDesc && l.descripcion.trim() && (
+              <div className="mt-2 text-[12px] text-dim">↳ {l.descripcion}</div>
+            )}
           </Card>
         ))}
       </div>
+
+      {/* Interruptor: mostrar la descripción de los portes como concepto en la
+          factura (debajo de la ruta). Solo se ofrece si algún porte la tiene. */}
+      {hayDesc && (
+        <label className="mt-3 flex items-start gap-2.5 rounded-2xl border border-line bg-panel px-4 py-3.5 text-[13px] font-semibold">
+          <input
+            type="checkbox"
+            checked={incluirDesc}
+            onChange={(e) => setIncluirDesc(e.target.checked)}
+            className="mt-0.5 h-4 w-4 flex-none accent-amber"
+          />
+          <span>
+            Mostrar la descripción de cada porte en la factura
+            <span className="block text-[12px] font-normal text-dim">
+              Aparecerá como concepto, debajo de la ruta. Por defecto no se incluye.
+            </span>
+          </span>
+        </label>
+      )}
 
       {/* Emisor / Cliente (solo lectura: la identidad fiscal se ancla en el
           servidor desde tu perfil y la ficha del cliente, no es editable aquí

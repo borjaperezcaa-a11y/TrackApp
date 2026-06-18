@@ -21,7 +21,7 @@ export default async function NuevaFacturaPage() {
     supabase.from("clients").select("id, nombre, nif, direccion, cp_localidad, condiciones_pago").order("nombre"),
     supabase
       .from("trips")
-      .select("id, fecha, origen, destino, importe, client_id")
+      .select("id, fecha, origen, destino, descripcion, importe, client_id")
       .eq("estado", "pendiente")
       .order("fecha"),
     supabase.from("invoices").select("id", { count: "exact", head: true }),
@@ -70,6 +70,7 @@ export default async function NuevaFacturaPage() {
           fecha: t.fecha,
           origen: t.origen ?? "",
           destino: t.destino ?? "",
+          descripcion: t.descripcion ?? "",
           importe: Number(t.importe),
           client_id: t.client_id as string,
         }))}
