@@ -17,10 +17,9 @@ Clientes · viajes · **generación de facturas a partir de viajes** · panel de
 
 ## Puesta en marcha
 
-1. **Crear proyecto Supabase** (región UE). En _SQL Editor_ ejecuta, en orden:
-   - `supabase/migrations/0001_schema.sql`
-   - `supabase/migrations/0002_rls.sql`
-   - `supabase/migrations/0003_emit_invoice.sql`
+1. **Crear proyecto Supabase** (región UE). En _SQL Editor_ ejecuta **todas** las
+   migraciones de `supabase/migrations/` **en orden numérico**, de `0001` hasta la
+   última (actualmente `0031`). Esas migraciones son la fuente de verdad del esquema.
 2. **Variables de entorno**: copia `.env.example` a `.env.local` y rellena
    `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Settings → API).
 3. **Auth**: en Supabase → Authentication → URL Configuration, añade
@@ -36,7 +35,7 @@ Clientes · viajes · **generación de facturas a partir de viajes** · panel de
 
 ```
 app/                 Rutas (App Router)
-  (auth) login/ register/ auth/   Acceso (público)
+  login/ register/ auth/          Acceso (público)
   (app)/                          Área privada (protegida por middleware + layout)
 components/          UI reutilizable (sistema de diseño del mockup)
 lib/
@@ -45,7 +44,7 @@ lib/
   pdf/               Generación del PDF A4 (formato FACT/25-04)            [paso 4]
   format.ts          Formato es-ES (euros, fechas, redondeo a céntimo)
 supabase/migrations/ Esquema + RLS + función de emisión atómica
-reference/           Mockup, brief y factura de referencia (fuente de verdad)
+reference/           Mockup, brief y factura — material HISTÓRICO de arranque
 ```
 
 ## Seguridad (desde el día 1)

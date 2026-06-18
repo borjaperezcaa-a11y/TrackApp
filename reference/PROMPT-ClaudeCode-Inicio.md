@@ -1,5 +1,8 @@
 # Prompt de arranque para Claude Code — TrackApp (MVP web)
 
+> ⚠️ **DOCUMENTO HISTÓRICO.** Prompt original de arranque; algunos detalles ya no
+> reflejan el código actual. Se conserva como referencia del proyecto.
+
 > Mete en el repo, dentro de `/reference`, estos 3 ficheros antes de pegar el prompt:
 > - `trackapp-mockup.html` (diseño, estética y navegación)
 > - `BRIEF-TrackApp-ClaudeCode.md` (especificación completa + seguridad)

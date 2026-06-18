@@ -11,8 +11,10 @@ estar en la **UE**.
   proyecto en la UE antes de meter datos reales (no se puede mover después).
 
 ## 1. Aplicar las migraciones pendientes
-En Supabase → **SQL Editor**, pega y ejecuta en orden las que falten:
-`0019`, `0020`, `0021`, `0022` (de `supabase/migrations/`).
+En Supabase → **SQL Editor**, pega y ejecuta **en orden numérico** las que falten,
+de `supabase/migrations/`, hasta la última (actualmente `0031`). Críticas recientes:
+`0030` (corrige la numeración al migrar de facturación manual) y `0031` (descripción
+del porte en la factura).
 
 ## 2. Cerrar el registro (modo invitación)
 Dos opciones (con una basta; puedes poner las dos):

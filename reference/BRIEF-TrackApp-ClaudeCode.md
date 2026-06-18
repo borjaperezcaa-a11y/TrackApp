@@ -1,5 +1,10 @@
 # BRIEF DE CONSTRUCCIÓN — TrackApp (Android + iOS)
 
+> ⚠️ **DOCUMENTO HISTÓRICO / OBSOLETO.** Describe el planteamiento inicial (app
+> nativa Android+iOS en Flutter) que NO es lo que se construyó: TrackApp es una
+> **PWA web con Next.js**. Se conserva solo como referencia del arranque; no seguir
+> su stack ni su estructura.
+
 > Documento para entregar a **Claude Code**. Es la "fuente de la verdad" del producto.
 > Hay un prototipo web funcional en `/reference/` (HTML) que define la UX, el diseño y los flujos. Úsalo como referencia visual; este documento manda en caso de duda.
 
