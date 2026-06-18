@@ -134,19 +134,31 @@ export function InvoiceDetailClient({
     };
   }, [invoice.qr]);
 
-  // Verificación de la huella encadenada (recalculada en el cliente)
+  // Verificación de la huella encadenada (recalculada en el cliente).
   useEffect(() => {
-    const input: HuellaInput = {
+    const base: Omit<HuellaInput, "importeTotal"> = {
       emisorNif: em?.nif ?? "",
       numero: invoice.numero,
       fechaExpedicion: invoice.fecha,
       cuotaTotal: Number(invoice.iva),
-      importeTotal: Number(invoice.total),
       huellaAnterior: invoice.prev_hash,
       genTs: new Date(invoice.gen_ts),
       tipoFactura: invoice.tipo,
     };
-    verifyInvoice(input, invoice.huella).then(setVerified);
+    // El ImporteTotal del registro es base+IVA (conforme, FAQ20). Las facturas
+    // emitidas ANTES de la migración 0032 lo calcularon con base+IVA−IRPF (= total).
+    // Se acepta cualquiera de las dos: en ambos casos la cadena es íntegra.
+    const conforme = Number(invoice.base) + Number(invoice.iva);
+    let alive = true;
+    (async () => {
+      const ok =
+        (await verifyInvoice({ ...base, importeTotal: conforme }, invoice.huella)) ||
+        (await verifyInvoice({ ...base, importeTotal: Number(invoice.total) }, invoice.huella));
+      if (alive) setVerified(ok);
+    })();
+    return () => {
+      alive = false;
+    };
   }, [invoice, em]);
 
   function togglePaid() {
