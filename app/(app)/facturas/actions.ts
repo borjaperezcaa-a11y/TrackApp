@@ -26,7 +26,7 @@ const payloadSchema = z.object({
   irpfRate: z.number().min(0).max(100),
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha no válida"),
   formaPago: z.string().max(60),
-  lines: z.array(lineSchema).min(1, "La factura no tiene líneas"),
+  lines: z.array(lineSchema).min(1, "La factura no tiene líneas").max(500, "Demasiadas líneas en la factura"),
   emisor: z.object({
     nombre: str,
     nif: str,

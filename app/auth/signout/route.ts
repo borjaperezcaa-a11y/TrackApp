@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
-  // Anti-CSRF: solo aceptar la petición si viene del propio sitio.
+  // Anti-CSRF: solo aceptar la petición si viene del propio sitio. Falla CERRADO:
+  // si la cabecera no viene (cliente no estándar / petición forjada), se rechaza.
   const site = request.headers.get("sec-fetch-site");
-  if (site && site !== "same-origin" && site !== "same-site") {
+  if (site !== "same-origin" && site !== "same-site") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 

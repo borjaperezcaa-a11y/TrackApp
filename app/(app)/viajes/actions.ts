@@ -66,16 +66,20 @@ function porteRowFromDraft(
   const importe = num(String(d?.importe ?? ""));
   if (!Number.isFinite(importe) || importe <= 0) return { ok: false, error: "Cada porte necesita un importe mayor que 0." };
 
+  // Topes anti-abuso: máx. 30 paradas por lista y longitudes acotadas por parada.
   const asList = (x: unknown) =>
     Array.isArray(x)
-      ? x.map((s) => conCp((s as StopDraft)?.lugar, (s as StopDraft)?.cp)).filter((t): t is string => Boolean(t))
+      ? x
+          .slice(0, 30)
+          .map((s) => conCp((s as StopDraft)?.lugar?.slice(0, 120), (s as StopDraft)?.cp?.slice(0, 12)))
+          .filter((t): t is string => Boolean(t))
       : [];
   const origenes = asList(d?.origenes);
   const destinos = asList(d?.destinos);
   const origen = origenes.length ? origenes.join("\n") : fb.origen;
   const destino = destinos.length ? destinos.join("\n") : fb.destino;
 
-  const descripcion = String(d?.descripcion ?? "").trim() || null;
+  const descripcion = String(d?.descripcion ?? "").trim().slice(0, 300) || null;
   const pesoStr = String(d?.peso ?? "").trim();
   let peso: number | null = null;
   if (pesoStr !== "") {
@@ -112,6 +116,7 @@ export async function createViajeAction(_prev: TripState, formData: FormData): P
     return { error: "Portes no válidos." };
   }
   if (!Array.isArray(drafts) || drafts.length === 0) return { error: "Añade al menos un porte." };
+  if (drafts.length > 50) return { error: "Demasiados portes en un viaje (máximo 50)." };
 
   const rows: Record<string, unknown>[] = [];
   for (const d of drafts as Record<string, unknown>[]) {
@@ -119,6 +124,12 @@ export async function createViajeAction(_prev: TripState, formData: FormData): P
     if (!r.ok) return { error: r.error };
     rows.push(r.row);
   }
+
+  // Propiedad de los clientes: cada client_id referenciado debe ser del usuario
+  // (la FK solo comprueba que exista, no que sea suyo).
+  const clientIds = [...new Set(rows.map((r) => String(r.client_id)))];
+  const { data: ownedClients } = await supabase.from("clients").select("id").eq("user_id", user.id).in("id", clientIds);
+  if ((ownedClients?.length ?? 0) !== clientIds.length) return { error: "Algún cliente no es válido." };
 
   // 1) Viaje físico
   const { data: viaje, error: vErr } = await supabase
@@ -206,6 +217,9 @@ export async function addPorteAction(viajeId: string, _prev: TripState, formData
   const p = porteRowFromDraft(draft as Record<string, unknown>, { origen: viaje.origen, destino: viaje.destino });
   if (!p.ok) return { error: p.error };
 
+  const { data: oc } = await supabase.from("clients").select("id").eq("id", p.row.client_id as string).eq("user_id", user.id).maybeSingle();
+  if (!oc) return { error: "Cliente no válido." };
+
   const { error } = await supabase
     .from("trips")
     .insert({ ...p.row, fecha: viaje.fecha, viaje_id: viajeId, user_id: user.id, estado: "pendiente" });
@@ -250,6 +264,9 @@ export async function updatePorteAction(porteId: string, _prev: TripState, formD
   }
   const p = porteRowFromDraft(draft as Record<string, unknown>, fb);
   if (!p.ok) return { error: p.error };
+
+  const { data: oc } = await supabase.from("clients").select("id").eq("id", p.row.client_id as string).eq("user_id", user.id).maybeSingle();
+  if (!oc) return { error: "Cliente no válido." };
 
   // El .eq("estado","pendiente") evita pisar un porte que se facturara entremedias.
   const { error } = await supabase
