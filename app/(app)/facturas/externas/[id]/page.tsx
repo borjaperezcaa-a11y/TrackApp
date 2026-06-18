@@ -40,6 +40,7 @@ export default async function EditarFacturaExternaPage({ params }: { params: Pro
         <Link
           href={archivoUrl}
           target="_blank"
+          rel="noopener noreferrer"
           className="mb-3.5 inline-flex items-center gap-2 rounded-2xl border border-line bg-panel px-4 py-3 text-[13px] font-bold text-amber"
         >
           Ver archivo adjunto ›

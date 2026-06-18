@@ -30,7 +30,7 @@ function format1(n: number): string {
 async function embedLogo(pdf: PDFDocument, url?: string | null): Promise<PDFImage | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
     const bytes = new Uint8Array(await res.arrayBuffer());
     try {

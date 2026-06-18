@@ -22,6 +22,11 @@ function esc(s: unknown): string {
   );
 }
 
+/** Solo admite `data:` o `https:` en los src (logo/QR): evita inyección de atributo/SSRF. */
+function safeUrl(u: string | null): string {
+  return u && /^(data:|https:)/i.test(u) ? u : "";
+}
+
 /** Porcentaje legible: 10 → "10", 10.5 → "10,5" (sin decimales superfluos). */
 function pct(n: number): string {
   return Number(n).toLocaleString("es-ES", { maximumFractionDigits: 2 });
@@ -31,7 +36,7 @@ function pct(n: number): string {
 async function toDataUrl(url?: string | null): Promise<string | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {
@@ -190,7 +195,7 @@ function eleganteHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, q
 </style>
 <article class="invoice">
   <header class="masthead">
-    <div class="logo-slot">${logo ? `<img class="logo-img" src="${logo}" alt="logo">` : ""}</div>
+    <div class="logo-slot">${logo ? `<img class="logo-img" src="${safeUrl(logo)}" alt="logo">` : ""}</div>
     <div class="docmeta">
       <p class="wordmark">${esc(titulo)}</p>
       <dl class="meta">
@@ -232,7 +237,7 @@ function eleganteHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, q
     ${
       borrador
         ? `<div class="foot-text"><p class="eyebrow" style="color:#c0392b">Borrador · sin validez fiscal</p><p class="notice">Vista previa. La factura definitiva (con huella y QR Veri*factu) se genera al emitir.</p></div>`
-        : `${qr ? `<div class="qr-slot"><img class="qr-img" src="${qr}" alt="QR Veri*factu"></div>` : ""}
+        : `${qr ? `<div class="qr-slot"><img class="qr-img" src="${safeUrl(qr)}" alt="QR Veri*factu"></div>` : ""}
     <div class="foot-text">
       <p class="eyebrow">Huella Veri*factu (SHA-256)</p>
       <p class="hash">${esc(inv.huella ?? "")}</p>
@@ -314,7 +319,7 @@ function modernaHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr
 </style>
 <article class="invoice">
   <header class="band">
-    ${logo ? `<div class="logo-chip"><img class="logo-img" src="${logo}" alt="logo"></div>` : "<div></div>"}
+    ${logo ? `<div class="logo-chip"><img class="logo-img" src="${safeUrl(logo)}" alt="logo"></div>` : "<div></div>"}
     <div class="band-meta">
       <p class="wordmark">${esc(titulo)}</p>
       <div class="bmeta-row"><span class="k">Nº de factura</span><span class="v">${esc(inv.numero)}</span></div>
@@ -360,7 +365,7 @@ function modernaHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr
       ${
         borrador
           ? `<div class="foot-text"><p class="eyebrow" style="color:#c0392b">Borrador · sin validez fiscal</p><p class="notice">Vista previa. La factura definitiva (con huella y QR Veri*factu) se genera al emitir.</p></div>`
-          : `${qr ? `<div class="qr-chip"><img class="qr-img" src="${qr}" alt="QR Veri*factu"></div>` : ""}
+          : `${qr ? `<div class="qr-chip"><img class="qr-img" src="${safeUrl(qr)}" alt="QR Veri*factu"></div>` : ""}
       <div class="foot-text">
         <p class="eyebrow">Huella Veri*factu (SHA-256)</p>
         <p class="hash">${esc(inv.huella ?? "")}</p>

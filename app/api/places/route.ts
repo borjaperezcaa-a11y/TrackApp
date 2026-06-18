@@ -11,6 +11,10 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "No autenticado" }, { status: 401 });
 
+  // Rate-limit anti-abuso (autocompletado). Bloquea solo con false explícito.
+  const { data: rlOk } = await supabase.rpc("allow_api_call", { p_bucket: "places", p_per_min: 90 });
+  if (rlOk === false) return Response.json({ places: [] });
+
   if (!routingEnabled()) {
     return Response.json({ error: "El buscador de lugares no está configurado." }, { status: 503 });
   }

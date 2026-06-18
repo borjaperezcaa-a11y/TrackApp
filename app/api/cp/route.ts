@@ -28,6 +28,10 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "No autenticado" }, { status: 401 });
 
+  // Rate-limit anti-abuso de la cuota de GeoNames. Bloquea solo con false explícito.
+  const { data: rlOk } = await supabase.rpc("allow_api_call", { p_bucket: "cp", p_per_min: 40 });
+  if (rlOk === false) return Response.json({ error: "Demasiadas consultas. Espera un momento." }, { status: 429 });
+
   const username = process.env.GEONAMES_USERNAME;
   if (!username) return Response.json({ error: "GeoNames no configurado" }, { status: 503 });
 

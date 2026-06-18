@@ -15,6 +15,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "No autenticado" }, { status: 401 });
 
+  // Rate-limit anti-abuso de la cuota de OpenRouteService. Bloquea solo con un
+  // false explícito (fail-open si la RPC aún no está aplicada → no rompe la app).
+  const { data: rlOk } = await supabase.rpc("allow_api_call", { p_bucket: "distance", p_per_min: 30 });
+  if (rlOk === false) return Response.json({ error: "Demasiadas peticiones. Espera un momento." }, { status: 429 });
+
   if (!routingEnabled()) {
     return Response.json({ error: "El cálculo de ruta no está configurado." }, { status: 503 });
   }
