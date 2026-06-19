@@ -146,7 +146,28 @@ export function ProfileForm({
 
   return (
     <form action={formAction} className="stagger">
-      <div className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Factura</div>
+      <div className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Tus datos</div>
+      <Field label="Nombre o razón social" htmlFor="nombre">
+        <input id="nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu nombre o razón social" />
+      </Field>
+
+      <Field label="NIF / CIF" htmlFor="nif">
+        <input id="nif" name="nif" value={nif} onChange={(e) => setNif(e.target.value)} placeholder="Tu NIF o CIF" autoCapitalize="characters" />
+      </Field>
+
+      <Field label="Dirección" htmlFor="direccion">
+        <input id="direccion" name="direccion" value={direccion} onChange={(e) => setDireccion(e.target.value)} placeholder="Calle, número" />
+      </Field>
+
+      <Field label="CP y localidad" htmlFor="cp_localidad">
+        <input id="cp_localidad" name="cp_localidad" value={cpLocalidad} onChange={(e) => setCpLocalidad(e.target.value)} placeholder="CP y localidad" />
+      </Field>
+
+      <Field label="IBAN" htmlFor="iban">
+        <input id="iban" name="iban" value={iban} onChange={(e) => setIban(e.target.value)} placeholder="ES00 0000 0000 0000 0000 0000" autoCapitalize="characters" />
+      </Field>
+
+      <div className="mb-2 mt-5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Factura</div>
       <Card className="mb-3.5">
         <div className="flex items-center gap-4">
           <div className="grid h-20 w-20 flex-none place-items-center overflow-hidden rounded-2xl border border-line bg-panel2 text-dim">
@@ -235,27 +256,6 @@ export function ProfileForm({
         </div>
         <input type="hidden" name="factura_plantilla" value={plantilla} />
       </Card>
-
-      <div className="mb-2 mt-5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Tus datos</div>
-      <Field label="Nombre o razón social" htmlFor="nombre">
-        <input id="nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu nombre o razón social" />
-      </Field>
-
-      <Field label="NIF / CIF" htmlFor="nif">
-        <input id="nif" name="nif" value={nif} onChange={(e) => setNif(e.target.value)} placeholder="Tu NIF o CIF" autoCapitalize="characters" />
-      </Field>
-
-      <Field label="Dirección" htmlFor="direccion">
-        <input id="direccion" name="direccion" value={direccion} onChange={(e) => setDireccion(e.target.value)} placeholder="Calle, número" />
-      </Field>
-
-      <Field label="CP y localidad" htmlFor="cp_localidad">
-        <input id="cp_localidad" name="cp_localidad" value={cpLocalidad} onChange={(e) => setCpLocalidad(e.target.value)} placeholder="CP y localidad" />
-      </Field>
-
-      <Field label="IBAN" htmlFor="iban">
-        <input id="iban" name="iban" value={iban} onChange={(e) => setIban(e.target.value)} placeholder="ES00 0000 0000 0000 0000 0000" autoCapitalize="characters" />
-      </Field>
 
       <div className="mb-2 mt-5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Impuestos por defecto</div>
       {/* IVA por defecto (chips) */}
