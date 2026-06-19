@@ -24,10 +24,12 @@ function buildCsp(nonce: string): string {
     "frame-ancestors 'none'",
     "form-action 'self'",
     "img-src 'self' data: blob: https://*.supabase.co",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    // challenges.cloudflare.com: necesario para el CAPTCHA Turnstile (script + iframe + red).
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co",
+    "connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com",
+    "frame-src https://challenges.cloudflare.com",
     "worker-src 'self'",
     "manifest-src 'self'",
   ].join("; ");
