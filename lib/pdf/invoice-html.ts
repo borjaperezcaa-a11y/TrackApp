@@ -377,6 +377,150 @@ function modernaHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr
 </article>`;
 }
 
+// ── plantilla TRACKAPP en HTML (solo para la previsualización de estilos) ─────
+// El PDF real de "trackapp" se genera con pdf-lib (invoice-pdf.ts); esta versión
+// HTML existe únicamente para renderizar la imagen de muestra en el comparador.
+function trackappHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, qr: string | null): string {
+  const em = inv.emisor_snapshot ?? ({} as Invoice["emisor_snapshot"]);
+  const cl = inv.cliente_snapshot ?? ({} as Invoice["cliente_snapshot"]);
+  const linea = (x: string | null | undefined) => (x ? `<div class="em-line">${esc(x)}</div>` : "");
+  return `<style>
+.invoice{--ink:#1a1a1f;--gray:#73737a;--line:#d4d4d8;--head:#ededee;--amber:#E8920C;--font:'Archivo',system-ui,Arial,sans-serif;--display:'Saira Condensed','Archivo',sans-serif;}
+.invoice *{box-sizing:border-box;}
+.invoice{width:210mm;min-height:297mm;background:#fff;color:var(--ink);font-family:var(--font);padding:14mm 12mm;font-size:12px;}
+.invoice .top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;}
+.invoice .em-name{font-weight:700;font-size:16px;}
+.invoice .em-line{color:var(--gray);font-size:11px;margin-top:2px;}
+.invoice .logo{max-width:46mm;max-height:20mm;object-fit:contain;}
+.invoice .title{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.04em;margin:14px 0 6px;}
+.invoice .hr{height:1px;background:var(--line);margin:6px 0 14px;}
+.invoice .cols{display:flex;justify-content:space-between;gap:24px;}
+.invoice .eyebrow{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);}
+.invoice .cl-name{font-weight:700;margin-top:5px;}
+.invoice .meta{min-width:64mm;}
+.invoice .meta-row{display:flex;justify-content:space-between;gap:18px;padding:2px 0;font-size:11px;}
+.invoice .meta-k{color:var(--gray);}
+.invoice .meta-v{font-weight:600;font-variant-numeric:tabular-nums;}
+.invoice table{width:100%;border-collapse:collapse;margin-top:16px;}
+.invoice thead th{background:var(--head);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-align:left;padding:7px 8px;}
+.invoice tbody td{font-size:11px;padding:9px 8px;border-bottom:1px solid #ececee;vertical-align:top;}
+.invoice th.num,.invoice td.num{text-align:right;}
+.invoice td.amount{font-weight:700;}
+.invoice .totals{display:flex;justify-content:flex-end;margin-top:18px;}
+.invoice .totals-box{width:84mm;}
+.invoice .t-row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;}
+.invoice .t-k{color:var(--gray);}
+.invoice .t-grand{display:flex;justify-content:space-between;align-items:center;background:var(--head);border-radius:4px;padding:9px 12px;margin-top:8px;}
+.invoice .t-grand .k{font-weight:700;}
+.invoice .t-grand .v{font-family:var(--display);font-weight:700;font-size:18px;color:var(--amber);}
+.invoice .foot{display:flex;gap:14px;align-items:flex-start;margin-top:24px;padding-top:12px;border-top:1px solid var(--line);}
+.invoice .qr{width:24mm;height:24mm;object-fit:contain;}
+.invoice .hash{font-family:Consolas,'Courier New',monospace;font-size:8.5px;color:var(--gray);word-break:break-all;}
+.invoice .notice{font-size:8.5px;color:var(--gray);margin-top:6px;}
+</style>
+<article class="invoice">
+  <div class="top">
+    <div>
+      <div class="em-name">${esc(em?.nombre ?? "")}</div>
+      ${[em?.nif, em?.direccion, em?.cp_localidad].map(linea).join("")}
+    </div>
+    ${logo ? `<img class="logo" src="${logo}" alt="logo">` : ""}
+  </div>
+  <div class="title">FACTURA</div>
+  <div class="hr"></div>
+  <div class="cols">
+    <div>
+      <div class="eyebrow">Cliente</div>
+      <div class="cl-name">${esc(cl?.nombre ?? "")}</div>
+      ${[cl?.nif, cl?.direccion, cl?.cp_localidad].map(linea).join("")}
+    </div>
+    <div class="meta">
+      <div class="meta-row"><span class="meta-k">Nº Factura</span><span class="meta-v">${esc(inv.numero)}</span></div>
+      <div class="meta-row"><span class="meta-k">Fecha</span><span class="meta-v">${esc(dateES(inv.fecha))}</span></div>
+      <div class="meta-row"><span class="meta-k">F. de pago</span><span class="meta-v">${esc(inv.forma_pago)}</span></div>
+      ${em?.iban ? `<div class="meta-row"><span class="meta-k">IBAN</span><span class="meta-v">${esc(em.iban)}</span></div>` : ""}
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Fecha</th><th>Origen</th><th>Destino</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Importe</th></tr></thead>
+    <tbody>${lines
+      .map(
+        (ln) => `<tr><td>${esc(ln.fecha ? dateES(ln.fecha) : "")}</td><td>${multilinea(ln.origen)}</td><td>${multilinea(ln.destino)}</td><td class="num">${esc(amount(ln.cantidad))}</td><td class="num">${esc(amount(ln.precio))}</td><td class="num amount">${esc(amount(ln.importe))}</td></tr>`,
+      )
+      .join("")}</tbody>
+  </table>
+  <div class="totals"><div class="totals-box">
+    <div class="t-row"><span class="t-k">Base imponible</span><span>${esc(amount(inv.base))} €</span></div>
+    <div class="t-row"><span class="t-k">IVA (${pct(inv.iva_rate)}%)</span><span>${esc(amount(inv.iva))} €</span></div>
+    ${inv.irpf > 0 ? `<div class="t-row"><span class="t-k">Retención IRPF (${pct(inv.irpf_rate)}%)</span><span>−${esc(amount(inv.irpf))} €</span></div>` : ""}
+    <div class="t-grand"><span class="k">Total Factura</span><span class="v">${esc(eur(inv.total))}</span></div>
+  </div></div>
+  <div class="foot">
+    ${qr ? `<img class="qr" src="${qr}" alt="QR">` : ""}
+    <div>
+      <div class="eyebrow">Huella Veri*factu (SHA-256)</div>
+      <div class="hash">${esc(inv.huella ?? "")}</div>
+      <div class="notice">${esc(NOTICE)}</div>
+    </div>
+  </div>
+</article>`;
+}
+
+// Factura de ejemplo para el comparador de estilos (sin logo ni QR externos).
+const PREVIEW_INVOICE = {
+  numero: "FACT/26-08",
+  fecha: "2026-06-16",
+  forma_pago: "Transferencia",
+  tipo: "F1",
+  base: 1300,
+  iva_rate: 10,
+  iva: 130,
+  irpf_rate: 1,
+  irpf: 13,
+  total: 1417,
+  huella: "394107E646DC0964947851C57D3C90E5C13F79F5D8FA3E013C10881AF97EC817",
+  qr: null,
+  emisor_snapshot: {
+    nombre: "Paloma Pérez",
+    nif: "12345678Z",
+    direccion: "Calle Medina 11",
+    cp_localidad: "36001 Pontevedra",
+    iban: "ES91 2100 0418 4502 0005 1332",
+    logo_url: null,
+  },
+  cliente_snapshot: { nombre: "Transportes García, S.L.", nif: "87654321X", direccion: "Calle Maldonado", cp_localidad: "30100 Murcia" },
+} as unknown as Invoice;
+const PREVIEW_LINES = [
+  { fecha: "2026-06-16", origen: "Pontevedra", destino: "Irún", cantidad: 1, precio: 800, importe: 800 },
+  { fecha: "2026-06-16", origen: "Vigo", destino: "Madrid", cantidad: 1, precio: 500, importe: 500 },
+] as unknown as InvoiceLine[];
+
+function htmlForPreview(template: FacturaPlantilla): string {
+  if (template === "moderna") return modernaHtml(PREVIEW_INVOICE, PREVIEW_LINES, null, null, false);
+  if (template === "elegante") return eleganteHtml(PREVIEW_INVOICE, PREVIEW_LINES, null, null, false);
+  return trackappHtml(PREVIEW_INVOICE, PREVIEW_LINES, null, null);
+}
+
+/**
+ * Renderiza la factura de EJEMPLO de un estilo a una imagen PNG (data URL), para
+ * el comparador de estilos del perfil. Solo navegador (html2canvas en diferido).
+ */
+export async function renderStylePreview(template: FacturaPlantilla): Promise<string> {
+  const html2canvas = (await import("html2canvas")).default;
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-10000px;top:0;background:#fff;z-index:-1;";
+  host.innerHTML = htmlForPreview(template);
+  document.body.appendChild(host);
+  try {
+    await ensureFonts(template === "moderna" ? "moderna" : "elegante");
+    const el = host.querySelector(".invoice") as HTMLElement;
+    const canvas = await html2canvas(el, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false });
+    return canvas.toDataURL("image/png");
+  } finally {
+    document.body.removeChild(host);
+  }
+}
+
 // ── render HTML → PDF ─────────────────────────────────────────────────────────
 export async function buildHtmlPdf(
   invoice: Invoice,

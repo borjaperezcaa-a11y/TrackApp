@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { Cta } from "@/components/ui/Cta";
 import { Icon } from "@/components/ui/Icon";
+import { StylePreview } from "@/components/ui/StylePreview";
 import { clsx } from "@/lib/clsx";
 import { saveProfile, setPlantillaAction, type ProfileState } from "./actions";
 
@@ -89,6 +90,7 @@ export function ProfileForm({
   const [plantilla, setPlantilla] = useState<Plantilla>(values.factura_plantilla);
   const [savingPlantilla, startPlantilla] = useTransition();
   const [plantillaSaved, setPlantillaSaved] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // Cambia el estilo y lo GUARDA al instante (no hace falta pulsar "Guardar datos").
   function elegirPlantilla(t: Plantilla) {
@@ -99,32 +101,6 @@ export function ProfileForm({
       const r = await setPlantillaAction(t);
       if (r.ok) setPlantillaSaved(true);
     });
-  }
-
-  // Previsualiza una plantilla descargando un PDF de EJEMPLO con nombre claro
-  // (EJ-FACT-CLASICA / EJ-FACT-MODERNA / EJ-FACT-TRACKAPP) para distinguirlo de
-  // una factura real. Al abrirlo se ve el estilo.
-  async function previewPlantilla(t: Plantilla) {
-    const NAMES: Record<Plantilla, string> = {
-      trackapp: "TRACKAPP",
-      elegante: "CLASICA",
-      moderna: "MODERNA",
-    };
-    try {
-      const { buildInvoicePdf, sampleInvoice } = await import("@/lib/pdf/invoice-pdf");
-      const { invoice, lines } = sampleInvoice(logoUrl || null);
-      const bytes = await buildInvoicePdf(invoice, lines, t);
-      const url = URL.createObjectURL(new Blob([bytes as unknown as BlobPart], { type: "application/pdf" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `EJ-FACT-${NAMES[t]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch {
-      /* ignore */
-    }
   }
 
   const [iva, setIva] = useState<number>(values.iva_def);
@@ -250,10 +226,10 @@ export function ProfileForm({
             <p className="px-0.5 text-xs text-dim">El estilo se aplica al instante a tus PDFs.</p>
             <button
               type="button"
-              onClick={() => previewPlantilla(plantilla)}
+              onClick={() => setPreviewOpen(true)}
               className="inline-flex flex-none items-center gap-1 text-[12.5px] font-bold text-amber"
             >
-              <Icon name="doc" size={13} /> Ver ejemplo
+              <Icon name="doc" size={13} /> Ver ejemplos
             </button>
           </div>
         </div>
@@ -384,6 +360,8 @@ export function ProfileForm({
       )}
 
       <Cta icon="save">GUARDAR DATOS</Cta>
+
+      <StylePreview open={previewOpen} onClose={() => setPreviewOpen(false)} current={plantilla} />
     </form>
   );
 }
