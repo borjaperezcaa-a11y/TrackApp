@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { Cta } from "@/components/ui/Cta";
 import { Icon } from "@/components/ui/Icon";
 import { clsx } from "@/lib/clsx";
-import { saveProfile, type ProfileState } from "./actions";
+import { saveProfile, setPlantillaAction, type ProfileState } from "./actions";
 
 /**
  * Convierte cualquier imagen (PNG/JPG/WebP) a PNG vía canvas. pdf-lib solo sabe
@@ -87,6 +87,19 @@ export function ProfileForm({
   const [serie, setSerie] = useState(values.serie);
   const [numInicial, setNumInicial] = useState(String(values.num_inicial || ""));
   const [plantilla, setPlantilla] = useState<Plantilla>(values.factura_plantilla);
+  const [savingPlantilla, startPlantilla] = useTransition();
+  const [plantillaSaved, setPlantillaSaved] = useState(false);
+
+  // Cambia el estilo y lo GUARDA al instante (no hace falta pulsar "Guardar datos").
+  function elegirPlantilla(t: Plantilla) {
+    if (t === plantilla) return;
+    setPlantilla(t);
+    setPlantillaSaved(false);
+    startPlantilla(async () => {
+      const r = await setPlantillaAction(t);
+      if (r.ok) setPlantillaSaved(true);
+    });
+  }
 
   // Previsualiza una plantilla descargando un PDF de EJEMPLO con nombre claro
   // (EJ-FACT-CLASICA / EJ-FACT-MODERNA / EJ-FACT-TRACKAPP) para distinguirlo de
@@ -208,16 +221,18 @@ export function ProfileForm({
         <input type="hidden" name="logo_url" value={logoUrl} />
 
         <div className="mt-4 border-t border-line pt-3.5">
-          <div className="mb-2 text-sm font-bold">Estilo de factura</div>
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-bold">Estilo de factura</div>
+            {plantillaSaved && !savingPlantilla && (
+              <span className="text-[11px] font-bold text-green">Guardado ✓</span>
+            )}
+          </div>
           <div className="grid grid-cols-3 gap-2">
             {PLANTILLAS.map((p) => (
               <button
                 key={p.id}
                 type="button"
-                onClick={() => {
-                  setPlantilla(p.id);
-                  previewPlantilla(p.id);
-                }}
+                onClick={() => elegirPlantilla(p.id)}
                 aria-pressed={plantilla === p.id}
                 className={clsx(
                   "rounded-xl border-[1.5px] px-2 py-3 text-center transition-all active:scale-[0.97]",
@@ -225,13 +240,22 @@ export function ProfileForm({
                 )}
               >
                 <span className="block text-[12.5px] font-bold">{p.label}</span>
-                <span className="mt-0.5 block text-[10px] font-medium text-dim">Ver ejemplo</span>
+                <span className="mt-0.5 block text-[10px] font-medium text-dim">
+                  {plantilla === p.id ? (savingPlantilla ? "Guardando…" : "Activo") : ""}
+                </span>
               </button>
             ))}
           </div>
-          <p className="mt-1.5 px-0.5 text-xs text-dim">
-            Toca un estilo para previsualizarlo. El elegido se usará en tus PDFs.
-          </p>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="px-0.5 text-xs text-dim">El estilo se aplica al instante a tus PDFs.</p>
+            <button
+              type="button"
+              onClick={() => previewPlantilla(plantilla)}
+              className="inline-flex flex-none items-center gap-1 text-[12.5px] font-bold text-amber"
+            >
+              <Icon name="doc" size={13} /> Ver ejemplo
+            </button>
+          </div>
         </div>
         <input type="hidden" name="factura_plantilla" value={plantilla} />
       </Card>

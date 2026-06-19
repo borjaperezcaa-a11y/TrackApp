@@ -44,6 +44,23 @@ const profileSchema = z.object({
 
 export type ProfileState = { error?: string; ok?: boolean; message?: string };
 
+/** Guarda al instante el estilo de factura (sin tener que pulsar "Guardar datos"). */
+export async function setPlantillaAction(
+  plantilla: "trackapp" | "elegante" | "moderna",
+): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión expirada." };
+  const valid = (["trackapp", "elegante", "moderna"] as const).includes(plantilla) ? plantilla : "trackapp";
+  const { error } = await supabase.from("profiles").update({ factura_plantilla: valid }).eq("user_id", user.id);
+  if (error) return { error: "No se pudo guardar el estilo." };
+  revalidatePath("/ajustes/perfil");
+  revalidatePath("/facturas");
+  return { ok: true };
+}
+
 export async function saveProfile(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
   const supabase = await createClient();
   const {
