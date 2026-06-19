@@ -33,7 +33,9 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  // Token del CAPTCHA (Turnstile) si está activo; si no, va undefined y Supabase lo ignora.
+  const captchaToken = formData.get("cf-turnstile-response")?.toString() || undefined;
+  const { error } = await supabase.auth.signInWithPassword({ ...parsed.data, options: { captchaToken } });
   if (error) {
     return { error: "Email o contraseña incorrectos." };
   }
@@ -66,9 +68,10 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
 
   const supabase = await createClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const captchaToken = formData.get("cf-turnstile-response")?.toString() || undefined;
   const { error } = await supabase.auth.signUp({
     ...parsed.data,
-    options: { emailRedirectTo: `${siteUrl}/auth/callback` },
+    options: { emailRedirectTo: `${siteUrl}/auth/callback`, captchaToken },
   });
   // Mensaje neutro: no revelamos si el email ya existía (anti-enumeración).
   if (error) {

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { Turnstile } from "@/components/ui/Turnstile";
 import { register, type AuthState } from "../login/actions";
 
 const initial: AuthState = {};
@@ -47,6 +48,8 @@ export default function RegisterPage() {
               {state.message}
             </p>
           )}
+
+          <Turnstile />
 
           <button
             type="submit"
