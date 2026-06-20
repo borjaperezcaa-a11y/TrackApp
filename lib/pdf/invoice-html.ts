@@ -549,14 +549,20 @@ export async function buildHtmlPdf(
     await ensureFonts(template);
     const el = host.querySelector(".invoice") as HTMLElement;
 
-    // Paginación: el pie (QR + huella) está anclado al fondo del documento con
-    // margin-top:auto, pero al fondo del CONTENIDO. Si los portes hacen que el
-    // contenido pase de una página por poco, el pie caía flotando arriba de la
-    // página siguiente. Fijamos la altura a un nº ENTERO de páginas A4 para que
-    // el pie caiga SIEMPRE al fondo de la última página.
+    // Paginación. El pie (QR + huella) está anclado al fondo del documento
+    // (margin-top:auto), pero al fondo del CONTENIDO. Dos ajustes:
+    //  · Si el contenido se pasa de una página por POCO (≤ ~12 %), encogemos un
+    //    pelín (uniforme, el QR sigue cuadrado) para que quepa en una página
+    //    menos y no quede una última página casi en blanco.
+    //  · Si de verdad necesita varias páginas, fijamos la altura a un nº ENTERO
+    //    de páginas para que el pie caiga al fondo de la última (no flotando
+    //    arriba de la siguiente).
     const pageHpx = (el.offsetWidth * 297) / 210; // alto de 1 página A4 al ancho renderizado
-    const numPages = Math.max(1, Math.ceil(el.offsetHeight / pageHpx - 0.02));
-    el.style.height = `${numPages * pageHpx}px`;
+    const rawPages = el.offsetHeight / pageHpx;
+    let numPages = Math.max(1, Math.ceil(rawPages - 0.02));
+    const shrink = numPages > 1 && (numPages - 1) / rawPages >= 0.88; // cabe encogiendo ≤ ~12 %
+    if (shrink) numPages -= 1;
+    else el.style.height = `${numPages * pageHpx}px`;
 
     const canvas = await html2canvas(el, {
       scale: 2,
@@ -571,10 +577,14 @@ export async function buildHtmlPdf(
     const imgH = (canvas.height * pw) / canvas.width;
     const img = canvas.toDataURL("image/png");
 
-    // Una sola imagen troceada en numPages páginas A4 (cada página desplaza -ph).
+    // Render: en modo "encoger" se escala uniforme (QR cuadrado) y se centra;
+    // si no, ocupa todo el ancho con la altura ya ajustada a páginas enteras.
+    const totalH = shrink ? numPages * ph : imgH;
+    const w = shrink ? (pw * numPages * ph) / imgH : pw;
+    const x = (pw - w) / 2;
     for (let p = 0; p < numPages; p++) {
       if (p > 0) pdf.addPage();
-      pdf.addImage(img, "PNG", 0, -p * ph, pw, imgH);
+      pdf.addImage(img, "PNG", x, -p * ph, w, totalH);
     }
     return new Uint8Array(pdf.output("arraybuffer"));
   } finally {
