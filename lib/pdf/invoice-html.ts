@@ -548,6 +548,16 @@ export async function buildHtmlPdf(
   try {
     await ensureFonts(template);
     const el = host.querySelector(".invoice") as HTMLElement;
+
+    // Paginación: el pie (QR + huella) está anclado al fondo del documento con
+    // margin-top:auto, pero al fondo del CONTENIDO. Si los portes hacen que el
+    // contenido pase de una página por poco, el pie caía flotando arriba de la
+    // página siguiente. Fijamos la altura a un nº ENTERO de páginas A4 para que
+    // el pie caiga SIEMPRE al fondo de la última página.
+    const pageHpx = (el.offsetWidth * 297) / 210; // alto de 1 página A4 al ancho renderizado
+    const numPages = Math.max(1, Math.ceil(el.offsetHeight / pageHpx - 0.02));
+    el.style.height = `${numPages * pageHpx}px`;
+
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
@@ -561,20 +571,10 @@ export async function buildHtmlPdf(
     const imgH = (canvas.height * pw) / canvas.width;
     const img = canvas.toDataURL("image/png");
 
-    if (imgH <= ph + 1) {
-      pdf.addImage(img, "PNG", 0, 0, pw, imgH);
-    } else {
-      // Factura larga: trocear la imagen en páginas A4.
-      let pos = 0;
-      let remaining = imgH;
-      pdf.addImage(img, "PNG", 0, 0, pw, imgH);
-      remaining -= ph;
-      while (remaining > 0) {
-        pos -= ph;
-        pdf.addPage();
-        pdf.addImage(img, "PNG", 0, pos, pw, imgH);
-        remaining -= ph;
-      }
+    // Una sola imagen troceada en numPages páginas A4 (cada página desplaza -ph).
+    for (let p = 0; p < numPages; p++) {
+      if (p > 0) pdf.addPage();
+      pdf.addImage(img, "PNG", 0, -p * ph, pw, imgH);
     }
     return new Uint8Array(pdf.output("arraybuffer"));
   } finally {
