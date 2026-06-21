@@ -110,7 +110,7 @@ export default async function HomePage({
   const hasTrips = (tripData ?? []).length > 0;
   const hasInvoices = (invData ?? []).length > 0;
   const onboardingSteps = [
-    { label: "Completa tus datos fiscales", href: "/ajustes/perfil", done: profileComplete },
+    { label: "Completa tus datos fiscales", href: "/ajustes/datos", done: profileComplete },
     { label: "Crea tu primer cliente", href: "/clientes/nuevo", done: hasClients },
     { label: "Registra tu primer viaje", href: "/viajes/nuevo", done: hasTrips },
     { label: "Emite tu primera factura", href: "/facturas/nueva", done: hasInvoices },
@@ -132,7 +132,7 @@ export default async function HomePage({
     { key: "ingresos", icon: "income", label: "Ingresos", note: "Apunta a mano", color: "var(--green)", href: "/ingresos" },
     { key: "gastos", icon: "euro", label: "Gastos", note: monthPoint.gastos > 0 ? `${eur(monthPoint.gastos)} mes` : "Escanea un ticket", color: "var(--red)", href: "/gastos" },
     { key: "stats", icon: "chart", label: "Estadísticas", note: `${eur(monthPoint.beneficio)} mes`, color: "var(--amber)", href: "/estadisticas" },
-    { key: "ajustes", icon: "user", label: "Mi Perfil", note: "Datos de emisor", color: "var(--dim)", href: "/ajustes/perfil" },
+    { key: "perfil", icon: "user", label: "Mi perfil", note: "Tus datos y logo", color: "var(--dim)", href: "/ajustes/datos" },
   ];
 
   return (

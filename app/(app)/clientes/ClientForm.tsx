@@ -67,7 +67,7 @@ export function ClientForm({
       </Field>
 
       {state.error && (
-        <p className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
+        <p role="alert" className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
           {state.error}
         </p>
       )}

@@ -22,6 +22,9 @@ const schema = z.object({
   cobrada: z.boolean(),
   archivo_path: z.string().max(500).nullable(),
   notas: z.string().trim().max(500).nullable(),
+}).refine((d) => Math.abs(d.total - (d.base + d.iva - d.irpf)) <= 0.01, {
+  message: "El total no cuadra: debe ser base + IVA − IRPF.",
+  path: ["total"],
 });
 
 export type ExternalInvoicePayload = z.infer<typeof schema>;

@@ -33,7 +33,7 @@ const payloadSchema = z.object({
     direccion: str,
     cp_localidad: str,
     iban: str,
-    logo_url: z.string().max(500),
+    logo_url: z.string().max(500).refine((v) => v === "" || /^https:\/\//i.test(v), "URL de logo no válida"),
   }),
   cliente: z.object({
     nombre: str,

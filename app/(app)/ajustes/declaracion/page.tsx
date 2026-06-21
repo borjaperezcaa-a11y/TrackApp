@@ -9,7 +9,7 @@ export default function DeclaracionPage() {
 
   return (
     <>
-      <PageHeader title="Declaración responsable" kicker="Verifactu · Art. 13" fallbackHref="/ajustes/perfil" />
+      <PageHeader title="Declaración responsable" kicker="Verifactu · Art. 13" fallbackHref="/ajustes" />
 
       {!s.cumpleIntegramente && (
         <p className="mb-3.5 rounded-2xl border border-amber-line bg-amber-soft px-4 py-3 text-[12.5px] font-semibold text-amber">

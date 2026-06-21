@@ -22,15 +22,16 @@ export default function RegisterPage() {
           action={formAction}
           className="rounded-[20px] border border-line bg-panel p-5 shadow-[var(--shadow)]"
         >
-          <label className="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.1em] text-dim">
+          <label htmlFor="email" className="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.1em] text-dim">
             Email
           </label>
-          <input name="email" type="email" autoComplete="email" required className="mb-4" />
+          <input id="email" name="email" type="email" autoComplete="email" required className="mb-4" />
 
-          <label className="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.1em] text-dim">
+          <label htmlFor="password" className="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.1em] text-dim">
             Contraseña
           </label>
           <input
+            id="password"
             name="password"
             type="password"
             autoComplete="new-password"
@@ -39,12 +40,12 @@ export default function RegisterPage() {
           />
 
           {state.error && (
-            <p className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
+            <p role="alert" className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
               {state.error}
             </p>
           )}
           {state.message && (
-            <p className="mb-3 rounded-xl bg-green-soft px-3 py-2 text-sm font-semibold text-green">
+            <p role="status" className="mb-3 rounded-xl bg-green-soft px-3 py-2 text-sm font-semibold text-green">
               {state.message}
             </p>
           )}

@@ -10,7 +10,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:rls": "vitest run tests/rls-isolation.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",

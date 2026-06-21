@@ -13,6 +13,7 @@ export default async function NuevaFacturaPage() {
     { data: clientsData, error: clientsErr },
     { data: tripsData, error: tripsErr },
     { count: emittedCount },
+    { data: clausulaRow },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -25,6 +26,8 @@ export default async function NuevaFacturaPage() {
       .eq("estado", "pendiente")
       .order("fecha"),
     supabase.from("invoices").select("id", { count: "exact", head: true }),
+    // Cláusula aparte: degrada a vacío si la migración 0037 aún no está aplicada.
+    supabase.from("profiles").select("clausula_activa, clausula_texto").maybeSingle(),
   ]);
 
   // Si aún no hay ninguna factura, esta sería la PRIMERA: avisaremos de que la
@@ -77,6 +80,7 @@ export default async function NuevaFacturaPage() {
         esPrimeraFactura={esPrimeraFactura}
         serie={serie}
         facturaPlantilla={(profile?.factura_plantilla as "trackapp" | "elegante" | "moderna") ?? "trackapp"}
+        clausula={clausulaRow?.clausula_activa ? (clausulaRow?.clausula_texto ?? "") : ""}
       />
     </>
   );

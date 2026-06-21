@@ -1,10 +1,7 @@
 /**
- * Genera el PDF A4 de una factura. 3 plantillas seleccionables:
- *   - trackapp : la original (tabla de portes, acento ámbar). pdf-lib vectorial,
- *                funciona también en Node (tests).
- *   - elegante : "Clásica" — render fiel del HTML (ver invoice-html.ts).
- *   - moderna  : render fiel del HTML (ver invoice-html.ts).
- * Las plantillas HTML solo corren en navegador (html2canvas+jspdf en diferido).
+ * Genera el PDF A4 de una factura. Un único estilo: TrackApp (tabla de portes,
+ * acento ámbar, marca del producto al pie). Vectorial con pdf-lib, así que también
+ * funciona en Node (tests).
  */
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type RGB } from "pdf-lib";
 import QRCode from "qrcode";
@@ -81,28 +78,16 @@ function wrap(s: string, f: PDFFont, size: number, maxW: number): string[] {
   return out;
 }
 
-const TERMS =
-  "La presente factura se entenderá aceptada en el momento de su cobro salvo que de forma " +
-  "expresa sea rechazada en el plazo de 15 días contados desde su recepción.";
-
 // ════════════════════════════════════════════════════════════════════════════
 // Dispatcher
 // ════════════════════════════════════════════════════════════════════════════
 export async function buildInvoicePdf(
   invoice: Invoice,
   lines: InvoiceLine[],
-  template: FacturaPlantilla = "trackapp",
-  opts: { borrador?: boolean } = {},
+  _template: FacturaPlantilla = "trackapp", // ya no hay estilos: todas usan TrackApp
+  opts: { borrador?: boolean; clausula?: string | null } = {},
 ): Promise<Uint8Array> {
-  const borrador = opts.borrador ?? false;
-  // Clásica/Moderna: render fiel del HTML original (solo navegador). Las
-  // librerías html2canvas+jspdf se cargan en diferido dentro de buildHtmlPdf.
-  if (template === "elegante" || template === "moderna") {
-    const { buildHtmlPdf } = await import("./invoice-html");
-    return buildHtmlPdf(invoice, lines, template, borrador);
-  }
-  // TrackApp: vectorial con pdf-lib (también funciona en Node, para los tests).
-  return buildTrackApp(invoice, lines, borrador);
+  return buildTrackApp(invoice, lines, opts.borrador ?? false, (opts.clausula ?? "").trim());
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -123,7 +108,12 @@ const COLS = {
   importe: { x: M + 460, w: W - M - (M + 460) },
 };
 
-async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = false): Promise<Uint8Array> {
+async function buildTrackApp(
+  invoice: Invoice,
+  lines: InvoiceLine[],
+  borrador = false,
+  clausula = "",
+): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([W, H]);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -238,10 +228,13 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
 
   ty += 24;
   const blockTop = ty;
-  let ny = blockTop;
-  for (const line of wrap(TERMS, font, 8, W - 2 * M - 250)) {
-    text(line, M, ny, { size: 8, color: GRAY });
-    ny += 11;
+  // Cláusula de condiciones (texto del usuario; vacía = no se imprime).
+  if (clausula) {
+    let ny = blockTop;
+    for (const line of wrap(clausula, font, 8, W - 2 * M - 250)) {
+      text(line, M, ny, { size: 8, color: GRAY });
+      ny += 11;
+    }
   }
 
   const baseIva = invoice.base + invoice.iva;
@@ -258,10 +251,13 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
   text(amount(invoice.iva), tx + 150, tot, { size: 9, align: "right", w: 40 });
   text(amount(baseIva), tx + 190, tot, { size: 9, font: bold, align: "right", w: 50 });
   tot += 16;
-  hline(tot - 4, tx, W - M);
-  text(`Retención I.R.P.F.  ${format1(invoice.irpf_rate)}%`, tx, tot + 8, { size: 8.5, color: GRAY });
-  text(`-${amount(invoice.irpf)}`, tx, tot + 8, { size: 9, align: "right", w: tw });
-  tot += 24;
+  // La retención solo se muestra si la hay (coherente con las plantillas HTML).
+  if (invoice.irpf > 0) {
+    hline(tot - 4, tx, W - M);
+    text(`Retención I.R.P.F.  ${format1(invoice.irpf_rate)}%`, tx, tot + 8, { size: 8.5, color: GRAY });
+    text(`-${amount(invoice.irpf)}`, tx, tot + 8, { size: 9, align: "right", w: tw });
+    tot += 24;
+  }
   page.drawRectangle({ x: tx, y: H - tot - 9, width: tw, height: 22, color: HEADBG });
   text("Total Factura", tx + 6, tot + 6, { font: bold, size: 10 });
   text(eur(invoice.total), tx, tot + 6, { font: bold, size: 12, align: "right", w: tw - 6 });
@@ -278,14 +274,27 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
     });
   } else {
     const qrImg = await embedQr(pdf, invoice.qr);
-    if (qrImg) page.drawImage(qrImg, { x: M, y: 40, width: 78, height: 78 });
+    if (qrImg) page.drawImage(qrImg, { x: M, y: 54, width: 78, height: 78 });
     const fx = M + 92;
-    page.drawText("Huella Verifactu (SHA-256):", { x: fx, y: 110, size: 8, font: bold, color: BLACK });
-    page.drawText(huella.slice(0, 48), { x: fx, y: 99, size: 7, font, color: GRAY });
-    page.drawText(huella.slice(48), { x: fx, y: 90, size: 7, font, color: GRAY });
-    page.drawText("Documento de prueba: Verifactu NO oficial. No se ha enviado a la AEAT", { x: fx, y: 70, size: 7.5, font, color: GRAY });
-    page.drawText("ni se ha firmado con certificado digital.", { x: fx, y: 61, size: 7.5, font, color: GRAY });
+    page.drawText("Huella Verifactu (SHA-256):", { x: fx, y: 120, size: 8, font: bold, color: BLACK });
+    page.drawText(huella.slice(0, 48), { x: fx, y: 109, size: 7, font, color: GRAY });
+    page.drawText(huella.slice(48), { x: fx, y: 100, size: 7, font, color: GRAY });
+    page.drawText("Documento de prueba: Verifactu NO oficial. No se ha enviado a la AEAT", { x: fx, y: 80, size: 7.5, font, color: GRAY });
+    page.drawText("ni se ha firmado con certificado digital.", { x: fx, y: 71, size: 7.5, font, color: GRAY });
   }
+
+  // Marca del producto: "Factura generada con TrackApp", centrada al pie.
+  const b1 = "Factura generada con ";
+  const b2 = "TrackApp";
+  const b3 = " — gestión y facturación para transportistas";
+  const bs = 9;
+  const w1 = font.widthOfTextAtSize(b1, bs);
+  const w2 = bold.widthOfTextAtSize(b2, bs);
+  const w3 = font.widthOfTextAtSize(b3, bs);
+  const bx = (W - (w1 + w2 + w3)) / 2;
+  page.drawText(b1, { x: bx, y: 34, size: bs, font, color: GRAY });
+  page.drawText(b2, { x: bx + w1, y: 34, size: bs, font: bold, color: rgb(0.91, 0.57, 0.05) });
+  page.drawText(b3, { x: bx + w1 + w2, y: 34, size: bs, font, color: GRAY });
 
   return pdf.save();
 }

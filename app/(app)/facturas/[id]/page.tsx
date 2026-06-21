@@ -66,6 +66,10 @@ export default async function FacturaDetallePage({
     .maybeSingle();
   const profileLogoUrl = (prof?.logo_url as string | null) ?? null;
   const facturaPlantilla = (prof?.factura_plantilla as "trackapp" | "elegante" | "moderna") ?? "trackapp";
+  // Cláusula de condiciones (consulta aparte: degrada a vacío si la migración
+  // 0037 aún no está aplicada, sin romper la página).
+  const { data: cl } = await supabase.from("profiles").select("clausula_activa, clausula_texto").maybeSingle();
+  const clausula = cl?.clausula_activa ? ((cl?.clausula_texto as string | null) ?? "") : "";
 
   // Email actual del cliente (para el botón "Enviar por email", aún desactivado).
   let clienteEmail: string | null = null;
@@ -90,6 +94,7 @@ export default async function FacturaDetallePage({
         profileLogoUrl={profileLogoUrl}
         facturaPlantilla={facturaPlantilla}
         clienteEmail={clienteEmail}
+        clausula={clausula}
       />
     </>
   );
