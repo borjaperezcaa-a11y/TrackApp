@@ -13,23 +13,25 @@ export default async function DatosPage() {
 
   const { data: p } = await supabase
     .from("profiles")
-    .select("nombre, nif, direccion, cp_localidad, iban")
+    .select("nombre, nif, direccion, cp_localidad, iban, logo_url")
     .eq("user_id", user.id)
     .maybeSingle();
 
   return (
     <>
-      <PageHeader title="Tus datos" kicker="Ajustes · emisor" fallbackHref="/ajustes" />
+      <PageHeader title="Mi perfil" kicker="Ajustes · emisor" fallbackHref="/ajustes" />
       <p className="mb-4 px-1 text-[12.5px] text-dim">
-        Rellenan automáticamente el emisor de tus facturas. Todo es editable antes de emitir.
+        Tus datos y tu logo rellenan automáticamente el emisor de tus facturas.
       </p>
       <DatosForm
+        userId={user.id}
         values={{
           nombre: p?.nombre ?? "",
           nif: p?.nif ?? "",
           direccion: p?.direccion ?? "",
           cp_localidad: p?.cp_localidad ?? "",
           iban: p?.iban ?? "",
+          logo_url: p?.logo_url ?? "",
         }}
       />
     </>

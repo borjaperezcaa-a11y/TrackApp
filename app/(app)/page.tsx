@@ -132,7 +132,7 @@ export default async function HomePage({
     { key: "ingresos", icon: "income", label: "Ingresos", note: "Apunta a mano", color: "var(--green)", href: "/ingresos" },
     { key: "gastos", icon: "euro", label: "Gastos", note: monthPoint.gastos > 0 ? `${eur(monthPoint.gastos)} mes` : "Escanea un ticket", color: "var(--red)", href: "/gastos" },
     { key: "stats", icon: "chart", label: "Estadísticas", note: `${eur(monthPoint.beneficio)} mes`, color: "var(--amber)", href: "/estadisticas" },
-    { key: "ajustes", icon: "user", label: "Ajustes", note: "Perfil y preferencias", color: "var(--dim)", href: "/ajustes" },
+    { key: "perfil", icon: "user", label: "Mi perfil", note: "Tus datos y logo", color: "var(--dim)", href: "/ajustes/datos" },
   ];
 
   return (

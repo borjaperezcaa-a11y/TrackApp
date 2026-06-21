@@ -131,7 +131,7 @@ export async function saveNumeracionAction(_prev: AjustesState, formData: FormDa
       entidad: "perfil",
     });
   }
-  revalidatePath("/ajustes/numeracion");
+  revalidatePath("/ajustes/factura");
   revalidatePath("/ajustes");
   revalidatePath("/");
   return { ok: true, message: "Numeración guardada." };
@@ -161,7 +161,7 @@ export async function saveClausulaAction(_prev: AjustesState, formData: FormData
     .update({ clausula_activa: activa, clausula_texto: texto || null })
     .eq("user_id", user.id);
   if (error) return { error: "No se pudo guardar la cláusula." };
-  revalidatePath("/ajustes/clausula");
+  revalidatePath("/ajustes/factura");
   revalidatePath("/ajustes");
   return { ok: true, message: "Cláusula guardada." };
 }

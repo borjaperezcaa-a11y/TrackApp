@@ -520,8 +520,8 @@ export function NuevaFacturaWizard({
           <p className="mt-1 text-[12.5px] font-semibold text-text">
             Se emitirá con la serie <b>{serie}</b> y, a partir de ahí, la serie y la numeración{" "}
             <b>quedarán fijadas</b> (no se podrán cambiar). Si quieres otra serie, cámbiala primero en{" "}
-            <Link href="/ajustes/numeracion" className="underline">
-              Numeración
+            <Link href="/ajustes/factura" className="underline">
+              Factura
             </Link>
             .
           </p>
