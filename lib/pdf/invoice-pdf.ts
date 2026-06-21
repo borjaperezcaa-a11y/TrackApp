@@ -270,19 +270,19 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
     });
   } else {
     const qrImg = await embedQr(pdf, invoice.qr);
-    if (qrImg) page.drawImage(qrImg, { x: M, y: 40, width: 78, height: 78 });
+    if (qrImg) page.drawImage(qrImg, { x: M, y: 54, width: 78, height: 78 });
     const fx = M + 92;
-    page.drawText("Huella Verifactu (SHA-256):", { x: fx, y: 110, size: 8, font: bold, color: BLACK });
-    page.drawText(huella.slice(0, 48), { x: fx, y: 99, size: 7, font, color: GRAY });
-    page.drawText(huella.slice(48), { x: fx, y: 90, size: 7, font, color: GRAY });
-    page.drawText("Documento de prueba: Verifactu NO oficial. No se ha enviado a la AEAT", { x: fx, y: 70, size: 7.5, font, color: GRAY });
-    page.drawText("ni se ha firmado con certificado digital.", { x: fx, y: 61, size: 7.5, font, color: GRAY });
+    page.drawText("Huella Verifactu (SHA-256):", { x: fx, y: 120, size: 8, font: bold, color: BLACK });
+    page.drawText(huella.slice(0, 48), { x: fx, y: 109, size: 7, font, color: GRAY });
+    page.drawText(huella.slice(48), { x: fx, y: 100, size: 7, font, color: GRAY });
+    page.drawText("Documento de prueba: Verifactu NO oficial. No se ha enviado a la AEAT", { x: fx, y: 80, size: 7.5, font, color: GRAY });
+    page.drawText("ni se ha firmado con certificado digital.", { x: fx, y: 71, size: 7.5, font, color: GRAY });
   }
 
   // Marca del producto: "Factura generada con TrackApp", centrada al pie.
   const b1 = "Factura generada con ";
   const b2 = "TrackApp";
-  const b3 = " — facturación para transportistas";
+  const b3 = " — gestión y facturación para transportistas";
   const bs = 9;
   const w1 = font.widthOfTextAtSize(b1, bs);
   const w2 = bold.widthOfTextAtSize(b2, bs);
