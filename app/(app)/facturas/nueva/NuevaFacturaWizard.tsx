@@ -285,13 +285,13 @@ export function NuevaFacturaWizard({
         <p className="text-[15px] font-semibold">Completa tus datos de emisor</p>
         <p className="mx-auto mt-1.5 max-w-[290px] text-[13px] text-dim">
           Para emitir facturas necesitas registrar al menos tu nombre o razón social y tu NIF/CIF
-          en “Mis datos”. Esos datos aparecerán como emisor de todas tus facturas.
+          en “Tus datos”. Esos datos aparecerán como emisor de todas tus facturas.
         </p>
         <Link
-          href="/ajustes/perfil"
+          href="/ajustes/datos"
           className="mt-5 inline-flex rounded-2xl bg-amber px-5 py-3 text-sm font-extrabold text-[#1a1205]"
         >
-          Ir a Mis datos
+          Ir a Tus datos
         </Link>
       </div>
     );
@@ -429,8 +429,8 @@ export function NuevaFacturaWizard({
             <div className="text-dim">
               {[emisor.nif, emisor.cp_localidad].filter(Boolean).join(" · ")}
             </div>
-            <Link href="/ajustes/perfil" className="text-xs font-bold text-amber">
-              Editar en Mis datos ›
+            <Link href="/ajustes/datos" className="text-xs font-bold text-amber">
+              Editar en Tus datos ›
             </Link>
           </div>
           <div className="border-t border-line pt-2.5">
@@ -454,7 +454,15 @@ export function NuevaFacturaWizard({
           <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </Field>
         <Field label="Forma de pago">
-          <input value={formaPago} onChange={(e) => setFormaPago(e.target.value)} />
+          <input list="formas-pago" value={formaPago} onChange={(e) => setFormaPago(e.target.value)} />
+          <datalist id="formas-pago">
+            <option value="Transferencia" />
+            <option value="Efectivo" />
+            <option value="Domiciliación" />
+            <option value="Bizum" />
+            <option value="Pagaré" />
+            <option value="Confirming" />
+          </datalist>
         </Field>
       </div>
 
@@ -510,8 +518,8 @@ export function NuevaFacturaWizard({
           <p className="mt-1 text-[12.5px] font-semibold text-text">
             Se emitirá con la serie <b>{serie}</b> y, a partir de ahí, la serie y la numeración{" "}
             <b>quedarán fijadas</b> (no se podrán cambiar). Si quieres otra serie, cámbiala primero en{" "}
-            <Link href="/ajustes/perfil" className="underline">
-              Mi Perfil
+            <Link href="/ajustes/numeracion" className="underline">
+              Numeración
             </Link>
             .
           </p>

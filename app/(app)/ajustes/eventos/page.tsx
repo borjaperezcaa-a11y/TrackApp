@@ -57,7 +57,7 @@ export default async function EventosPage() {
 
   return (
     <>
-      <PageHeader title="Registro de eventos" kicker="Verifactu · Art. 8.3" fallbackHref="/ajustes/perfil" />
+      <PageHeader title="Registro de eventos" kicker="Verifactu · Art. 8.3" fallbackHref="/ajustes" />
       <p className="mb-4 px-1 text-[12.5px] text-dim">
         Registro automático e inalterable de las operaciones del sistema (emisión, rectificación,
         facturas externas…). Cada evento se encadena con una huella SHA-256, de modo que cualquier
