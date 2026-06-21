@@ -558,11 +558,13 @@ export async function buildHtmlPdf(
     //    de páginas para que el pie caiga al fondo de la última (no flotando
     //    arriba de la siguiente).
     const pageHpx = (el.offsetWidth * 297) / 210; // alto de 1 página A4 al ancho renderizado
-    const rawPages = el.offsetHeight / pageHpx;
-    let numPages = Math.max(1, Math.ceil(rawPages - 0.02));
+    // Guarda anti-cuelgue: si el host aún no tiene layout (offsetWidth 0), pageHpx
+    // sería 0 → rawPages = Infinity → bucle infinito. Caemos a 1 página y topamos.
+    const rawPages = pageHpx > 0 ? el.offsetHeight / pageHpx : 1;
+    let numPages = Math.min(40, Math.max(1, Math.ceil(rawPages - 0.02)));
     const shrink = numPages > 1 && (numPages - 1) / rawPages >= 0.88; // cabe encogiendo ≤ ~12 %
     if (shrink) numPages -= 1;
-    else el.style.height = `${numPages * pageHpx}px`;
+    else if (pageHpx > 0) el.style.height = `${numPages * pageHpx}px`;
 
     const canvas = await html2canvas(el, {
       scale: 2,
