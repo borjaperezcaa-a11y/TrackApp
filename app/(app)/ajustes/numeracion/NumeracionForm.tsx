@@ -10,7 +10,7 @@ const initial: AjustesState = {};
 export function NumeracionForm({
   values,
 }: {
-  values: { serie: string; numInicial: number; nextNumero: string; locked: boolean };
+  values: { serie: string; numInicial: number; nextNumero: string; serieTieneFacturas: boolean };
 }) {
   const [state, action] = useActionState(saveNumeracionAction, initial);
   const [serie, setSerie] = useState(values.serie);
@@ -23,55 +23,59 @@ export function NumeracionForm({
         <div className="mt-0.5 font-display text-xl font-bold text-amber tnum">{values.nextNumero}</div>
       </div>
 
-      {values.locked ? (
-        <p className="rounded-xl bg-amber-soft px-3.5 py-3 text-[13px] font-medium text-amber">
-          Ya has emitido facturas, así que la serie y el número de arranque <b>no se pueden cambiar</b>: la cadena de
-          numeración ya está iniciada y modificarla rompería la correlación (lo exige Verifactu).
+      <Field
+        label="Serie"
+        htmlFor="serie"
+        hint="Cambiarla empieza una serie nueva; la anterior se conserva intacta. Tener varias series es legal."
+      >
+        <input
+          id="serie"
+          name="serie"
+          value={serie}
+          onChange={(e) => setSerie(e.target.value)}
+          autoCapitalize="characters"
+          placeholder="FACT"
+        />
+      </Field>
+
+      <Field
+        label="Nº de la primera factura"
+        htmlFor="num_inicial"
+        hint="Solo al empezar una serie NUEVA: pon el último número que usaste en otro programa + 1. Déjalo vacío para empezar en 1."
+      >
+        <input
+          id="num_inicial"
+          name="num_inicial"
+          type="number"
+          min="0"
+          max="9999999"
+          inputMode="numeric"
+          value={numInicial}
+          onChange={(e) => setNumInicial(e.target.value)}
+          placeholder="1"
+        />
+      </Field>
+
+      {values.serieTieneFacturas && (
+        <p className="mb-3 rounded-xl bg-amber-soft px-3.5 py-2.5 text-[12.5px] text-amber">
+          La serie <b>{values.serie}</b> ya tiene facturas: su numeración sigue correlativa, así que el{" "}
+          <b>nº de la primera factura</b> se ignora (evita huecos). Para arrancar en otro número, cambia a una serie
+          nueva.
         </p>
-      ) : (
-        <>
-          <Field label="Serie" htmlFor="serie" hint="Letras, números y / _ -. Ej.: FACT, A, 2026">
-            <input
-              id="serie"
-              name="serie"
-              value={serie}
-              onChange={(e) => setSerie(e.target.value)}
-              autoCapitalize="characters"
-              placeholder="FACT"
-            />
-          </Field>
-          <Field
-            label="Nº de la primera factura"
-            htmlFor="num_inicial"
-            hint="Si ya facturabas con otro programa, pon el último número usado + 1. Déjalo vacío para empezar en 1."
-          >
-            <input
-              id="num_inicial"
-              name="num_inicial"
-              type="number"
-              min="0"
-              max="9999999"
-              inputMode="numeric"
-              value={numInicial}
-              onChange={(e) => setNumInicial(e.target.value)}
-              placeholder="1"
-            />
-          </Field>
-
-          {state.error && (
-            <p role="alert" className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
-              {state.error}
-            </p>
-          )}
-          {state.ok && (
-            <p role="status" className="mb-3 rounded-xl bg-green-soft px-3 py-2 text-sm font-semibold text-green">
-              {state.message ?? "Guardado ✓"}
-            </p>
-          )}
-
-          <Cta icon="save">GUARDAR NUMERACIÓN</Cta>
-        </>
       )}
+
+      {state.error && (
+        <p role="alert" className="mb-3 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
+          {state.error}
+        </p>
+      )}
+      {state.ok && (
+        <p role="status" className="mb-3 rounded-xl bg-green-soft px-3 py-2 text-sm font-semibold text-green">
+          {state.message ?? "Guardado ✓"}
+        </p>
+      )}
+
+      <Cta icon="save">GUARDAR NUMERACIÓN</Cta>
     </form>
   );
 }

@@ -99,37 +99,35 @@ export async function saveNumeracionAction(_prev: AjustesState, formData: FormDa
   const parsed = numeracionSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos no válidos" };
   const serie = parsed.data.serie.toUpperCase();
+  const year = nowMadrid().year;
 
-  // La numeración de arranque solo se puede tocar mientras no haya facturas
-  // emitidas: una vez iniciada la cadena, cambiarla rompería la correlación.
-  const { count: emittedCount, error: countErr } = await supabase
+  // La SERIE se puede cambiar SIEMPRE: hacerlo simplemente empieza una serie
+  // nueva (la anterior se conserva, correlativa; tener varias series es legal y
+  // la cadena de huellas va por emisor, no por serie). Lo único que se protege es
+  // el "suelo" de numeración: solo se fija si ESA serie+año aún no tiene facturas.
+  // Si ya las tiene, fijarlo crearía un HUECO, así que se ignora y la numeración
+  // sigue correlativa (max(num)+1).
+  const { count: serieCount, error: countErr } = await supabase
     .from("invoices")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-  // Fail-closed: si no podemos verificar, NO tocamos la numeración.
+    .eq("user_id", user.id)
+    .eq("serie", serie)
+    .eq("anio", year);
+  // Fail-closed: si no podemos verificar, no fijamos el suelo (pero la serie sí).
   if (countErr) return { error: "No se pudo verificar la numeración. Inténtalo de nuevo en un momento." };
-  if ((emittedCount ?? 0) > 0) {
-    return { error: "Ya has emitido facturas: la numeración no se puede cambiar (rompería la correlación)." };
-  }
+  const serieTieneFacturas = (serieCount ?? 0) > 0;
 
-  // Dejar el nº vacío (0) preserva el arranque ya guardado; solo se fija el
-  // "suelo" cuando el usuario indica un número > 0.
-  const numbering =
-    parsed.data.num_inicial > 0
-      ? {
-          serie,
-          num_inicial: parsed.data.num_inicial,
-          num_inicial_anio: nowMadrid().year,
-          num_inicial_serie: serie,
-        }
-      : { serie };
+  const fijarSuelo = parsed.data.num_inicial > 0 && !serieTieneFacturas;
+  const numbering = fijarSuelo
+    ? { serie, num_inicial: parsed.data.num_inicial, num_inicial_anio: year, num_inicial_serie: serie }
+    : { serie };
 
   const { error } = await supabase.from("profiles").update(numbering).eq("user_id", user.id);
   if (error) return { error: "No se pudo guardar la numeración." };
 
-  if (parsed.data.num_inicial > 0) {
+  if (fijarSuelo) {
     await logEvent(supabase, "numeracion_configurada", {
-      detalle: { serie, num_inicial: parsed.data.num_inicial, anio: nowMadrid().year },
+      detalle: { serie, num_inicial: parsed.data.num_inicial, anio: year },
       entidad: "perfil",
     });
   }

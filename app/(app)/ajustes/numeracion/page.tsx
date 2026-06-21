@@ -30,8 +30,9 @@ export default async function NumeracionPage() {
     .limit(1)
     .maybeSingle();
 
-  const { count: emittedCount } = await supabase.from("invoices").select("id", { count: "exact", head: true });
-  const locked = (emittedCount ?? 0) > 0;
+  // ¿La serie ACTUAL+año ya tiene facturas? (Si las tiene, el "suelo" se ignora;
+  // la serie en sí siempre se puede cambiar para empezar una nueva.)
+  const serieTieneFacturas = last != null;
 
   const floorApplies =
     profile?.num_inicial != null &&
@@ -48,9 +49,10 @@ export default async function NumeracionPage() {
     <>
       <PageHeader title="Numeración" kicker="Ajustes · facturación" fallbackHref="/ajustes" />
       <p className="mb-4 px-1 text-[12.5px] text-dim">
-        Serie y número con que se emiten tus facturas. Solo se puede fijar antes de emitir la primera.
+        Serie y número con que se emiten tus facturas. La serie la puedes cambiar cuando quieras (empieza una nueva);
+        el número de arranque solo se fija al estrenar una serie.
       </p>
-      <NumeracionForm values={{ serie, numInicial, nextNumero, locked }} />
+      <NumeracionForm values={{ serie, numInicial, nextNumero, serieTieneFacturas }} />
     </>
   );
 }
