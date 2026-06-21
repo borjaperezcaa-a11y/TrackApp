@@ -55,29 +55,34 @@ export async function GET(request: Request) {
   };
 
   try {
-    // 1) España primero. 2) Si no hay, el resto (Europa/mundo).
-    let pcs = await fetchPC("ES");
-    const esEspana = pcs.length > 0;
-    if (!esEspana) pcs = await fetchPC();
+    // Un mismo CP existe en varios países (p. ej. 43122 = Tarragona ES y Parma IT).
+    // Buscamos en España Y en el resto en paralelo y fusionamos (España primero),
+    // para que el usuario pueda ELEGIR cuál es si hay varios candidatos.
+    const [esPcs, worldPcs] = await Promise.all([fetchPC("ES"), fetchPC()]);
 
-    const first = pcs[0];
-    // En España el municipio está en adminName3; fuera, la ciudad suele ser placeName.
-    const localidad = first
-      ? esEspana
-        ? first.adminName3 || first.placeName || null
-        : first.placeName || first.adminName3 || null
-      : null;
+    const seen = new Set<string>();
+    const places: { nombre: string; provincia: string; pais: string; lat: number | null; lon: number | null }[] = [];
+    for (const p of [...esPcs, ...worldPcs]) {
+      const nombre = p.adminName3 || p.placeName || "";
+      if (!nombre) continue;
+      const provincia = p.adminName2 || p.adminName1 || "";
+      const pais = p.countryCode || "";
+      const key = `${nombre}|${provincia}|${pais}`.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      places.push({ nombre, provincia, pais, lat: toNum(p.lat), lon: toNum(p.lng) });
+      if (places.length >= 8) break;
+    }
 
-    const places = pcs
-      .filter((p) => p.placeName || p.adminName3)
-      .map((p) => ({ nombre: p.adminName3 || p.placeName || "", provincia: p.adminName2 || p.adminName1 || "", pais: p.countryCode || "" }));
-
-    // Coordenadas del CP (para calcular los km del viaje sin tener que elegir en el buscador).
-    const lat = first ? toNum(first.lat) : null;
-    const lon = first ? toNum(first.lng) : null;
-
-    return Response.json({ localidad, lat, lon, places });
+    // El primero (España si la hay) es el valor por defecto; `places` permite elegir.
+    const first = places[0];
+    return Response.json({
+      localidad: first?.nombre ?? null,
+      lat: first?.lat ?? null,
+      lon: first?.lon ?? null,
+      places,
+    });
   } catch {
-    return Response.json({ localidad: null, places: [] });
+    return Response.json({ localidad: null, lat: null, lon: null, places: [] });
   }
 }
