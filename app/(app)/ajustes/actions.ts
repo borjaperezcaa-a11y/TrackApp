@@ -149,17 +149,3 @@ export async function saveLogoAction(logoUrl: string): Promise<{ ok?: boolean; e
   revalidatePath("/facturas");
   return { ok: true };
 }
-
-// ── Estilo de factura (guardado instantáneo) ─────────────────────────────────
-export async function setPlantillaAction(
-  plantilla: "trackapp" | "elegante" | "moderna",
-): Promise<{ ok?: boolean; error?: string }> {
-  const { supabase, user } = await getUser();
-  if (!user) return { error: "Sesión expirada." };
-  const valid = (["trackapp", "elegante", "moderna"] as const).includes(plantilla) ? plantilla : "trackapp";
-  const { error } = await supabase.from("profiles").update({ factura_plantilla: valid }).eq("user_id", user.id);
-  if (error) return { error: "No se pudo guardar el estilo." };
-  revalidatePath("/ajustes/factura");
-  revalidatePath("/facturas");
-  return { ok: true };
-}

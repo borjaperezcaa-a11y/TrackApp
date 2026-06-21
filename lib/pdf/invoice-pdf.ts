@@ -1,10 +1,7 @@
 /**
- * Genera el PDF A4 de una factura. 3 plantillas seleccionables:
- *   - trackapp : la original (tabla de portes, acento ámbar). pdf-lib vectorial,
- *                funciona también en Node (tests).
- *   - elegante : "Clásica" — render fiel del HTML (ver invoice-html.ts).
- *   - moderna  : render fiel del HTML (ver invoice-html.ts).
- * Las plantillas HTML solo corren en navegador (html2canvas+jspdf en diferido).
+ * Genera el PDF A4 de una factura. Un único estilo: TrackApp (tabla de portes,
+ * acento ámbar, marca del producto al pie). Vectorial con pdf-lib, así que también
+ * funciona en Node (tests).
  */
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type RGB } from "pdf-lib";
 import QRCode from "qrcode";
@@ -91,18 +88,10 @@ const TERMS =
 export async function buildInvoicePdf(
   invoice: Invoice,
   lines: InvoiceLine[],
-  template: FacturaPlantilla = "trackapp",
+  _template: FacturaPlantilla = "trackapp", // ya no hay estilos: todas usan TrackApp
   opts: { borrador?: boolean } = {},
 ): Promise<Uint8Array> {
-  const borrador = opts.borrador ?? false;
-  // Clásica/Moderna: render fiel del HTML original (solo navegador). Las
-  // librerías html2canvas+jspdf se cargan en diferido dentro de buildHtmlPdf.
-  if (template === "elegante" || template === "moderna") {
-    const { buildHtmlPdf } = await import("./invoice-html");
-    return buildHtmlPdf(invoice, lines, template, borrador);
-  }
-  // TrackApp: vectorial con pdf-lib (también funciona en Node, para los tests).
-  return buildTrackApp(invoice, lines, borrador);
+  return buildTrackApp(invoice, lines, opts.borrador ?? false);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -289,6 +278,15 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
     page.drawText("Documento de prueba: Verifactu NO oficial. No se ha enviado a la AEAT", { x: fx, y: 70, size: 7.5, font, color: GRAY });
     page.drawText("ni se ha firmado con certificado digital.", { x: fx, y: 61, size: 7.5, font, color: GRAY });
   }
+
+  // Marca del producto (branding discreto de TrackApp), centrada al pie.
+  const brandA = "TrackApp";
+  const brandB = "  ·  gestión y facturación para transportistas";
+  const wA = bold.widthOfTextAtSize(brandA, 7.5);
+  const wB = font.widthOfTextAtSize(brandB, 7);
+  const brandX = (W - (wA + wB)) / 2;
+  page.drawText(brandA, { x: brandX, y: 30, size: 7.5, font: bold, color: rgb(0.91, 0.57, 0.05) });
+  page.drawText(brandB, { x: brandX + wA, y: 30, size: 7, font, color: GRAY });
 
   return pdf.save();
 }

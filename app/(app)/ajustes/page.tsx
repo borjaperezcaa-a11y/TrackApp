@@ -6,12 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Ajustes · TrackApp" };
 
-const PLANTILLA_LABEL: Record<string, string> = {
-  trackapp: "TrackApp",
-  elegante: "Clásica",
-  moderna: "Moderna",
-};
-
 function Row({
   href,
   icon,
@@ -57,12 +51,11 @@ export default async function AjustesPage() {
 
   const { data: p } = await supabase
     .from("profiles")
-    .select("nombre, nif, factura_plantilla, iva_def, irpf_def, serie")
+    .select("nombre, nif, iva_def, irpf_def, serie")
     .eq("user_id", user.id)
     .maybeSingle();
 
   const datosOk = Boolean(p?.nombre && p?.nif);
-  const estilo = PLANTILLA_LABEL[p?.factura_plantilla ?? "trackapp"] ?? "TrackApp";
   const iva = p?.iva_def != null ? Number(p.iva_def) : 21;
   const irpf = p?.irpf_def != null ? Number(p.irpf_def) : 1;
   const serie = (p?.serie ?? "FACT").toUpperCase();
@@ -81,7 +74,7 @@ export default async function AjustesPage() {
             subtitle={datosOk ? "Nombre, NIF, dirección, IBAN" : "Faltan tus datos fiscales"}
             warn={!datosOk}
           />
-          <Row href="/ajustes/factura" icon="doc" title="Factura" subtitle={`Logo y estilo · ${estilo}`} />
+          <Row href="/ajustes/factura" icon="doc" title="Factura" subtitle="Logo de la factura" />
           <Row
             href="/ajustes/impuestos"
             icon="euro"

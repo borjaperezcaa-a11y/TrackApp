@@ -13,7 +13,7 @@ export default async function FacturaPage() {
 
   const { data: p } = await supabase
     .from("profiles")
-    .select("logo_url, factura_plantilla")
+    .select("logo_url")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -21,15 +21,9 @@ export default async function FacturaPage() {
     <>
       <PageHeader title="Factura" kicker="Ajustes · diseño" fallbackHref="/ajustes" />
       <p className="mb-4 px-1 text-[12.5px] text-dim">
-        Logo y estilo de tus PDFs. Los cambios se guardan al instante.
+        El logo que aparece en tus facturas. Se guarda al instante.
       </p>
-      <FacturaForm
-        userId={user.id}
-        values={{
-          logo_url: p?.logo_url ?? "",
-          factura_plantilla: (p?.factura_plantilla as "trackapp" | "elegante" | "moderna") ?? "trackapp",
-        }}
-      />
+      <FacturaForm userId={user.id} values={{ logo_url: p?.logo_url ?? "" }} />
     </>
   );
 }
