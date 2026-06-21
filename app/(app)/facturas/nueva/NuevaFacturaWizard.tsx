@@ -82,6 +82,7 @@ export function NuevaFacturaWizard({
   esPrimeraFactura = false,
   serie = "FACT",
   facturaPlantilla = "trackapp",
+  clausula = "",
 }: {
   profile: ProfileData;
   clients: ClientData[];
@@ -89,6 +90,7 @@ export function NuevaFacturaWizard({
   esPrimeraFactura?: boolean;
   serie?: string;
   facturaPlantilla?: "trackapp" | "elegante" | "moderna";
+  clausula?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -264,7 +266,7 @@ export function NuevaFacturaWizard({
             orden: i,
           }) as unknown as InvoiceLine,
       );
-      const bytes = await buildInvoicePdf(draft, draftLines, facturaPlantilla, { borrador: true });
+      const bytes = await buildInvoicePdf(draft, draftLines, facturaPlantilla, { borrador: true, clausula });
       const file = new File([bytes as unknown as BlobPart], "Borrador factura.pdf", { type: "application/pdf" });
       const url = URL.createObjectURL(file);
       triggerDownload(url, file.name);

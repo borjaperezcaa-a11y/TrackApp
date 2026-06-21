@@ -54,6 +54,13 @@ export default async function AjustesPage() {
     .select("nombre, nif, iva_def, irpf_def, serie")
     .eq("user_id", user.id)
     .maybeSingle();
+  // Estado de la cláusula aparte: no rompe el hub si la migración 0037 aún no
+  // está aplicada (la columna podría no existir).
+  const { data: cl } = await supabase
+    .from("profiles")
+    .select("clausula_activa")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
   const datosOk = Boolean(p?.nombre && p?.nif);
   const iva = p?.iva_def != null ? Number(p.iva_def) : 21;
@@ -82,6 +89,12 @@ export default async function AjustesPage() {
             subtitle={`IVA ${iva}% · IRPF ${irpf}%`}
           />
           <Row href="/ajustes/numeracion" icon="doc" title="Numeración" subtitle={`Serie ${serie}`} />
+          <Row
+            href="/ajustes/clausula"
+            icon="doc"
+            title="Cláusula de condiciones"
+            subtitle={cl?.clausula_activa ? "Se muestra en las facturas" : "Oculta en las facturas"}
+          />
         </ul>
 
         <h2 className="mb-2 mt-5 px-1 text-xs font-bold uppercase tracking-[0.16em] text-dim">Registros y datos</h2>

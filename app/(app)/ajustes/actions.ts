@@ -149,3 +149,19 @@ export async function saveLogoAction(logoUrl: string): Promise<{ ok?: boolean; e
   revalidatePath("/facturas");
   return { ok: true };
 }
+
+// ── Cláusula de condiciones (nota comercial del pie de la factura) ────────────
+export async function saveClausulaAction(_prev: AjustesState, formData: FormData): Promise<AjustesState> {
+  const { supabase, user } = await getUser();
+  if (!user) return { error: "Sesión expirada. Vuelve a entrar." };
+  const activa = formData.get("clausula_activa") === "on";
+  const texto = String(formData.get("clausula_texto") ?? "").trim().slice(0, 600);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ clausula_activa: activa, clausula_texto: texto || null })
+    .eq("user_id", user.id);
+  if (error) return { error: "No se pudo guardar la cláusula." };
+  revalidatePath("/ajustes/clausula");
+  revalidatePath("/ajustes");
+  return { ok: true, message: "Cláusula guardada." };
+}

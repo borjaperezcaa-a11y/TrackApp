@@ -78,10 +78,6 @@ function wrap(s: string, f: PDFFont, size: number, maxW: number): string[] {
   return out;
 }
 
-const TERMS =
-  "La presente factura se entenderá aceptada en el momento de su cobro salvo que de forma " +
-  "expresa sea rechazada en el plazo de 15 días contados desde su recepción.";
-
 // ════════════════════════════════════════════════════════════════════════════
 // Dispatcher
 // ════════════════════════════════════════════════════════════════════════════
@@ -89,9 +85,9 @@ export async function buildInvoicePdf(
   invoice: Invoice,
   lines: InvoiceLine[],
   _template: FacturaPlantilla = "trackapp", // ya no hay estilos: todas usan TrackApp
-  opts: { borrador?: boolean } = {},
+  opts: { borrador?: boolean; clausula?: string | null } = {},
 ): Promise<Uint8Array> {
-  return buildTrackApp(invoice, lines, opts.borrador ?? false);
+  return buildTrackApp(invoice, lines, opts.borrador ?? false, (opts.clausula ?? "").trim());
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -112,7 +108,12 @@ const COLS = {
   importe: { x: M + 460, w: W - M - (M + 460) },
 };
 
-async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = false): Promise<Uint8Array> {
+async function buildTrackApp(
+  invoice: Invoice,
+  lines: InvoiceLine[],
+  borrador = false,
+  clausula = "",
+): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([W, H]);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -227,10 +228,13 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
 
   ty += 24;
   const blockTop = ty;
-  let ny = blockTop;
-  for (const line of wrap(TERMS, font, 8, W - 2 * M - 250)) {
-    text(line, M, ny, { size: 8, color: GRAY });
-    ny += 11;
+  // Cláusula de condiciones (texto del usuario; vacía = no se imprime).
+  if (clausula) {
+    let ny = blockTop;
+    for (const line of wrap(clausula, font, 8, W - 2 * M - 250)) {
+      text(line, M, ny, { size: 8, color: GRAY });
+      ny += 11;
+    }
   }
 
   const baseIva = invoice.base + invoice.iva;
