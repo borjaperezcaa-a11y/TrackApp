@@ -424,7 +424,7 @@ function trackappHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, q
       <div class="em-name">${esc(em?.nombre ?? "")}</div>
       ${[em?.nif, em?.direccion, em?.cp_localidad].map(linea).join("")}
     </div>
-    ${logo ? `<img class="logo" src="${logo}" alt="logo">` : ""}
+    ${logo ? `<img class="logo" src="${safeUrl(logo)}" alt="logo">` : ""}
   </div>
   <div class="title">FACTURA</div>
   <div class="hr"></div>
@@ -456,7 +456,7 @@ function trackappHtml(inv: Invoice, lines: InvoiceLine[], logo: string | null, q
     <div class="t-grand"><span class="k">Total Factura</span><span class="v">${esc(eur(inv.total))}</span></div>
   </div></div>
   <div class="foot">
-    ${qr ? `<img class="qr" src="${qr}" alt="QR">` : ""}
+    ${qr ? `<img class="qr" src="${safeUrl(qr)}" alt="QR">` : ""}
     <div>
       <div class="eyebrow">Huella Veri*factu (SHA-256)</div>
       <div class="hash">${esc(inv.huella ?? "")}</div>

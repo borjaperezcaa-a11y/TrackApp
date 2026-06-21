@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 
@@ -27,6 +27,7 @@ export function StylePreview({
 }) {
   const [imgs, setImgs] = useState<Partial<Record<Plantilla, string>>>({});
   const [error, setError] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -50,6 +51,26 @@ export function StylePreview({
     };
   }, [open]);
 
+  // Accesibilidad: foco al abrir, Escape para cerrar, Tab atrapado, y devolver
+  // el foco al elemento que abrió el modal al cerrarse.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "Tab") {
+        e.preventDefault();
+        closeRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      prev?.focus?.();
+    };
+  }, [open, onClose]);
+
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
@@ -67,18 +88,19 @@ export function StylePreview({
         <div className="flex items-center justify-between px-4 pt-4">
           <div className="text-[15px] font-bold">Estilos de factura</div>
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
             className="grid h-8 w-8 place-items-center rounded-full border border-line text-dim"
           >
-            ✕
+            <span aria-hidden="true">✕</span>
           </button>
         </div>
         <p className="px-4 pt-1 text-[12px] text-dim">Desliza para comparar. El estilo activo está marcado.</p>
 
         {error ? (
-          <p className="m-4 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
+          <p role="alert" className="m-4 rounded-xl bg-red-soft px-3 py-2 text-sm font-semibold text-red">
             No se pudo generar la vista previa.
           </p>
         ) : (

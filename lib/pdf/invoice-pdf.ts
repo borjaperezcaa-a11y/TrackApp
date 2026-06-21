@@ -258,10 +258,13 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
   text(amount(invoice.iva), tx + 150, tot, { size: 9, align: "right", w: 40 });
   text(amount(baseIva), tx + 190, tot, { size: 9, font: bold, align: "right", w: 50 });
   tot += 16;
-  hline(tot - 4, tx, W - M);
-  text(`Retención I.R.P.F.  ${format1(invoice.irpf_rate)}%`, tx, tot + 8, { size: 8.5, color: GRAY });
-  text(`-${amount(invoice.irpf)}`, tx, tot + 8, { size: 9, align: "right", w: tw });
-  tot += 24;
+  // La retención solo se muestra si la hay (coherente con las plantillas HTML).
+  if (invoice.irpf > 0) {
+    hline(tot - 4, tx, W - M);
+    text(`Retención I.R.P.F.  ${format1(invoice.irpf_rate)}%`, tx, tot + 8, { size: 8.5, color: GRAY });
+    text(`-${amount(invoice.irpf)}`, tx, tot + 8, { size: 9, align: "right", w: tw });
+    tot += 24;
+  }
   page.drawRectangle({ x: tx, y: H - tot - 9, width: tw, height: 22, color: HEADBG });
   text("Total Factura", tx + 6, tot + 6, { font: bold, size: 10 });
   text(eur(invoice.total), tx, tot + 6, { font: bold, size: 12, align: "right", w: tw - 6 });

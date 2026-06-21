@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
   const fetchPC = async (country?: string): Promise<PC[]> => {
     const url =
-      `http://api.geonames.org/postalCodeLookupJSON?postalcode=${encodeURIComponent(cp)}&maxRows=10` +
+      `https://secure.geonames.org/postalCodeLookupJSON?postalcode=${encodeURIComponent(cp)}&maxRows=10` +
       (country ? `&country=${country}` : "") +
       `&username=${encodeURIComponent(username)}`;
     try {

@@ -371,36 +371,37 @@ export function InvoiceDetailClient({
       )}
 
       {/* Enviar por email — PREPARADO pero DESACTIVADO (estamos en pruebas).
-          Para activarlo: cambia ENVIO_EMAIL_ACTIVO a true (arriba) y conecta el
-          envío real (p. ej. un server action que mande el PDF a `clienteEmail`). */}
-      <button
-        type="button"
-        disabled={!ENVIO_EMAIL_ACTIVO || !clienteEmail}
-        aria-disabled={!ENVIO_EMAIL_ACTIVO || !clienteEmail}
-        title={
-          clienteEmail
-            ? `Se enviará a ${clienteEmail}${ENVIO_EMAIL_ACTIVO ? "" : " (envío aún no activado)"}`
-            : "Añade el correo del cliente en su ficha"
-        }
-        className="mt-2.5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[18px] border border-line bg-panel py-4 text-[15px] font-bold text-dim transition-transform active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <Icon name="send" size={18} /> Enviar por email
-      </button>
-      <p className="mt-1 px-1 text-center text-[11.5px] text-dim">
-        {clienteEmail ? (
-          <>
-            Listo para enviar a <b className="text-text">{clienteEmail}</b>. Envío aún desactivado (en pruebas).
-          </>
-        ) : (
-          <>
-            Para enviarla por correo, añade el email del cliente en su{" "}
-            <Link href={`/clientes/${invoice.client_id}`} className="underline">
-              ficha
-            </Link>
-            .
-          </>
-        )}
-      </p>
+          El bloque entero se OCULTA mientras ENVIO_EMAIL_ACTIVO sea false: no
+          mostramos un botón permanentemente inhabilitado (confunde). Al activar
+          el flag reaparece, deshabilitado solo si falta el email del cliente. */}
+      {ENVIO_EMAIL_ACTIVO && (
+        <>
+          <button
+            type="button"
+            disabled={!clienteEmail}
+            aria-disabled={!clienteEmail}
+            title={clienteEmail ? `Se enviará a ${clienteEmail}` : "Añade el correo del cliente en su ficha"}
+            className="mt-2.5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[18px] border border-line bg-panel py-4 text-[15px] font-bold text-dim transition-transform active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Icon name="send" size={18} /> Enviar por email
+          </button>
+          <p className="mt-1 px-1 text-center text-[11.5px] text-dim">
+            {clienteEmail ? (
+              <>
+                Listo para enviar a <b className="text-text">{clienteEmail}</b>.
+              </>
+            ) : (
+              <>
+                Para enviarla por correo, añade el email del cliente en su{" "}
+                <Link href={`/clientes/${invoice.client_id}`} className="underline">
+                  ficha
+                </Link>
+                .
+              </>
+            )}
+          </p>
+        </>
+      )}
 
       <button
         type="button"

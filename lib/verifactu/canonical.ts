@@ -60,7 +60,10 @@ export type AnulacionInput = {
  * Se redondea a céntimo vía enteros para evitar el clásico error de coma flotante.
  */
 export function formatAmount(value: number): string {
-  const cents = Math.round(Number(value) * 100);
+  // Nunca hashear "NaN"/"Infinity": si un importe corrupto llega a la huella,
+  // es mejor fallar ruidosamente que sellar basura.
+  if (!Number.isFinite(value)) throw new Error(`formatAmount: importe no finito (${value})`);
+  const cents = Math.round(value * 100);
   const sign = cents < 0 ? "-" : "";
   const abs = Math.abs(cents);
   const intPart = Math.floor(abs / 100);
@@ -83,6 +86,7 @@ export function dateDMY(isoDate: string): string {
  * `to_char(ts AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`.
  */
 export function tsUtcSeconds(date: Date): string {
+  if (Number.isNaN(date.getTime())) throw new Error("tsUtcSeconds: fecha inválida");
   const p = (x: number) => String(x).padStart(2, "0");
   return (
     `${date.getUTCFullYear()}-${p(date.getUTCMonth() + 1)}-${p(date.getUTCDate())}` +
