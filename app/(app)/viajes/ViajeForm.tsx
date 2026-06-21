@@ -9,7 +9,7 @@ import { DateField } from "@/components/ui/DateField";
 import { clsx } from "@/lib/clsx";
 import { createViajeAction, type TripState } from "./actions";
 import { NewClientModal } from "./NewClientModal";
-import { lookupCp } from "@/lib/cp-lookup";
+import { lookupCp, type CpPlace } from "@/lib/cp-lookup";
 
 type ClientOption = { id: string; nombre: string };
 type Stop = { lugar: string; cp: string }; // parada = localidad + código postal
@@ -63,6 +63,10 @@ export function ViajeForm({
   const [km, setKm] = useState("");
   const [origenCoord, setOrigenCoord] = useState<ResolvedPlace>(null);
   const [destinoCoord, setDestinoCoord] = useState<ResolvedPlace>(null);
+  // Candidatos de localidad cuando un CP coincide con varios sitios/países.
+  const [origenOpts, setOrigenOpts] = useState<CpPlace[]>([]);
+  const [destinoOpts, setDestinoOpts] = useState<CpPlace[]>([]);
+  const [stopOpts, setStopOpts] = useState<Record<string, CpPlace[]>>({});
   const [kmStatus, setKmStatus] = useState<"idle" | "calc" | "done" | "error">("idle");
 
   // Portes (al menos uno) + modo: una carga o varias (multiporte).
@@ -167,42 +171,56 @@ export function ViajeForm({
     return (
       <div>
         <div className="mb-1 px-1 text-[11px] font-bold uppercase tracking-[0.1em] text-dim">{label}</div>
-        {stops.map((s, j) => (
-          <div key={j} className="mb-1.5 flex gap-2">
-            <input
-              value={s.cp}
-              onChange={(e) => setStop(i, field, j, "cp", e.target.value)}
-              onBlur={async () => {
-                if (s.cp.trim() && !s.lugar.trim()) {
-                  const r = await lookupCp(s.cp);
-                  if (r.localidad) setStop(i, field, j, "lugar", r.localidad);
-                }
-              }}
-              placeholder="CP"
-              inputMode="numeric"
-              maxLength={5}
-              aria-label="Código postal"
-              className="w-20 flex-none text-center"
-            />
-            <input
-              value={s.lugar}
-              onChange={(e) => setStop(i, field, j, "lugar", e.target.value)}
-              placeholder="Localidad"
-              aria-label="Localidad"
-              className="flex-1"
-            />
-            {stops.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeStop(i, field, j)}
-                aria-label="Quitar parada"
-                className="flex-none rounded-xl border border-line px-3 font-bold text-dim"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
+        {stops.map((s, j) => {
+          const key = `${i}-${field}-${j}`;
+          return (
+            <div key={j} className="mb-1.5">
+              <div className="flex gap-2">
+                <input
+                  value={s.cp}
+                  onChange={(e) => setStop(i, field, j, "cp", e.target.value)}
+                  onBlur={async () => {
+                    if (s.cp.trim() && !s.lugar.trim()) {
+                      const r = await lookupCp(s.cp);
+                      if (r.localidad) setStop(i, field, j, "lugar", r.localidad);
+                      setStopOpts((m) => ({ ...m, [key]: r.places.length > 1 ? r.places : [] }));
+                    }
+                  }}
+                  placeholder="CP"
+                  inputMode="numeric"
+                  maxLength={5}
+                  aria-label="Código postal"
+                  className="w-20 flex-none text-center"
+                />
+                <input
+                  value={s.lugar}
+                  onChange={(e) => setStop(i, field, j, "lugar", e.target.value)}
+                  placeholder="Localidad"
+                  aria-label="Localidad"
+                  className="flex-1"
+                />
+                {stops.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeStop(i, field, j)}
+                    aria-label="Quitar parada"
+                    className="flex-none rounded-xl border border-line px-3 font-bold text-dim"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <CpOptions
+                places={stopOpts[key] ?? []}
+                onClose={() => setStopOpts((m) => ({ ...m, [key]: [] }))}
+                onPick={(p) => {
+                  setStop(i, field, j, "lugar", p.nombre);
+                  setStopOpts((m) => ({ ...m, [key]: [] }));
+                }}
+              />
+            </div>
+          );
+        })}
         <button type="button" onClick={() => addStop(i, field)} className="inline-flex items-center gap-1 text-[12.5px] font-bold text-amber">
           <Icon name="plus" size={13} /> Añadir {field === "origenes" ? "carga" : "descarga"}
         </button>
@@ -309,6 +327,7 @@ export function ViajeForm({
                 const r = await lookupCp(origenCp);
                 if (r.localidad && !origen.trim()) setOrigen(r.localidad);
                 if (r.lat != null && r.lon != null) setOrigenCoord({ lat: r.lat, lon: r.lon });
+                setOrigenOpts(r.places.length > 1 ? r.places : []);
               }}
               placeholder="CP"
               inputMode="numeric"
@@ -320,6 +339,15 @@ export function ViajeForm({
               <PlaceAutocomplete id="origen" name="origen" value={origen} onChange={setOrigen} onResolve={setOrigenCoord} enabled={routingEnabled} placeholder="Localidad" required />
             </div>
           </div>
+          <CpOptions
+            places={origenOpts}
+            onClose={() => setOrigenOpts([])}
+            onPick={(p) => {
+              setOrigen(p.nombre);
+              if (p.lat != null && p.lon != null) setOrigenCoord({ lat: p.lat, lon: p.lon });
+              setOrigenOpts([]);
+            }}
+          />
         </Field>
         <Field label="Destino" htmlFor="cp_destino" hint="CP y localidad (el CP rellena la localidad)">
           <div className="flex gap-2">
@@ -333,6 +361,7 @@ export function ViajeForm({
                 const r = await lookupCp(destinoCp);
                 if (r.localidad && !destino.trim()) setDestino(r.localidad);
                 if (r.lat != null && r.lon != null) setDestinoCoord({ lat: r.lat, lon: r.lon });
+                setDestinoOpts(r.places.length > 1 ? r.places : []);
               }}
               placeholder="CP"
               inputMode="numeric"
@@ -344,6 +373,15 @@ export function ViajeForm({
               <PlaceAutocomplete id="destino" name="destino" value={destino} onChange={setDestino} onResolve={setDestinoCoord} enabled={routingEnabled} placeholder="Localidad" required />
             </div>
           </div>
+          <CpOptions
+            places={destinoOpts}
+            onClose={() => setDestinoOpts([])}
+            onPick={(p) => {
+              setDestino(p.nombre);
+              if (p.lat != null && p.lon != null) setDestinoCoord({ lat: p.lat, lon: p.lon });
+              setDestinoOpts([]);
+            }}
+          />
         </Field>
         <Field label="Km del viaje" htmlFor="km" hint={kmHint}>
           <input id="km" name="km" type="number" step="1" min="0" inputMode="numeric" value={km} onChange={(e) => setKm(e.target.value)} placeholder="940" />
@@ -530,5 +568,62 @@ export function ViajeForm({
         }}
       />
     </form>
+  );
+}
+
+// Nombre legible del país a partir del código ISO (ES → España, IT → Italia…).
+const REGION_NAMES = (() => {
+  try {
+    return new Intl.DisplayNames(["es"], { type: "region" });
+  } catch {
+    return null;
+  }
+})();
+function paisNombre(code: string): string {
+  if (!code) return "";
+  try {
+    return REGION_NAMES?.of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+/** Lista para ELEGIR localidad cuando un CP coincide con varios sitios/países. */
+function CpOptions({
+  places,
+  onPick,
+  onClose,
+}: {
+  places: CpPlace[];
+  onPick: (p: CpPlace) => void;
+  onClose: () => void;
+}) {
+  if (places.length < 2) return null;
+  return (
+    <div className="mt-1.5 rounded-xl border border-line bg-panel2 p-1.5">
+      <div className="flex items-center justify-between px-1.5 py-1">
+        <span className="text-[11px] font-bold text-dim">Este CP existe en varios sitios · elige cuál</span>
+        <button type="button" onClick={onClose} aria-label="Descartar opciones" className="px-1 text-xs text-dim">
+          ✕
+        </button>
+      </div>
+      <ul className="space-y-1">
+        {places.map((p, i) => (
+          <li key={`${p.nombre}-${p.pais}-${i}`}>
+            <button
+              type="button"
+              onClick={() => onPick(p)}
+              className="block w-full rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors hover:bg-amber-soft"
+            >
+              {p.nombre}
+              {p.provincia ? <span className="text-dim"> · {p.provincia}</span> : null}
+              {p.pais ? (
+                <span className="ml-1.5 rounded bg-panel px-1.5 py-0.5 text-[10px] font-bold text-dim">{paisNombre(p.pais)}</span>
+              ) : null}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
