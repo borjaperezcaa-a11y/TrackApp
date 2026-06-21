@@ -279,14 +279,18 @@ async function buildTrackApp(invoice: Invoice, lines: InvoiceLine[], borrador = 
     page.drawText("ni se ha firmado con certificado digital.", { x: fx, y: 61, size: 7.5, font, color: GRAY });
   }
 
-  // Marca del producto (branding discreto de TrackApp), centrada al pie.
-  const brandA = "TrackApp";
-  const brandB = "  ·  gestión y facturación para transportistas";
-  const wA = bold.widthOfTextAtSize(brandA, 7.5);
-  const wB = font.widthOfTextAtSize(brandB, 7);
-  const brandX = (W - (wA + wB)) / 2;
-  page.drawText(brandA, { x: brandX, y: 30, size: 7.5, font: bold, color: rgb(0.91, 0.57, 0.05) });
-  page.drawText(brandB, { x: brandX + wA, y: 30, size: 7, font, color: GRAY });
+  // Marca del producto: "Factura generada con TrackApp", centrada al pie.
+  const b1 = "Factura generada con ";
+  const b2 = "TrackApp";
+  const b3 = " — facturación para transportistas";
+  const bs = 9;
+  const w1 = font.widthOfTextAtSize(b1, bs);
+  const w2 = bold.widthOfTextAtSize(b2, bs);
+  const w3 = font.widthOfTextAtSize(b3, bs);
+  const bx = (W - (w1 + w2 + w3)) / 2;
+  page.drawText(b1, { x: bx, y: 34, size: bs, font, color: GRAY });
+  page.drawText(b2, { x: bx + w1, y: 34, size: bs, font: bold, color: rgb(0.91, 0.57, 0.05) });
+  page.drawText(b3, { x: bx + w1 + w2, y: 34, size: bs, font, color: GRAY });
 
   return pdf.save();
 }
